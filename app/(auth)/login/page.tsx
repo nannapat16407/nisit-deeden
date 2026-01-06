@@ -1,13 +1,13 @@
 import LoginForm from '@/components/auth/LoginForm'
-import React from 'react'
+import HalfBackground from '@/components/ui/HalfBackground'
 
-function page() {
+function LoginPage() {
   return (
-    <>
-      <div>page</div>
+    <div className='relative h-screen'>
+      <HalfBackground />
       <LoginForm />
-    </>
+    </div>
   )
 }
 
-export default page
+export default LoginPage
