@@ -1,7 +1,7 @@
 "use client";
 import LeftMenu from "@/components/ui/LeftMenu";
 
-function Home() {
+function Dashboard() {
   const buttons = [
     {
       name: "หน้าหลัก",
@@ -25,12 +25,12 @@ function Home() {
       <LeftMenu buttons={buttons} />
       <div className="w-full p-4 text-black">
         <div className="w-full h-24 bg-emerald-600 rounded-2xl shadow-md flex items-center">
-          <div className="pl-8 text-white font-bold text-xl">HOME</div>
+          <div className="pl-8 text-white font-bold text-xl">DASHBOARD</div>
         </div>
-        <div className="pl-8 pt-4">this is home page</div>
+        <div className="pl-8 pt-4">this is dashboard</div>
       </div>
     </div>
   );
 }
 
-export default Home;
+export default Dashboard;
