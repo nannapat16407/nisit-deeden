@@ -1,15 +1,29 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
+import GoogleButton from '../ui/GoogleButton'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import useAuth from '@/hooks/useAuth'
 
 function LoginForm() {
+  const router = useRouter()
+  const { user, loading, error, loginWithGoogle, isAuthenticated } = useAuth()
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   })
+
+  // Redirect to /home if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('User authenticated, redirecting to /home')
+      router.push('/home')
+    }
+  }, [isAuthenticated, user, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -20,8 +34,17 @@ function LoginForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Handle login logic
+    // TODO: Handle traditional email/password login logic
     console.log('Login data:', formData)
+  }
+
+  const handleGoogleLogin = async () => {
+    try {
+      await loginWithGoogle()
+      // The loginWithGoogle function will redirect to Google OAuth
+    } catch (err) {
+      console.error('Google login error:', err)
+    }
   }
 
   return (
@@ -35,7 +58,30 @@ function LoginForm() {
         {/* Form Title */}
         <h2 className='text-xl font-bold mb-6 text-primary'>LOG IN YOUR ACCOUNT</h2>
 
-        {/* Form */}
+        {/* Error Message */}
+        {error && (
+          <div className='mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded'>
+            {error}
+          </div>
+        )}
+
+        {/* Google Sign In Button */}
+        <div className='mb-6'>
+          <GoogleButton 
+            onClick={handleGoogleLogin} 
+            disabled={loading}
+            loading={loading}
+          />
+        </div>
+
+        {/* Divider */}
+        <div className='flex items-center my-6'>
+          <div className='flex-1 border-t border-gray-300'></div>
+          <span className='px-4 text-sm text-gray-500'>หรือ</span>
+          <div className='flex-1 border-t border-gray-300'></div>
+        </div>
+
+        {/* Traditional Login Form */}
         <form onSubmit={handleSubmit}>
           <Input
             label='อีเมล (@ku.th)'
@@ -57,7 +103,9 @@ function LoginForm() {
             required
           />
 
-          <Button type='submit'>เข้าสู่ระบบ</Button>
+          <Button type='submit' disabled={loading}>
+            {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
+          </Button>
         </form>
 
         {/* Register Link */}
@@ -65,6 +113,13 @@ function LoginForm() {
           ยังไม่มีบัญชีผู้ใช้?{' '}
           <Link href='/register' className='text-primary font-medium underline hover:text-primary-hover'>
             ลงทะเบียน
+          </Link>
+        </div>
+
+        {/* Forgot Password Link */}
+        <div className='mt-4 text-sm text-center'>
+          <Link href='/forgot-password' className='text-gray-600 hover:text-primary'>
+            ลืมรหัสผ่าน?
           </Link>
         </div>
       </div>

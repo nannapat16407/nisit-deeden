@@ -1,12 +1,29 @@
 type User = {
   id: string
   email: string
-  role: 'student' | 'officer' | 'admin' | 'dean'
-  name: string
-  age: number
-  grade: string
-  department: string
-  major: string
+  first_name: string
+  last_name: string
+  role: string
+  provider?: string
+  is_oauth?: boolean
+  created_at?: string
+  updated_at?: string
+  // Legacy fields (optional for backward compatibility)
+  age?: number
+  grade?: string
+  department?: string
+  major?: string
 }
 
-export type { User };
+type AuthResponse = {
+  token: string
+  expires_at: string
+  user: User
+}
+
+type MeResponse = {
+  authenticated: boolean
+  user: User | null
+}
+
+export type { User, AuthResponse, MeResponse };
