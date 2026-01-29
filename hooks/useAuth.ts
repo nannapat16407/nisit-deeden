@@ -21,7 +21,7 @@ function useAuth() {
       setError(null)
       
       const response = await api.getCurrentUser()
-      
+      console.log(response); 
       if (response.authenticated && response.user) {
         setUser(response.user)
       } else {
