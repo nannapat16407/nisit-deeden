@@ -13,19 +13,40 @@ export const ROUTES = {
 
 export const ROUTES_BY_ROLE = {
   ADMIN: {
+    home: "/home",
     dashboard: "/dashboard",
     campus: "/campus",
     user: "/user/management",
   },
   STUDENT: {
-    profile: "/profile",
-    document: "/document",
-    track_status: "/document/track-status",
+    home: "/home",
+    request: "/request",
+    announcement: "/announcement",
   },
   SD_STAFF: {
+    home: "/home",
     request_period: "/request-period",
     request: "/request",
     announcement: "/announcement",
     reward: "/reward",
   },
+  DEPARTMENT_HEAD: {
+    home: "/home",
+    request: "/request",
+  }
 };
+
+export const getName = (key: string) => {
+    const names: Record<string, string> = {
+      home: "หน้าแรก",
+      request_period: "จัดการช่วงเวลารับสมัคร",
+      request: "รายการคำร้อง",
+      announcement: "ประกาศ",
+      reward: "จัดการรางวัล",
+      dashboard: "Dashboard",
+      profile: "Profile",
+      user: "User Management",
+      campus: "จัดการวิทยาเขต",
+    };
+    return names[key] || key;
+  };  

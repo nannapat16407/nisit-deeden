@@ -5,8 +5,10 @@ import { Award } from "@/types/award.type";
 import AwardCard from "@/components/reward/AwardCard";
 import AwardFormModal from "@/components/reward/AwardFormModal";
 import { api } from "@/lib/api";
+import { useAlertPopUp } from "@/components/pop-up/AlertPopUp";
 
 function RewardPage() {
+  const { setAlert } = useAlertPopUp();
   const [awards, setAwards] = useState<Award[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAward, setEditingAward] = useState<Award | null>(null);
@@ -38,29 +40,36 @@ function RewardPage() {
   };
 
   const handleEdit = (award: Award) => {
-    alert("Edit feature is not yet available in API.");
-    // setEditingAward(award);
-    // setIsModalOpen(true);
+    setAlert({
+      open: true,
+      msg: "Edit feature is not yet available in API.",
+      severity: "info",
+    });
   };
 
   const handleToggleStatus = (id: string, currentStatus: boolean) => {
-    alert("Toggle Status feature is not yet available in API.");
-    // Soft update
-    // setAwards((prev) =>
-    //   prev.map((a) => (a.id === id ? { ...a, isActive: !currentStatus } : a)),
-    // );
+    setAlert({
+      open: true,
+      msg: "Toggle Status feature is not yet available in API.",
+      severity: "info",
+    });
   };
 
   const handleDelete = (id: string) => {
-    alert("Delete feature is not yet available in API.");
-    // if (confirm("Are you sure you want to delete this award?")) {
-    //   setAwards((prev) => prev.filter((a) => a.id !== id));
-    // }
+    setAlert({
+      open: true,
+      msg: "Delete feature is not yet available in API.",
+      severity: "info",
+    });
   };
 
   const handleSave = async (awardData: Partial<Award>) => {
     if (awardData.award_id) {
-      alert("Edit not implemented.");
+      setAlert({
+        open: true,
+        msg: "Edit not implemented.",
+        severity: "warning",
+      });
     } else {
       // Create
       try {
@@ -74,7 +83,11 @@ function RewardPage() {
         const activePeriod = periodsRes.data?.[0]?.period_id;
 
         if (!activePeriod) {
-          alert("No active period found to attach award to.");
+          setAlert({
+            open: true,
+            msg: "No active period found to attach award to.",
+            severity: "error",
+          });
           return;
         }
 
@@ -90,8 +103,13 @@ function RewardPage() {
         });
         await fetchAwards();
         setIsModalOpen(false);
+        setAlert({ open: true, msg: "สร้างรางวัลสำเร็จ", severity: "success" });
       } catch (err: any) {
-        alert("Failed to create award: " + err.message);
+        setAlert({
+          open: true,
+          msg: "Failed to create award: " + err.message,
+          severity: "error",
+        });
       }
     }
   };

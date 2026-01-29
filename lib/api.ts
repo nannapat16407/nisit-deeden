@@ -1,6 +1,10 @@
 import { AuthResponse, MeResponse } from "@/types/user.type";
 import { Period, CreatePeriodRequest } from "@/types/period.type";
 import { Award, CreateAwardRequest } from "@/types/award.type";
+import {
+  Request as RequestType,
+  CreateApplicationRequest,
+} from "@/types/request.type";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8008";
 
@@ -85,6 +89,26 @@ class ApiClient {
 
   async getAvailableAwards(): Promise<{ data: Award[] }> {
     return this.fetch("/api/student/awards");
+  }
+  async createApplication(
+    data: CreateApplicationRequest,
+  ): Promise<{ message: string; data: any }> {
+    return this.fetch("/api/student/apply", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getMyRequests(): Promise<{ data: RequestType[] }> {
+    return this.fetch("/api/student/my-requests");
+  }
+
+  // ============================================
+  // Department Head APIs
+  // ============================================
+
+  async getDeptRequests(): Promise<{ message: string; data: RequestType[] }> {
+    return this.fetch("/api/department-head/requests");
   }
 
   // ============================================

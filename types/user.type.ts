@@ -1,19 +1,21 @@
 type User = {
-  id: string;
+  user_id: string;
   email: string;
-  first_name: string;
-  last_name: string;
-  role: string;
+  fname: string;
+  lname: string;
+  role: string | { RoleName: string };
   provider?: string;
   is_oauth?: boolean;
   created_at?: string;
   updated_at?: string;
-  // Legacy fields (optional for backward compatibility)
+  username?: string;
+  prefix?: string;
   age?: number;
   grade?: string;
   department?: string;
   major?: string;
   profile_url?: string;
+  phone_number?: string;
 };
 
 type AuthResponse = {

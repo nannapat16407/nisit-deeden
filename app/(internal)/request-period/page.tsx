@@ -5,8 +5,11 @@ import { Period } from "@/types/period.type";
 import PeriodCard from "@/components/period/PeriodCard";
 import PeriodFormModal from "@/components/period/PeriodFormModal";
 import { api } from "@/lib/api";
+import { useAlertPopUp } from "@/components/pop-up/AlertPopUp";
 
 function RequestPeriod() {
+  // State and Hooks
+  const { setAlert } = useAlertPopUp();
   const [periods, setPeriods] = useState<Period[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<Period | null>(null);
@@ -39,33 +42,52 @@ function RequestPeriod() {
   };
 
   const handleEdit = (period: Period) => {
-    alert("Edit feature is not yet available in the API.");
-    // setEditingPeriod(period);
-    // setIsModalOpen(true);
+    setAlert({
+      open: true,
+      msg: "Edit feature is not yet available in the API.",
+      severity: "info",
+    });
   };
 
   const handleDelete = (id: string) => {
-    alert("Delete feature is not yet available in the API.");
+    setAlert({
+      open: true,
+      msg: "Delete feature is not yet available in the API.",
+      severity: "info",
+    });
   };
 
   const handleSave = async (periodData: Partial<Period>) => {
     if (periodData.period_id) {
       // Edit
-      alert("Edit not implemented on backend.");
+      setAlert({
+        open: true,
+        msg: "Edit not implemented on backend.",
+        severity: "warning",
+      });
     } else {
       // Create
       try {
         await api.createPeriod({
-          academic_year: parseInt(periodData.academic_year || "2569"),
-          semester: parseInt(periodData.semester || "1"),
-          period_start: periodData.start_date || new Date().toISOString(),
-          period_end: periodData.end_date || new Date().toISOString(),
+          academic_year: parseInt(String(periodData.academic_year || "2569")),
+          semester: parseInt(String(periodData.semester || "1")),
+          period_start: periodData.period_start || new Date().toISOString(),
+          period_end: periodData.period_end || new Date().toISOString(),
           campus_id: 1, // Default or from context
         });
         await fetchPeriods(); // Refresh list
         setIsModalOpen(false);
-      } catch (err) {
-        alert("Failed to create period: " + err);
+        setAlert({
+          open: true,
+          msg: "สร้างช่วงเวลารับสมัครสำเร็จ",
+          severity: "success",
+        });
+      } catch (err: any) {
+        setAlert({
+          open: true,
+          msg: "เกิดข้อผิดพลาด: " + (err.message || err),
+          severity: "error",
+        });
       }
     }
   };
