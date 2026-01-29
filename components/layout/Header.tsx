@@ -1,5 +1,7 @@
 import React from "react";
 
+import Breadcrumbs from "@/components/common/Breadcrumbs";
+
 interface HeaderProps {
   user?: {
     name: string;
@@ -7,6 +9,7 @@ interface HeaderProps {
     image?: string;
   };
   title?: string;
+  showBreadcrumbs?: boolean;
 }
 
 function Header({
@@ -15,11 +18,17 @@ function Header({
     position: "กองพัฒนานิสิต",
   },
   title = "จัดการช่วงเวลารับสมัคร",
+  showBreadcrumbs = false,
 }: HeaderProps) {
   return (
     <header className="h-[60px] bg-primary flex items-center justify-between px-6 text-white shadow-md z-10 sticky top-0">
       <div className="flex items-center gap-2 font-noto">
         <span className="font-bold text-lg">{title}</span>
+        {showBreadcrumbs && (
+          <div className="ml-4 pl-4 border-l border-white/20">
+            <Breadcrumbs />
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-6">

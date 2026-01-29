@@ -12,7 +12,11 @@ export const ROUTES = {
 };
 
 export const ROUTES_BY_ROLE = {
-  ADMIN: { dashboard: "/dashboard", profile: "/profile", user: "/user" },
+  ADMIN: {
+    dashboard: "/dashboard",
+    campus: "/campus",
+    user: "/user/management",
+  },
   NISIT: {
     profile: "/profile",
     document: "/document",
