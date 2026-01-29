@@ -1,9 +1,132 @@
-import React from 'react'
+'use client';
 
-function page() {
+import React, { useState, useEffect } from "react";
+
+
+function Welcome(){
+  const reward = "นักศึกษาดีเด่น";
+  const academicYear = "2569";
+  const semester = "ภาคต้น";
+  return(
+
+    <div className="bg-white rounded-xl p-10">
+      <div className="">
+        <div className="flex flex-row">
+          <div className="w-[80%]  flex flex-col  space-y-4">
+            <p className="font-extrabold text-3xl text-black">ยินดีต้อนรับระบบนิสิตดีเด่น</p>
+            <div className="flex flex-row space-x-2">
+              <p className="text-lg text-black">สมัครขอรับรางวัล{reward}ผ่านระบบออนไลน์</p>
+              <div className="px-2 bg-emerald-600 rounded-xl flex items-center justify-center">
+               <p className="text-xs">{semester} {academicYear}</p>
+              </div>
+
+            </div>
+          </div>
+          <div className="flex flex-col w-[20%] justify-center items-end">
+            <button className="w-[90%] p-2 bg-emerald-600 text-2xl rounded-xl hover:cursor-pointer hover:bg-emerald-700">สมัคร</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+function Countdown(){
+  const start_date = "2026-01-01";
+  const end_date = "2026-12-31";
+
+  const targetDate = new Date(end_date + "T23:59:59").getTime();
+
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const difference = targetDate - now;
+
+      if (difference > 0) {
+        setTimeLeft({
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((difference % (1000 * 60)) / 1000)
+        });
+      } else {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  const formatDateToBE = (dateString: string) => {
+    const date = new Date(dateString);
+    const thaiMonths = [
+      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+      "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
+    const day = date.getDate();
+    const month = thaiMonths[date.getMonth()];
+    const year = date.getFullYear() + 543; // Convert to Buddhist Era
+    return `${day} ${month} ${year}`;
+  };
+
   return (
-    <div>page</div>
+    <div className="bg-white rounded-xl p-10 mt-4 flex flex-col justify-center items-center ">
+      <p className="text-black text-lg mb-4">ช่วงเวลาที่กำหนด ระหว่างวันที่ {formatDateToBE(start_date)} - {formatDateToBE(end_date)}</p>
+
+      <div className="w-full flex flex-row justify-center items-center space-x-4">
+        <div className="w-full flex flex-row justify-center space-x-2">
+          <p className="text-lg text-black font-semibold">เหลืออีก</p>
+          <div className="bg-emerald-100 w-1/6 py-2 rounded-lg">
+            <p className="text-black font-bold text-2xl text-center">{timeLeft.days}</p>
+            <p className="text-sm text-gray-600 text-center">วัน</p>
+          </div>
+          <div className="bg-emerald-100 w-1/6 py-2 rounded-lg">
+            <p className="text-black font-bold text-2xl text-center">{timeLeft.hours}</p>
+            <p className="text-sm text-gray-600 text-center">ชั่วโมง</p>
+          </div>
+          <div className="bg-emerald-100 w-1/6 py-2 rounded-lg">
+            <p className="text-black font-bold text-2xl text-center">{timeLeft.minutes}</p>
+            <p className="text-sm text-gray-600 text-center">นาที</p>
+          </div>
+          <div className="bg-emerald-100 w-1/6 py-2 rounded-lg">
+            <p className="text-black font-bold text-2xl text-center">{timeLeft.seconds}</p>
+            <p className="text-sm text-gray-600 text-center">วินาที</p>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
-export default page
+function Announcement(){
+  const description = "นิสิตที่สนใจสมัครขอรับรางวัลนิสิตดีเด่น สามารถสมัครผ่านระบบออนไลน์ได้ตั้งแต่วันนี้เป็นต้นไป โดยต้องเตรียมเอกสารประกอบการสมัครให้ครบถ้วน";
+
+  return (
+    <div className="bg-white rounded-xl p-4 mt-4">
+      <div className="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg inline-block mb-4">
+        <p className="font-bold text-lg">ประกาศ</p>
+      </div>
+      <div className="px-6 pb-6">
+        <p className="text-gray-700 text-base">{description}</p>
+
+      </div>
+    </div>
+  )
+}
+function page() {
+  return (
+    <div>
+      <Welcome />
+      <Countdown />
+      <Announcement />
+    </div>
+  );
+}
+
+export default page;

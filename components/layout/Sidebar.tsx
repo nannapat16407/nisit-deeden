@@ -142,7 +142,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role = "SD" }) => {
     return names[key] || key;
   };
 
-  const routes = ROUTES_BY_ROLE[role as keyof typeof ROUTES_BY_ROLE] || {};
+  const routes = ROUTES_BY_ROLE[role.toUpperCase() as keyof typeof ROUTES_BY_ROLE] || {};
   const menuItems = Object.entries(routes).map(([key, href]) => ({
     key,
     href: href as string,
