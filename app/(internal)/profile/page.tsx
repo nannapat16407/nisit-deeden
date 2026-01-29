@@ -9,21 +9,20 @@ function Welcome(){
   const semester = "ภาคต้น";
   return(
 
-    <div className="bg-white rounded-xl p-10">
+    <div className="bg-white rounded-xl p-4 md:p-10">
       <div className="">
-        <div className="flex flex-row">
-          <div className="w-[80%]  flex flex-col  space-y-4">
-            <p className="font-extrabold text-3xl text-black">ยินดีต้อนรับระบบนิสิตดีเด่น</p>
-            <div className="flex flex-row space-x-2">
-              <p className="text-lg text-black">สมัครขอรับรางวัล{reward}ผ่านระบบออนไลน์</p>
-              <div className="px-2 bg-emerald-600 rounded-xl flex items-center justify-center">
-               <p className="text-xs">{semester} {academicYear}</p>
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="w-full md:w-[80%] flex flex-col space-y-2 md:space-y-6">
+            <p className="font-extrabold text-xl md:text-3xl text-black sm:whitespace-nowrap">ยินดีต้อนรับระบบนิสิตดีเด่น</p>
+            <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
+              <p className="text-sm md:text-base text-black">สมัครขอรับรางวัล{reward}ผ่านระบบออนไลน์</p>
+              <div className="px-2 py-1 bg-emerald-600 rounded-xl flex items-center justify-center self-start">
+               <p className="text-xs text-white whitespace-nowrap">{semester} {academicYear}</p>
               </div>
-
             </div>
           </div>
-          <div className="flex flex-col w-[20%] justify-center items-end">
-            <button className="w-[90%] p-2 bg-emerald-600 text-2xl rounded-xl hover:cursor-pointer hover:bg-emerald-700">สมัคร</button>
+          <div className="flex flex-col w-full md:w-[20%] justify-end items-stretch md:items-end">
+            <button className="w-full py-2 bg-emerald-600 text-lg md:text-xl rounded-xl hover:cursor-pointer hover:bg-emerald-700 text-white">สมัคร</button>
           </div>
         </div>
       </div>
