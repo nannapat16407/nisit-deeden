@@ -1,4 +1,6 @@
 import { AuthResponse, MeResponse } from "@/types/user.type";
+import { Period, CreatePeriodRequest } from "@/types/period.type";
+import { Award, CreateAwardRequest } from "@/types/award.type";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8008";
 
@@ -49,6 +51,40 @@ class ApiClient {
 
       throw error;
     }
+  }
+
+  // ============================================
+  // SD / Admin APIs
+  // ============================================
+
+  async getPeriods(): Promise<{ data: Period[] }> {
+    return this.fetch("/api/sd/periods");
+  }
+
+  async createPeriod(
+    data: CreatePeriodRequest,
+  ): Promise<{ message: string; data: Period }> {
+    return this.fetch("/api/sd/periods", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createAward(
+    data: CreateAwardRequest,
+  ): Promise<{ message: string; data: Award }> {
+    return this.fetch("/api/sd/awards", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ============================================
+  // Student APIs
+  // ============================================
+
+  async getAvailableAwards(): Promise<{ data: Award[] }> {
+    return this.fetch("/api/student/awards");
   }
 
   // ============================================

@@ -1,9 +1,17 @@
 export interface Period {
-  id: string;
-  academicYear: string;
-  semester: string;
-  label: string;
-  startDate: string; // ISO Date "YYYY-MM-DD"
-  endDate: string; // ISO Date "YYYY-MM-DD"
-  isActive: boolean;
+  period_id: string; // UUID
+  academic_year: number | string;
+  semester: number | string; // "1", "2"
+  start_date: string; // ISO Date
+  end_date: string; // ISO Date
+  campus_id?: number; // Optional
+  is_active?: boolean; // Calculated?
+}
+
+export interface CreatePeriodRequest {
+  academic_year: number;
+  semester: number;
+  period_start: string;
+  period_end: string;
+  campus_id: number;
 }

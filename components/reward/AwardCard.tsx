@@ -18,25 +18,25 @@ const AwardCard: React.FC<AwardCardProps> = ({
     <div
       className={`
              rounded-xl shadow-sm p-6 flex flex-col justify-between border transition-all
-            ${award.isActive ? "bg-white border-gray-100 hover:shadow-md" : "bg-gray-50 border-gray-200 opacity-70"}
+            ${award.is_active ? "bg-white border-gray-100 hover:shadow-md" : "bg-gray-50 border-gray-200 opacity-70"}
         `}
     >
       {/* Header */}
       <div>
         <h3
-          className={`text-lg font-bold mb-2 ${award.isActive ? "text-gray-800" : "text-gray-500"}`}
+          className={`text-lg font-bold mb-2 ${award.is_active ? "text-gray-800" : "text-gray-500"}`}
         >
-          {award.name}
+          {award.award_name}
         </h3>
         <p
-          className={`text-sm mb-4 line-clamp-2 ${award.isActive ? "text-gray-600" : "text-gray-400"}`}
+          className={`text-sm mb-4 line-clamp-2 ${award.is_active ? "text-gray-600" : "text-gray-400"}`}
         >
           {award.description}
         </p>
 
         {/* File Template Mock */}
         <div
-          className={`p-3 rounded-lg flex items-center justify-between mb-4 border ${award.isActive ? "bg-gray-50 border-gray-100" : "bg-gray-100 border-gray-200"}`}
+          className={`p-3 rounded-lg flex items-center justify-between mb-4 border ${award.is_active ? "bg-gray-50 border-gray-100" : "bg-gray-100 border-gray-200"}`}
         >
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="w-8 h-8 flex-shrink-0 bg-red-100 text-red-500 rounded flex items-center justify-center font-bold text-[10px]">
@@ -44,7 +44,7 @@ const AwardCard: React.FC<AwardCardProps> = ({
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-bold truncate text-gray-700">
-                {award.templateFileName || "Template.pdf"}
+                {award.template_file_url ? "Template.pdf" : "No Template"}
               </span>
               <span className="text-[10px] text-gray-400">
                 Template Uploaded
@@ -59,25 +59,25 @@ const AwardCard: React.FC<AwardCardProps> = ({
         {/* Toggle Status */}
         <div
           className="flex items-center gap-2 cursor-pointer"
-          onClick={() => onToggleStatus(award.id, award.isActive)}
+          onClick={() => onToggleStatus(award.award_id, award.is_active)}
         >
           <div
             className={`
                         w-10 h-6 flex items-center rounded-full p-1 transition-colors duration-300
-                        ${award.isActive ? "bg-emerald-500" : "bg-gray-300"}
+                        ${award.is_active ? "bg-emerald-500" : "bg-gray-300"}
                     `}
           >
             <div
               className={`
                             bg-white w-4 h-4 rounded-full shadow-md transform duration-300 ease-in-out
-                            ${award.isActive ? "translate-x-4" : "translate-x-0"}
+                            ${award.is_active ? "translate-x-4" : "translate-x-0"}
                         `}
             ></div>
           </div>
           <span
-            className={`text-sm font-medium ${award.isActive ? "text-gray-700" : "text-gray-400"}`}
+            className={`text-sm font-medium ${award.is_active ? "text-gray-700" : "text-gray-400"}`}
           >
-            {award.isActive ? "Active" : "Inactive"}
+            {award.is_active ? "Active" : "Inactive"}
           </span>
         </div>
 
@@ -102,7 +102,7 @@ const AwardCard: React.FC<AwardCardProps> = ({
             </svg>
           </button>
           <button
-            onClick={() => onDelete(award.id)}
+            onClick={() => onDelete(award.award_id)}
             className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-red-500 transition-colors"
           >
             <svg

@@ -12,63 +12,56 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
   onEdit,
   onDelete,
 }) => {
-  // Format dates to "D Month YYYY" (Thai)
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("th-TH", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  };
+  // Assuming isActive is calculated or defaulted
+  const isActive = period.is_active !== undefined ? period.is_active : true;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 flex items-start justify-between border border-gray-100 mb-4 transition-shadow hover:shadow-md">
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-4">
-          <h3 className="text-2xl font-bold text-gray-800">
-            {period.label} / {period.academicYear}
-          </h3>
+    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100 flex items-center justify-between">
+      <div className="flex items-center gap-6">
+        <div
+          className={`w-16 h-16 rounded-xl flex items-center justify-center font-bold text-xl ${isActive ? "bg-emerald-100 text-emerald-600" : "bg-gray-100 text-gray-400"}`}
+        >
+          {period.semester}/{String(period.academic_year).slice(-2)}
         </div>
-        <div className="flex items-center gap-2 text-gray-500 font-medium mt-1">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div>
+          <h3
+            className={`text-lg font-bold ${isActive ? "text-gray-800" : "text-gray-500"}`}
           >
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          <span>
-            {formatDate(period.startDate)} - {formatDate(period.endDate)}
-          </span>
+            ภาคเรียนที่ {period.semester} ปีการศึกษา {period.academic_year}
+          </h3>
+          <p className="text-gray-500 text-sm mt-1 flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            {new Date(period.start_date).toLocaleDateString("th-TH")} -{" "}
+            {new Date(period.end_date).toLocaleDateString("th-TH")}
+          </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2">
-          {period.isActive ? (
-            <>
-              <span className="text-gray-500 font-medium">กำลังใช้งาน</span>
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            </>
-          ) : (
-            <span className="text-gray-400 font-medium">ยังไม่เปิดใช้งาน</span>
-          )}
+      <div className="flex items-center gap-4">
+        <div
+          className={`px-3 py-1 rounded-full text-xs font-bold ${isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}
+        >
+          {isActive ? "เปิดรับสมัคร" : "ปิดรับสมัคร"}
         </div>
-
         <div className="flex items-center gap-2">
           <button
             onClick={() => onEdit(period)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+            className="p-2 text-gray-400 hover:text-primary transition-colors hover:bg-gray-50 rounded-lg"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -85,8 +78,8 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
             </svg>
           </button>
           <button
-            onClick={() => onDelete(period.id)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors"
+            onClick={() => onDelete(period.period_id)}
+            className="p-2 text-gray-400 hover:text-red-500 transition-colors hover:bg-red-50 rounded-lg"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

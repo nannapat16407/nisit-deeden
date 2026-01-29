@@ -1,45 +1,36 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Period } from "@/types/period.type";
 import PeriodCard from "@/components/period/PeriodCard";
 import PeriodFormModal from "@/components/period/PeriodFormModal";
-
-// Mock Data
-const INITIAL_PERIODS: Period[] = [
-  {
-    id: "1",
-    academicYear: "2569",
-    semester: "Semester 1",
-    label: "ภาคเรียนที่ 1",
-    startDate: "2026-08-01",
-    endDate: "2026-08-31",
-    isActive: true,
-  },
-  {
-    id: "2",
-    academicYear: "2569",
-    semester: "Semester 2",
-    label: "ภาคเรียนที่ 2",
-    startDate: "2026-08-01",
-    endDate: "2026-08-31",
-    isActive: false,
-  },
-  {
-    id: "3",
-    academicYear: "2570",
-    semester: "Semester 1",
-    label: "ภาคเรียนที่ 1",
-    startDate: "2026-08-01",
-    endDate: "2026-08-31",
-    isActive: false,
-  },
-];
+import { api } from "@/lib/api";
 
 function RequestPeriod() {
-  const [periods, setPeriods] = useState<Period[]>(INITIAL_PERIODS);
+  const [periods, setPeriods] = useState<Period[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<Period | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPeriods = async () => {
+    try {
+      setLoading(true);
+      const response = await api.getPeriods();
+      setPeriods(response.data || []);
+      setError(null);
+    } catch (err: any) {
+      console.error("Failed to fetch periods:", err);
+      // Fallback for demo if backend offline or auth issue
+      setError("Failed to fetch periods. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPeriods();
+  }, []);
 
   // Handlers
   const handleCreate = () => {
@@ -48,38 +39,35 @@ function RequestPeriod() {
   };
 
   const handleEdit = (period: Period) => {
-    setEditingPeriod(period);
-    setIsModalOpen(true);
+    alert("Edit feature is not yet available in the API.");
+    // setEditingPeriod(period);
+    // setIsModalOpen(true);
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("ยืนยันการลบช่วงเวลานี้?")) {
-      setPeriods((prev) => prev.filter((p) => p.id !== id));
-    }
+    alert("Delete feature is not yet available in the API.");
   };
 
-  const handleSave = (periodData: Partial<Period>) => {
-    if (periodData.id) {
+  const handleSave = async (periodData: Partial<Period>) => {
+    if (periodData.period_id) {
       // Edit
-      setPeriods((prev) =>
-        prev.map((p) =>
-          p.id === periodData.id ? ({ ...p, ...periodData } as Period) : p,
-        ),
-      );
+      alert("Edit not implemented on backend.");
     } else {
       // Create
-      const newPeriod: Period = {
-        id: Date.now().toString(),
-        academicYear: periodData.academicYear || "",
-        semester: periodData.semester || "",
-        label: periodData.label || "",
-        startDate: periodData.startDate || "",
-        endDate: periodData.endDate || "",
-        isActive: periodData.isActive || false,
-      };
-      setPeriods((prev) => [newPeriod, ...prev]);
+      try {
+        await api.createPeriod({
+          academic_year: parseInt(periodData.academic_year || "2569"),
+          semester: parseInt(periodData.semester || "1"),
+          period_start: periodData.start_date || new Date().toISOString(),
+          period_end: periodData.end_date || new Date().toISOString(),
+          campus_id: 1, // Default or from context
+        });
+        await fetchPeriods(); // Refresh list
+        setIsModalOpen(false);
+      } catch (err) {
+        alert("Failed to create period: " + err);
+      }
     }
-    setIsModalOpen(false);
   };
 
   return (
@@ -110,22 +98,30 @@ function RequestPeriod() {
         </button>
       </div>
 
-      <div className="flex flex-col gap-4">
-        {periods.map((period) => (
-          <PeriodCard
-            key={period.id}
-            period={period}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        ))}
+      {loading ? (
+        <div className="text-center py-20 text-gray-400">
+          Loading periods...
+        </div>
+      ) : error ? (
+        <div className="text-center py-20 text-red-500">{error}</div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {periods.map((period) => (
+            <PeriodCard
+              key={period.period_id}
+              period={period}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          ))}
 
-        {periods.length === 0 && (
-          <div className="text-center py-20 text-gray-400">
-            ไม่พบข้อมูลช่วงเวลารับสมัคร
-          </div>
-        )}
-      </div>
+          {periods.length === 0 && (
+            <div className="text-center py-20 text-gray-400">
+              ไม่พบข้อมูลช่วงเวลารับสมัคร
+            </div>
+          )}
+        </div>
+      )}
 
       <PeriodFormModal
         isOpen={isModalOpen}

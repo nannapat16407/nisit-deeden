@@ -1,66 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Award } from "@/types/award.type";
 import AwardCard from "@/components/reward/AwardCard";
 import AwardFormModal from "@/components/reward/AwardFormModal";
-
-// Mock Data
-const INITIAL_AWARDS: Award[] = [
-  {
-    id: "1",
-    name: "Extracurricular Activity Award",
-    description:
-      "Award for outstanding participation in university clubs and events.",
-    templateFileName: "Form_Template_Activity.pdf",
-    isActive: true,
-  },
-  {
-    id: "2",
-    name: "Innovation Award",
-    description:
-      "Recognizes student projects with significant creative potential.",
-    templateFileName: "Form_Template_Innovation.pdf",
-    isActive: true,
-  },
-  {
-    id: "3",
-    name: "Leadership Excellence Award",
-    description:
-      "Honors demonstrated leadership skills in student organizations.",
-    templateFileName: "Form_Template_Leadership.pdf",
-    isActive: true,
-  },
-  {
-    id: "4",
-    name: "Academic Achievement Award",
-    description:
-      "Award for outstanding participation in university clubs and events.",
-    templateFileName: "Form_Template_Activity.pdf",
-    isActive: true,
-  },
-  {
-    id: "5",
-    name: "Community Service Award",
-    description:
-      "Recognizes student projects with significant creative potential.",
-    templateFileName: "Form_Template_Innovation.pdf",
-    isActive: true,
-  },
-  {
-    id: "6",
-    name: "Cultural Ambassador Award",
-    description:
-      "Honors demonstrated leadership skills in student organizations.",
-    templateFileName: "Form_Template_Culture.pdf",
-    isActive: true,
-  },
-];
+import { api } from "@/lib/api";
 
 function RewardPage() {
-  const [awards, setAwards] = useState<Award[]>(INITIAL_AWARDS);
+  const [awards, setAwards] = useState<Award[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAward, setEditingAward] = useState<Award | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchAwards = async () => {
+    try {
+      setLoading(true);
+      const response = await api.getAvailableAwards();
+      setAwards(response.data || []);
+      setError(null);
+    } catch (err: any) {
+      console.error("Failed to fetch awards:", err);
+      setError("Failed to fetch awards. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAwards();
+  }, []);
 
   // Handlers
   const handleCreate = () => {
@@ -69,52 +38,69 @@ function RewardPage() {
   };
 
   const handleEdit = (award: Award) => {
-    setEditingAward(award);
-    setIsModalOpen(true);
+    alert("Edit feature is not yet available in API.");
+    // setEditingAward(award);
+    // setIsModalOpen(true);
   };
 
   const handleToggleStatus = (id: string, currentStatus: boolean) => {
+    alert("Toggle Status feature is not yet available in API.");
     // Soft update
-    setAwards((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, isActive: !currentStatus } : a)),
-    );
+    // setAwards((prev) =>
+    //   prev.map((a) => (a.id === id ? { ...a, isActive: !currentStatus } : a)),
+    // );
   };
 
   const handleDelete = (id: string) => {
-    // Just in case we want to support delete, but UI might not have it in final version. keeping it for dev.
-    // Or confirm?
-    if (confirm("Are you sure you want to delete this award?")) {
-      setAwards((prev) => prev.filter((a) => a.id !== id));
-    }
+    alert("Delete feature is not yet available in API.");
+    // if (confirm("Are you sure you want to delete this award?")) {
+    //   setAwards((prev) => prev.filter((a) => a.id !== id));
+    // }
   };
 
-  const handleSave = (awardData: Partial<Award>) => {
-    if (awardData.id) {
-      // Edit
-      setAwards((prev) =>
-        prev.map((a) =>
-          a.id === awardData.id ? ({ ...a, ...awardData } as Award) : a,
-        ),
-      );
+  const handleSave = async (awardData: Partial<Award>) => {
+    if (awardData.award_id) {
+      alert("Edit not implemented.");
     } else {
       // Create
-      const newAward: Award = {
-        id: Date.now().toString(),
-        name: awardData.name || "New Award",
-        description: awardData.description || "",
-        templateFileName: awardData.templateFileName || "Template.pdf",
-        isActive: awardData.isActive ?? true,
-      };
-      setAwards((prev) => [...prev, newAward]);
+      try {
+        // Need period_id. For now hardcode or fetch active period?
+        // Doc says `period_id` is required. I need an active period ID.
+        // I will assume the first active period or let user select (BUT Modal doesn't have period selector).
+        // For MVP, I will try to fetch periods first and use the first one, OR hardcode if I saw one in seeder.
+        // Actually best is to let user select in modal, but I am not editing Modal right now.
+        // I'll fetch periods and pick the first one.
+        const periodsRes = await api.getPeriods();
+        const activePeriod = periodsRes.data?.[0]?.period_id;
+
+        if (!activePeriod) {
+          alert("No active period found to attach award to.");
+          return;
+        }
+
+        await api.createAward({
+          campus_id: 1,
+          award_type: "General", // Default
+          award_name: awardData.award_name || "New Award",
+          description: awardData.description || "",
+          template_file_url:
+            awardData.template_file_url || "http://example.com/template.pdf",
+          requirement_json: "{}",
+          period_id: activePeriod,
+        });
+        await fetchAwards();
+        setIsModalOpen(false);
+      } catch (err: any) {
+        alert("Failed to create award: " + err.message);
+      }
     }
-    setIsModalOpen(false);
   };
 
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold font-noto text-gray-800">
-          Awards for Semester 1 / 2569
+          จัดการรางวัล (Awards)
         </h1>
         <button
           onClick={handleCreate}
@@ -138,21 +124,26 @@ function RewardPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {awards.map((award) => (
-          <AwardCard
-            key={award.id}
-            award={award}
-            onEdit={handleEdit}
-            onToggleStatus={handleToggleStatus}
-            onDelete={handleDelete}
-          />
-        ))}
-      </div>
-
-      {awards.length === 0 && (
-        <div className="text-center py-20 text-gray-400">
-          No awards found. Click "Add New Award" to create one.
+      {loading ? (
+        <div className="text-center py-20 text-gray-400">Loading awards...</div>
+      ) : error ? (
+        <div className="text-center py-20 text-red-500">{error}</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {awards.map((award) => (
+            <AwardCard
+              key={award.award_id}
+              award={award}
+              onEdit={handleEdit}
+              onToggleStatus={handleToggleStatus}
+              onDelete={handleDelete}
+            />
+          ))}
+          {awards.length === 0 && (
+            <div className="text-center py-20 text-gray-400 col-span-full">
+              No awards found. Click "Add New Award" to create one.
+            </div>
+          )}
         </div>
       )}
 

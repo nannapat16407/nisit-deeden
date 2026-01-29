@@ -24,10 +24,10 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
 
   useEffect(() => {
     if (isOpen && initialData) {
-      setName(initialData.name);
+      setName(initialData.award_name);
       setDescription(initialData.description);
-      setIsActive(initialData.isActive);
-      setFileName(initialData.templateFileName || "");
+      setIsActive(initialData.is_active);
+      setFileName(initialData.template_file_url || "");
     } else if (isOpen) {
       // Reset
       setName("");
@@ -42,11 +42,11 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
-      id: initialData?.id,
-      name,
+      award_id: initialData?.award_id,
+      award_name: name,
       description,
-      templateFileName: fileName || "Template_Default.pdf",
-      isActive,
+      template_file_url: fileName || "Template_Default.pdf",
+      is_active: isActive,
     });
     onClose();
   };
