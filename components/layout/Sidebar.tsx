@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { ROUTES_BY_ROLE } from "@/constants/route";
+import { ROUTES_BY_ROLE, getName } from "@/constants/route";
 
 interface SidebarProps {
   role?: string;
@@ -125,24 +125,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role = "SD" }) => {
     }
   };
 
-  // Name specific mapping
-  const getName = (key: string) => {
-    const names: Record<string, string> = {
-      request_period: "จัดการช่วงเวลารับสมัคร",
-      request: "รายการใบสมัคร",
-      announcement: "ประกาศ",
-      reward: "จัดการรางวัล",
-      dashboard: "Dashboard",
-      profile: "Profile",
-      user: "User Management",
-      document: "Documents",
-      track_status: "Track Status",
-      campus: "จัดการวิทยาเขต",
-    };
-    return names[key] || key;
-  };
-
-  const routes = ROUTES_BY_ROLE[role.toUpperCase() as keyof typeof ROUTES_BY_ROLE] || {};
+  const routes = ROUTES_BY_ROLE[role as keyof typeof ROUTES_BY_ROLE] || {};
   const menuItems = Object.entries(routes).map(([key, href]) => ({
     key,
     href: href as string,

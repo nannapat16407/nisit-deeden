@@ -3,6 +3,8 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import useAuth from "@/hooks/useAuth";
+import { api } from "@/lib/api";
+import { ROUTES_BY_ROLE } from "@/constants/route";
 
 function CallbackContent() {
   const router = useRouter();
@@ -35,20 +37,48 @@ function CallbackContent() {
         }
 
         // Wait a bit for the backend to set the cookie
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1500));
 
-        // Check authentication status
-        await checkAuth();
+        // Check authentication status & Get User for Redirection
+        // We call api directly to get the user object immediately for routing
+        const response = await api.getCurrentUser();
+        await checkAuth(); // Sync useAuth context as well
 
-        setStatus("success");
-        setMessage("เข้าสู่ระบบสำเร็จ! กำลังนำคุณไปยังหน้าหลัก...");
+        if (response.authenticated && response.user) {
+          setStatus("success");
+          setMessage(
+            `ยินดีต้อนรับ, ${response.user.fname || response.user.email}`,
+          );
 
-        // Redirect to /home
-        setTimeout(() => router.push("/home"), 1500);
+          // Determine redirect path based on role
+          const role =
+            typeof response.user.role === "string"
+              ? response.user.role
+              : response.user.role.RoleName;
+          let redirectPath = "/"; // Default
+
+          if (role === "STUDENT") {
+            redirectPath = ROUTES_BY_ROLE.STUDENT.request || "/";
+          } else if (role === "DEPARTMENT_HEAD") {
+            redirectPath = ROUTES_BY_ROLE.DEPARTMENT_HEAD.request || "/";
+          } else if (role === "SD_STAFF") {
+            redirectPath = ROUTES_BY_ROLE.SD_STAFF.request || "/";
+          } else if (role === "ADMIN") {
+            redirectPath = ROUTES_BY_ROLE.ADMIN.dashboard || "/";
+          } else {
+            // Fallback for other roles or if ROUTES_BY_ROLE is missing entry
+            redirectPath = "/dashboard";
+          }
+
+          console.log("Redirecting to:", redirectPath);
+          setTimeout(() => router.push(redirectPath), 1500);
+        } else {
+          throw new Error("User not found after login");
+        }
       } catch (err) {
         console.error("Callback error:", err);
         setStatus("error");
-        setMessage("เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
+        setMessage("เกิดข้อผิดพลาดในการเข้าสู่ระบบ หรือเซสชั่นหมดอายุ");
         setTimeout(() => router.push("/login"), 3000);
       }
     };

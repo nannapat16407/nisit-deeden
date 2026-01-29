@@ -16,26 +16,12 @@ function useAuth() {
 
   
   const checkAuth = async () => {
-    // DEV BYPASS: Mock user for development
-    if (process.env.NODE_ENV === 'development') {
-      setUser({
-        user_id: 1,
-        email: 'dev@example.com',
-        name: 'Dev User',
-        role: 'student',
-        campus_id: 1,
-        department_id: 1,
-      })
-      setLoading(false)
-      return
-    }
-
     try {
       setLoading(true)
       setError(null)
-
+      
       const response = await api.getCurrentUser()
-      console.log(response);
+      console.log(response); 
       if (response.authenticated && response.user) {
         setUser(response.user)
       } else {
