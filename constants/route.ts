@@ -17,12 +17,12 @@ export const ROUTES_BY_ROLE = {
     campus: "/campus",
     user: "/user/management",
   },
-  NISIT: {
+  STUDENT: {
     profile: "/profile",
     document: "/document",
     track_status: "/document/track-status",
   },
-  SD: {
+  SD_STAFF: {
     request_period: "/request-period",
     request: "/request",
     announcement: "/announcement",

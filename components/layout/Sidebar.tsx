@@ -7,7 +7,7 @@ import Image from "next/image";
 import { ROUTES_BY_ROLE } from "@/constants/route";
 
 interface SidebarProps {
-  role?: "ADMIN" | "NISIT" | "SD"; // Mock roles
+  role?: string;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ role = "SD" }) => {
@@ -142,7 +142,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role = "SD" }) => {
     return names[key] || key;
   };
 
-  const routes = ROUTES_BY_ROLE[role] || {};
+  const routes = ROUTES_BY_ROLE[role as keyof typeof ROUTES_BY_ROLE] || {};
   const menuItems = Object.entries(routes).map(([key, href]) => ({
     key,
     href: href as string,
