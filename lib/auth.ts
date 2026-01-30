@@ -6,12 +6,10 @@ function login(email: string, password: string): Promise<User> {
     id: "1",
     email,
     role: "student",
-    name: "John Doe",
-    age: 20,
-    grade: "A",
+    first_name: "John",
+    last_name: "Doe",
     department: "Computer Science",
-    major: "Software Engineering",
   });
 }
 
-export { login }
+export { login };

@@ -17,6 +17,8 @@
 /.next/
 /out/
 
+docs
+
 # production
 /build
 
@@ -168,4 +170,5 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+bun.lock
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,nextjs,macos,windows,linux
