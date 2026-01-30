@@ -20,6 +20,7 @@ export const ROUTES_BY_ROLE = {
   },
   STUDENT: {
     home: "/home",
+    document: "/document",
     request: "/request",
     announcement: "/announcement",
   },
