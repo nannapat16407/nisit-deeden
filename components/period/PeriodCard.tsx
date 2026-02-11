@@ -1,5 +1,6 @@
 import React from "react";
 import { Period } from "@/types/period.type";
+import Link from "next/link";
 
 interface PeriodCardProps {
   period: Period;
@@ -58,7 +59,29 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
         >
           {isActive ? "เปิดรับสมัคร" : "ปิดรับสมัคร"}
         </div>
-        <div className="flex items-center gap-2">
+
+        <Link
+          href={`/request-period/${period.period_id}/rewards`}
+          className="text-sm text-emerald-600 hover:text-emerald-700 font-medium hover:underline flex items-center gap-1"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="8" r="7" />
+            <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+          </svg>
+          จัดการรางวัล
+        </Link>
+
+        <div className="flex items-center gap-2 border-l pl-4 ml-2 border-gray-200">
           <button
             onClick={() => onEdit(period)}
             className="p-2 text-gray-400 hover:text-primary transition-colors hover:bg-gray-50 rounded-lg"

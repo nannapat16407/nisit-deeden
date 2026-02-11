@@ -18,67 +18,54 @@ function CallbackContent() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        const code = searchParams.get("code");
-        const state = searchParams.get("state");
         const error = searchParams.get("error");
 
+        // 1. ถ้า Google ส่ง Error มาจริงๆ ให้เด้งออกก่อน
         if (error) {
           setStatus("error");
-          setMessage(`เกิดข้อผิดพลาด: ${error}`);
+          setMessage(`เกิดข้อผิดพลาดจาก Google: ${error}`);
           setTimeout(() => router.push("/login"), 3000);
           return;
         }
 
-        if (!code || !state) {
-          setStatus("error");
-          setMessage("ข้อมูลการยืนยันตัวตนไม่ถูกต้อง");
-          setTimeout(() => router.push("/login"), 3000);
-          return;
-        }
+        // 2. ไม่ต้องเช็ค !code หรือ !state ที่นี่
+        // เพราะถ้า Backend จัดการ Callback ไปแล้ว URL ของหน้านี้จะไม่มี Params เหล่านี้
 
-        // Wait a bit for the backend to set the cookie
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        // 3. เช็คสถานะการ Login จริงๆ จาก Backend
+        // (อาจจะรอสักนิดเผื่อ Cookie ยัง Set ไม่เสร็จในบาง Browser)
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
-        // Check authentication status & Get User for Redirection
-        // We call api directly to get the user object immediately for routing
         const response = await api.getCurrentUser();
-        await checkAuth(); // Sync useAuth context as well
 
         if (response.authenticated && response.user) {
+          // Sync ข้อมูลลง Context
+          await checkAuth();
+
           setStatus("success");
           setMessage(
             `ยินดีต้อนรับ, ${response.user.fname || response.user.email}`,
           );
 
-          // Determine redirect path based on role
-          const role =
-            typeof response.user.role === "string"
-              ? response.user.role
-              : response.user.role.RoleName;
-          let redirectPath = "/"; // Default
+          // 4. Logic การ Redirect (เหมือนเดิม)
+          const user = response.user;
+          const role = (
+            typeof user.role === "string" ? user.role : user.role.RoleName
+          ) as keyof typeof ROUTES_BY_ROLE;
 
-          if (role === "STUDENT") {
-            redirectPath = ROUTES_BY_ROLE.STUDENT.request || "/";
-          } else if (role === "DEPARTMENT_HEAD") {
-            redirectPath = ROUTES_BY_ROLE.DEPARTMENT_HEAD.request || "/";
-          } else if (role === "SD_STAFF") {
-            redirectPath = ROUTES_BY_ROLE.SD_STAFF.request || "/";
-          } else if (role === "ADMIN") {
-            redirectPath = ROUTES_BY_ROLE.ADMIN.dashboard || "/";
-          } else {
-            // Fallback for other roles or if ROUTES_BY_ROLE is missing entry
-            redirectPath = "/dashboard";
-          }
+          const routes = ROUTES_BY_ROLE[role] as any;
+          const redirectPath =
+            routes?.request || routes?.dashboard || "/dashboard";
 
           console.log("Redirecting to:", redirectPath);
-          setTimeout(() => router.push(redirectPath), 1500);
+          setTimeout(() => router.push(redirectPath), 1000);
         } else {
-          throw new Error("User not found after login");
+          // ถ้าเรียก getCurrentUser แล้วบอกว่าไม่ได้ Login
+          throw new Error("Session not found");
         }
       } catch (err) {
         console.error("Callback error:", err);
         setStatus("error");
-        setMessage("เกิดข้อผิดพลาดในการเข้าสู่ระบบ หรือเซสชั่นหมดอายุ");
+        setMessage("เซสชั่นหมดอายุ หรือโปรดลองเข้าสู่ระบบใหม่อีกครั้ง");
         setTimeout(() => router.push("/login"), 3000);
       }
     };
