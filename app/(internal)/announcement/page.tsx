@@ -1,23 +1,26 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
+import usePeriod from "@/hooks/usePeriod";
 
+// Mock Data: ข้อมูลประกาศ (ยังไม่มี API รองรับ)
+// TODO: รอ API สำหรับดึงข้อมูลประกาศ
+const MOCK_REWARD = "นักศึกษาดีเด่น";
+const MOCK_ACADEMIC_YEAR = "2569";
+const MOCK_SEMESTER = "ภาคต้น";
+const MOCK_DESCRIPTION = "นิสิตที่สนใจสมัครขอรับรางวัลนิสิตดีเด่น สามารถสมัครผ่านระบบออนไลน์ได้ตั้งแต่วันนี้เป็นต้นไป โดยต้องเตรียมเอกสารประกอบการสมัครให้ครบถ้วน";
 
-function Welcome(){
-  const reward = "นักศึกษาดีเด่น";
-  const academicYear = "2569";
-  const semester = "ภาคต้น";
-  return(
-
+function Welcome() {
+  return (
     <div className="bg-white rounded-xl p-4 md:p-10">
       <div className="">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="w-full md:w-[80%] flex flex-col space-y-2 md:space-y-6">
             <p className="font-extrabold text-xl md:text-3xl text-black sm:whitespace-nowrap">ยินดีต้อนรับระบบนิสิตดีเด่น</p>
             <div className="flex flex-col sm:flex-row gap-2 sm:space-x-2">
-              <p className="text-sm md:text-base text-black">สมัครขอรับรางวัล{reward}ผ่านระบบออนไลน์</p>
+              <p className="text-sm md:text-base text-black">สมัครขอรับรางวัล{MOCK_REWARD}ผ่านระบบออนไลน์</p>
               <div className="px-2 py-1 bg-emerald-600 rounded-xl flex items-center justify-center self-start">
-               <p className="text-xs text-white whitespace-nowrap">{semester} {academicYear}</p>
+               <p className="text-xs text-white whitespace-nowrap">{MOCK_SEMESTER} {MOCK_ACADEMIC_YEAR}</p>
               </div>
             </div>
           </div>
@@ -29,18 +32,20 @@ function Welcome(){
     </div>
   )
 }
-function Countdown(){
-  const start_date = "2026-01-01";
-  const end_date = "2026-12-31";
 
-  const targetDate = new Date(end_date + "T23:59:59").getTime();
-
+function Countdown() {
+  const { currentPeriod, loading } = usePeriod();
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
     minutes: 0,
     seconds: 0
   });
+
+  // ใช้ข้อมูลจาก currentPeriod ถ้ามี มิฉะนั้นใช้ค่า default
+  const start_date = currentPeriod?.period_start || "2026-01-01";
+  const end_date = currentPeriod?.period_end || "2026-12-31";
+  const targetDate = new Date(end_date + "T23:59:59").getTime();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -74,8 +79,24 @@ function Countdown(){
     return `${day} ${month} ${year}`;
   };
 
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl p-10 mt-4 flex justify-center items-center">
+        <p className="text-gray-500">กำลังโหลดข้อมูล...</p>
+      </div>
+    );
+  }
+
+  if (!currentPeriod) {
+    return (
+      <div className="bg-white rounded-xl p-10 mt-4 flex flex-col justify-center items-center">
+        <p className="text-black text-lg mb-4">ขณะนี้ไม่มีรอบรับสมัคร</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white rounded-xl p-10 mt-4 flex flex-col justify-center items-center ">
+    <div className="bg-white rounded-xl p-10 mt-4 flex flex-col justify-center items-center">
       <p className="text-black text-lg mb-4">ช่วงเวลาที่กำหนด ระหว่างวันที่ {formatDateToBE(start_date)} - {formatDateToBE(end_date)}</p>
 
       <div className="w-full flex flex-row justify-center items-center space-x-4">
@@ -103,21 +124,21 @@ function Countdown(){
   )
 }
 
-function Announcement(){
-  const description = "นิสิตที่สนใจสมัครขอรับรางวัลนิสิตดีเด่น สามารถสมัครผ่านระบบออนไลน์ได้ตั้งแต่วันนี้เป็นต้นไป โดยต้องเตรียมเอกสารประกอบการสมัครให้ครบถ้วน";
-
+function Announcement() {
+  // Mock Data: ข้อมูลประกาศ (ยังไม่มี API รองรับ)
+  // TODO: รอ API สำหรับดึงข้อมูลประกาศ
   return (
     <div className="bg-white rounded-xl p-4 mt-4">
       <div className="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg inline-block mb-4">
         <p className="font-bold text-lg">ประกาศ</p>
       </div>
       <div className="px-6 pb-6">
-        <p className="text-gray-700 text-base">{description}</p>
-
+        <p className="text-gray-700 text-base">{MOCK_DESCRIPTION}</p>
       </div>
     </div>
   )
 }
+
 function page() {
   return (
     <div>
@@ -129,4 +150,3 @@ function page() {
 }
 
 export default page;
-

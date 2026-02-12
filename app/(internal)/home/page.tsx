@@ -7,6 +7,7 @@ import useAuth from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import { Period } from "@/types/period.type";
 import { ROUTES_BY_ROLE } from "@/constants/route";
+import CountDownBox from "@/components/home/CountdownBox";
 
 function HomePage() {
   const router = useRouter();
@@ -103,6 +104,10 @@ function HomePage() {
     });
   };
 
+  const semesterText = typeof activePeriod?.semester === 'number'
+    ? (activePeriod.semester === 1 ? 'ภาคต้น' : activePeriod.semester === 2 ? 'ภาคปลาย' : `ภาค ${activePeriod.semester}`)
+    : activePeriod?.semester;
+
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-noto">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -158,10 +163,10 @@ function HomePage() {
           </p>
 
           <div className="flex justify-center gap-4 text-gray-800">
-            <CountdownBox value={timeLeft.days} label="วัน" />
-            <CountdownBox value={timeLeft.hours} label="ชั่วโมง" />
-            <CountdownBox value={timeLeft.minutes} label="นาที" />
-            <CountdownBox value={timeLeft.seconds} label="วินาที" />
+            <CountDownBox value={timeLeft.days} label="วัน" />
+            <CountDownBox value={timeLeft.hours} label="ชั่วโมง" />
+            <CountDownBox value={timeLeft.minutes} label="นาที" />
+            <CountDownBox value={timeLeft.seconds} label="วินาที" />
           </div>
 
           <p className="mt-4 text-gray-600">เหลืออีก</p>
@@ -197,14 +202,5 @@ function HomePage() {
     </div>
   );
 }
-
-const CountdownBox = ({ value, label }: { value: number; label: string }) => (
-  <div className="bg-white rounded-lg shadow-sm w-32 h-32 flex flex-col items-center justify-center">
-    <span className="text-5xl font-bold text-[#599fa0] font-mono mb-1">
-      {value}
-    </span>
-    <span className="text-md text-[#599fa0]">{label}</span>
-  </div>
-);
 
 export default HomePage;

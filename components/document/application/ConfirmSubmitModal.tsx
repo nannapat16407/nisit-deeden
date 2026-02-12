@@ -25,7 +25,7 @@ const ConfirmSubmitModal: React.FC<ConfirmSubmitModalProps> = ({
 
       {/* Modal Content */}
       <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
-        {/* Header - แถบหัวสีเขียว - จัดกึ่งกลาง */}
+        {/* Header - แถบสีเขียว - จัดกึ่งกลาง */}
         <div className="bg-primary px-6 py-4 text-center">
           <h3 className="text-white text-lg font-bold">ยืนยันการอนุมัติ</h3>
         </div>
