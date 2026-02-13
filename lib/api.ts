@@ -5,6 +5,7 @@ import {
   Request as RequestType,
   CreateApplicationRequest,
 } from "@/types/request.type";
+import { StudentProfileResponse } from "@/types/student.type";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8008";
 
@@ -128,6 +129,11 @@ class ApiClient {
   // ============================================
   // Student APIs
   // ============================================
+
+  async getStudentProfile(): Promise<StudentProfileResponse> {
+    // Use the correct endpoint that exists in backend: /api/auth/me
+    return this.fetch("/api/auth/me");
+  }
 
   async getAvailableAwards(): Promise<{ data: Award[] }> {
     return this.fetch("/api/student/awards");

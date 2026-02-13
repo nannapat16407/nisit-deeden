@@ -4,11 +4,22 @@ import React, { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ConfirmSubmitModal from "./ConfirmSubmitModal";
 
-interface ConductFormProps {
+interface ApplicationFormProps {
   onSubmit?: (file: File) => void;
+  // Props สำหรับรับข้อมูลจาก API
+  templateFileUrl?: string;
+  awardId?: string;
+  awardName?: string; // สำหรับแสดงชื่อรางวัลที่หัวข้อความ
+  awardDescription?: string; // สำหรับแสดงรายละเอียด
 }
 
-const ConductForm: React.FC<ConductFormProps> = ({ onSubmit }) => {
+const ApplicationForm: React.FC<ApplicationFormProps> = ({
+  onSubmit,
+  templateFileUrl,
+  awardId,
+  awardName,
+  awardDescription
+}) => {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -27,16 +38,36 @@ const ConductForm: React.FC<ConductFormProps> = ({ onSubmit }) => {
     fileInputRef.current?.click();
   };
 
-  // Mock download: Download ConductAwardForm.doc
-  const handleDownloadForm = () => {
-    const link = document.createElement("a");
-    link.href = "/files/ConductAwardForm.doc";
-    link.download = "ConductAwardForm.doc";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // Handle download form template from API
+  const handleDownloadForm = async () => {
+    if (!templateFileUrl) {
+      console.log("No template file URL available");
+      return;
+    }
 
-    console.log("Mock download: ConductAwardForm.doc");
+    try {
+      // Fetch the template file from API URL
+      const response = await fetch(templateFileUrl);
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      // Use award name for filename, fallback to "AwardForm.docx"
+      const filename = `${awardName || "AwardForm"}.docx`;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      console.log("Downloaded template from API:", filename);
+    } catch (error) {
+      console.error("Failed to download template:", error);
+    }
   };
 
   // Handle submit button click - เปิด Modal ยืนยัน
@@ -50,36 +81,40 @@ const ConductForm: React.FC<ConductFormProps> = ({ onSubmit }) => {
     setShowConfirmModal(false);
   };
 
-  // Handle Modal "ยืนยัน" - Redirect ไปหน้าเลือกประเภทรางวัล
+  // Handle Modal "ยืนยัน" - Submit form
   const handleModalConfirm = () => {
-    console.log("Mock submit: Form confirmed");
-    setShowConfirmModal(false);
+    console.log("Form submitted");
+    console.log("Award ID:", awardId);
+    console.log("Selected file:", selectedFile?.name);
 
     // Mock: บันทึก state ลง localStorage
-    localStorage.setItem("submittedAwardId", "conduct");
-    localStorage.setItem("submittedAwardName", "ด้านความประพฤติดี");
+    const mockAwardId = awardId || "application";
+    localStorage.setItem("submittedAwardId", mockAwardId);
+
+    // Mock: แสดงชื่อรางวัลจาก props
+    const mockAwardName = awardName || "รางวัลที่เลือก";
+    localStorage.setItem("submittedAwardName", mockAwardName);
 
     // Mock: แสดง loading state
     setIsSubmitting(true);
     setTimeout(() => {
       setIsSubmitting(false);
-      if (onSubmit) {
-        onSubmit(selectedFile);
-      }
-      // Redirect ไปหน้า "ยื่นเอกสาร"
+      // Mock: Redirect ไปหน้า "ยื่นเอกสาร"
       router.push("/document");
     }, 500);
+    setShowConfirmModal(false);
   };
 
   return (
-    <div className="bg-[#F5F5F5] rounded-xl p-6">
-      <h2 className="text-lg font-bold text-gray-800 mb-4">
-        แบบฟอร์มสมัครนิสิตดีเด่น ด้านความประพฤติดี
-      </h2>
-
+    <div className="bg-[#F5F5F5] rounded-xl">
       {/* File Upload Section */}
-      <div className="bg-white rounded-lg p-6 mb-4">
-        <p className="text-gray-700 font-medium mb-3">อัปโหลดไฟล์แบบฟอร์มที่กรอกแล้ว:</p>
+      <div className="bg-white rounded-xl p-6 shadow-sm mb-4">
+        {/* หัวข้อความ - แสดงชื่อรางวัลจาก props หรือ default */}
+        <h2 className="text-xl font-bold text-gray-800 mb-4">
+          แบบฟอร์มสมัครนิสิตดีเด่น {awardName}
+        </h2>
+
+        <p className="text-gray-700 font-medium mb-3">อัปโหลดไฟล์แบบฟอร์ม (.pdf)</p>
 
         {/* Hidden file input */}
         <input
@@ -94,11 +129,17 @@ const ConductForm: React.FC<ConductFormProps> = ({ onSubmit }) => {
         <div className="flex items-center gap-2 mb-3">
           <button
             onClick={handleDownloadForm}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 text-sm hover:bg-gray-50 transition-colors"
+            disabled={!templateFileUrl}
+            className={`
+              px-4 py-2 rounded-lg text-sm transition-colors
+              ${templateFileUrl
+                ? "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                : "bg-gray-200 border border-gray-300 text-gray-400 cursor-not-allowed"
+              }
+            `}
           >
             ดาวน์โหลดไฟล์แบบฟอร์ม
           </button>
-
           <button
             onClick={handleBrowseClick}
             className="px-4 py-2 bg-yellow-400 border border-yellow-500 rounded-lg text-gray-700 text-sm hover:bg-yellow-500 transition-colors flex items-center gap-2"
@@ -114,7 +155,7 @@ const ConductForm: React.FC<ConductFormProps> = ({ onSubmit }) => {
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2v-4"></path>
               <polyline points="17 8 12 3 7 8"></polyline>
               <line x1="12" y1="3" x2="12" y2="15"></line>
             </svg>
@@ -126,10 +167,10 @@ const ConductForm: React.FC<ConductFormProps> = ({ onSubmit }) => {
         <p className="text-sm text-gray-500">
           {selectedFile ? (
             <span className="text-emerald-600 font-medium">
-              ไฟล์ถูกเลือก: {selectedFile.name}
+              ไฟล์ที่เลือก: {selectedFile.name}
             </span>
           ) : (
-            "ไม่มีไฟล์ที่เลือก"
+            "ยังไม่ได้เลือกไฟล์"
           )}
         </p>
       </div>
@@ -162,4 +203,4 @@ const ConductForm: React.FC<ConductFormProps> = ({ onSubmit }) => {
   );
 };
 
-export default ConductForm;
+export default ApplicationForm;

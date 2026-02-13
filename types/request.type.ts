@@ -28,6 +28,7 @@ export interface Request {
 }
 
 export interface CreateApplicationRequest {
+  campus_id: number;
   award_id: string;
-  // Add other fields if needed for "Application Form" data (mocked as JSON often)
+  files: File[];
 }
