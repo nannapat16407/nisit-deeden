@@ -4,6 +4,7 @@ type User = {
   fname: string;
   lname: string;
   role: string | { RoleName: string };
+  campus_id?: number;
   provider?: string;
   is_oauth?: boolean;
   created_at?: string;

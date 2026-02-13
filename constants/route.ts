@@ -21,8 +21,7 @@ export const ROUTES_BY_ROLE = {
   STUDENT: {
     home: "/home",
     document: "/document",
-    request: "/request",
-    announcement: "/announcement",
+    track_status: "/track-status",
   },
   SD_STAFF: {
     home: "/home",
@@ -48,6 +47,7 @@ export const getName = (key: string) => {
       profile: "Profile",
       user: "User Management",
       campus: "จัดการวิทยาเขต",
+      track_status: "ติดตามสถานะ",
     };
     return names[key] || key;
   };  
