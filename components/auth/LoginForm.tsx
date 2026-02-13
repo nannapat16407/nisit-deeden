@@ -75,15 +75,15 @@ function LoginForm() {
         </div>
 
         {/* Divider */}
-        <div className='flex items-center my-6'>
+        {/* <div className='flex items-center my-6'>
           <div className='flex-1 border-t border-gray-300'></div>
           <span className='px-4 text-sm text-gray-500'>หรือ</span>
           <div className='flex-1 border-t border-gray-300'></div>
-        </div>
+        </div> */}
 
         {/* Traditional Login Form */}
-        <form onSubmit={handleSubmit}>
-          <Input
+        {/* <form onSubmit={handleSubmit}>
+          {/* <Input
             label='อีเมล (@ku.th)'
             type='email'
             name='email'
@@ -101,14 +101,14 @@ function LoginForm() {
             onChange={handleChange}
             placeholder='••••••••••••'
             required
-          />
+          /> */}
 
-          <Button type='submit' disabled={loading}>
+          {/* <Button type='submit' disabled={loading}>
             {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
           </Button>
-        </form>
+        </form> */}
 
-        {/* Register Link */}
+        {/* Register Link
         <div className='mt-8 text-sm text-txt-primary text-center'>
           ยังไม่มีบัญชีผู้ใช้?{' '}
           <Link href='/register' className='text-primary font-medium underline hover:text-primary-hover'>
@@ -117,11 +117,11 @@ function LoginForm() {
         </div>
 
         {/* Forgot Password Link */}
-        <div className='mt-4 text-sm text-center'>
+        {/* <div className='mt-4 text-sm text-center'>
           <Link href='/forgot-password' className='text-gray-600 hover:text-primary'>
             ลืมรหัสผ่าน?
           </Link>
-        </div>
+        </div>  */}
       </div>
     </div>
   )

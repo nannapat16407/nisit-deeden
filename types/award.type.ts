@@ -1,3 +1,10 @@
+export interface Requirement {
+  label: string;
+  type: "file" | "image" | "grade" | "text";
+  extensions?: string[]; // e.g. ["pdf", "docx"] or ["png", "jpg"]
+  required: boolean;
+}
+
 export interface Award {
   award_id: string;
   award_name: string;
@@ -5,7 +12,7 @@ export interface Award {
   description: string;
   is_active: boolean;
   template_file_url?: string; // from backend
-  requirement_json?: string;
+  requirement_json?: string; // Serialized Requirement[]
   period_id?: string;
 }
 

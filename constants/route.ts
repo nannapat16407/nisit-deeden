@@ -28,7 +28,6 @@ export const ROUTES_BY_ROLE = {
     request_period: "/request-period",
     request: "/request",
     announcement: "/announcement",
-    reward: "/reward",
   },
   DEPARTMENT_HEAD: {
     home: "/home",
@@ -42,7 +41,6 @@ export const getName = (key: string) => {
       request_period: "จัดการช่วงเวลารับสมัคร",
       request: "รายการคำร้อง",
       announcement: "ประกาศ",
-      reward: "จัดการรางวัล",
       dashboard: "Dashboard",
       profile: "Profile",
       user: "User Management",

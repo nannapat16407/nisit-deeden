@@ -42,53 +42,146 @@ function RequestPeriod() {
   };
 
   const handleEdit = (period: Period) => {
-    setAlert({
-      open: true,
-      msg: "Edit feature is not yet available in the API.",
-      severity: "info",
-    });
+    setEditingPeriod(period);
+    setIsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setAlert({
-      open: true,
-      msg: "Delete feature is not yet available in the API.",
-      severity: "info",
-    });
-  };
-
-  const handleSave = async (periodData: Partial<Period>) => {
-    if (periodData.period_id) {
-      // Edit
-      setAlert({
-        open: true,
-        msg: "Edit not implemented on backend.",
-        severity: "warning",
-      });
-    } else {
-      // Create
+  const handleDelete = async (id: string) => {
+    if (
+      window.confirm(
+        "คุณแน่ใจหรือไม่ที่จะลบช่วงเวลานี้? การกระทำนี้ไม่สามารถย้อนกลับได้",
+      )
+    ) {
       try {
-        await api.createPeriod({
-          academic_year: parseInt(String(periodData.academic_year || "2569")),
-          semester: parseInt(String(periodData.semester || "1")),
-          period_start: periodData.period_start || new Date().toISOString(),
-          period_end: periodData.period_end || new Date().toISOString(),
-          campus_id: 1, // Default or from context
-        });
-        await fetchPeriods(); // Refresh list
-        setIsModalOpen(false);
+        await api.deletePeriod(id);
+        setPeriods(periods.filter((p) => p.period_id !== id));
         setAlert({
           open: true,
-          msg: "สร้างช่วงเวลารับสมัครสำเร็จ",
+          msg: "ลบช่วงเวลารับสมัครสำเร็จ",
           severity: "success",
         });
       } catch (err: any) {
         setAlert({
           open: true,
-          msg: "เกิดข้อผิดพลาด: " + (err.message || err),
+          msg: "เกิดข้อผิดพลาดในการลบ: " + (err.message || "Unknown error"),
           severity: "error",
         });
       }
+    }
+  };
+
+  const handleSave = async (periodData: Partial<Period>) => {
+    try {
+      // Data Preparation
+      const academicYearStr = String(periodData.academic_year || "2569");
+      const semesterStr = String(periodData.semester || "1");
+      const academicYearNum = parseInt(academicYearStr);
+      const semesterNum = parseInt(semesterStr);
+      const startDate = new Date(
+        periodData.period_start || new Date().toISOString(),
+      );
+      const endDate = new Date(
+        periodData.period_end || new Date().toISOString(),
+      );
+
+      // --- Business Logic Validation ---
+
+      // 1. Uniqueness Check (Year + Semester)
+      const duplicate = periods.find(
+        (p) =>
+          p.academic_year == academicYearNum &&
+          p.semester == semesterNum &&
+          p.period_id !== periodData.period_id, // Exclude self if editing
+      );
+
+      if (duplicate) {
+        setAlert({
+          open: true,
+          msg: `ช่วงเวลารับสมัครสำหรับ ปีการศึกษา ${academicYearStr} ภาคเรียนที่ ${semesterStr} มีอยู่แล้ว ไม่สามารถสร้างซ้ำได้`,
+          severity: "error",
+        });
+        return; // Stop execution
+      }
+
+      // 2. Date Range Validation (Start must be before End)
+      if (startDate >= endDate) {
+        setAlert({
+          open: true,
+          msg: "วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด",
+          severity: "error",
+        });
+        return;
+      }
+
+      // 3. Year Consistency Check (Strict-ish Validation)
+      // BE Year to AD Year approx: BE - 543.
+      // User requested "strict" logic.
+      // We will BLOCK if the year is totally off (more than 1 year difference).
+      const expectedADYear = academicYearNum - 543;
+      const startYear = startDate.getFullYear();
+      const endYear = endDate.getFullYear();
+
+      if (
+        startYear < expectedADYear - 1 ||
+        startYear > expectedADYear + 1 ||
+        endYear < expectedADYear - 1 ||
+        endYear > expectedADYear + 1
+      ) {
+        setAlert({
+          open: true,
+          msg: `ปีการศึกษา ${academicYearStr} (ค.ศ. ${expectedADYear}) ไม่สอดคล้องกับช่วงวันที่ที่เลือก (${startYear}-${endYear}). กรุณาตรวจสอบปีและวันที่ใหม่`,
+          severity: "error",
+        });
+        return;
+      }
+
+      // --- End Business Logic ---
+
+      const payload = {
+        academic_year: academicYearNum,
+        semester: semesterNum,
+        period_start: startDate.toISOString(),
+        period_end: endDate.toISOString(),
+        campus_id: 1,
+        is_active: periodData.is_active,
+      };
+
+      if (periodData.period_id) {
+        // Edit
+        await api.updatePeriod(periodData.period_id, payload);
+
+        setPeriods(
+          periods.map((p) =>
+            p.period_id === periodData.period_id
+              ? { ...p, ...payload, period_id: periodData.period_id! } // Ensure ID is present
+              : p,
+          ),
+        );
+
+        setAlert({
+          open: true,
+          msg: "แก้ไขช่วงเวลารับสมัครสำเร็จ",
+          severity: "success",
+        });
+      } else {
+        // Create
+        await api.createPeriod(payload);
+        // Refresh full list
+        await fetchPeriods();
+
+        setAlert({
+          open: true,
+          msg: "สร้างช่วงเวลารับสมัครสำเร็จ",
+          severity: "success",
+        });
+      }
+      setIsModalOpen(false);
+    } catch (err: any) {
+      setAlert({
+        open: true,
+        msg: "เกิดข้อผิดพลาด: " + (err.message || err.toString()),
+        severity: "error",
+      });
     }
   };
 

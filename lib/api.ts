@@ -43,6 +43,14 @@ class ApiClient {
         throw new Error(errorData.message || `HTTP Error: ${response.status}`);
       }
 
+      // Handle 204 No Content or empty response
+      if (
+        response.status === 204 ||
+        response.headers.get("Content-Length") === "0"
+      ) {
+        return {} as T;
+      }
+
       return await response.json();
     } catch (error) {
       console.error(`API Error (${endpoint}):`, error);
@@ -75,6 +83,23 @@ class ApiClient {
     });
   }
 
+  async updatePeriod(
+    id: string,
+    data: Partial<CreatePeriodRequest>,
+  ): Promise<{ message: string; data: Period }> {
+    return this.fetch(`/api/sd/periods/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deletePeriod(id: string): Promise<{ message: string }> {
+    await this.fetch(`/api/sd/periods/${id}`, {
+      method: "DELETE",
+    });
+    return { message: "Deleted successfully" };
+  }
+
   async createAward(
     data: CreateAwardRequest,
   ): Promise<{ message: string; data: Award }> {
@@ -82,6 +107,23 @@ class ApiClient {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+
+  async updateAward(
+    id: string,
+    data: Partial<CreateAwardRequest>,
+  ): Promise<{ message: string; data: Award }> {
+    return this.fetch(`/api/sd/awards/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAward(id: string): Promise<{ message: string }> {
+    await this.fetch(`/api/sd/awards/${id}`, {
+      method: "DELETE",
+    });
+    return { message: "Deleted successfully" };
   }
 
   // ============================================
