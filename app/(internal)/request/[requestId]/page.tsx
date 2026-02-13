@@ -5,12 +5,15 @@ import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import useAuth from "@/hooks/useAuth";
 import { Request } from "@/types/request.type";
+// import { MOCK_REQUESTS, USE_MOCK_DATA } from "../mock";
+import { useConfirmPopUp, ConfirmPopUpUI } from "@/components/pop-up/ConfirmPopUp";
 
-export default function RequestDetailPage() {
+function RequestDetailContent() {
   const { requestId } = useParams();
   const { user } = useAuth();
   const role = user?.role;
   const router = useRouter();
+  const { trigger: triggerConfirmPopUp } = useConfirmPopUp();
 
   const [request, setRequest] = useState<Request | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,6 +32,11 @@ export default function RequestDetailPage() {
         } else if (role === "DEPARTMENT_HEAD") {
           const res = await api.getDeptRequests();
           data = res.data;
+        } else if (role === "SD_STAFF") {
+          // SD Fetch Here
+          // if(USE_MOCK_DATA){
+          //   data = MOCK_REQUESTS;
+          // }
         }
 
         const found = data.find((r) => r.RequestID === requestId);
@@ -52,6 +60,26 @@ export default function RequestDetailPage() {
     );
 
   const handleBack = () => router.back();
+
+  // Callback for SD Staff approval action
+  const SDApproveCallback = async () => {
+    try {
+      console.log("SD Staff approved request:", requestId);
+    } catch (error) {
+      console.error("Failed to approve request:", error);
+      throw error;
+    }
+  };
+
+  const handleSDApproveClick = () => {
+    triggerConfirmPopUp({
+      title: "ยืนยันการเห็นชอบ",
+      message: "คุณแน่ใจหรือว่าต้องการให้เห็นชอบคำร้องนี้?",
+      confirmText: "เห็นชอบ",
+      cancelText: "ยกเลิก",
+      onConfirm: SDApproveCallback,
+    });
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto pb-10">
@@ -166,8 +194,36 @@ export default function RequestDetailPage() {
               </div>
             </div>
           )}
+
+          {/* Actions (If SD Staff) */}
+          {role === "SD_STAFF" && (
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+              <h3 className="font-bold text-gray-800 mb-4">
+                ส่วนสำหรับกองกิจการนักศึกษา
+              </h3>
+              <div className="flex flex-col md:flex-row gap-4">
+                <button
+                  onClick={handleSDApproveClick}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 hover:cursor-pointer text-white py-3 rounded-lg font-bold shadow-md transition-all"
+                >
+                  เห็นชอบ (Approve)
+                </button>
+                <button className="flex-1 bg-amber-600 hover:bg-amber-700 hover:cursor-pointer text-white py-3 rounded-lg font-bold shadow-md transition-all">
+                  ขอเอกสารเพิ่มเติม (Need More Document)
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RequestDetailPage() {
+  return (
+    <ConfirmPopUpUI>
+      <RequestDetailContent />
+    </ConfirmPopUpUI>
   );
 }
