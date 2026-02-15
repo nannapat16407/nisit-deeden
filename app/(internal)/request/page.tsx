@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import useAuth from "@/hooks/useAuth";
 import { Request } from "@/types/request.type";
+// import { MOCK_REQUESTS , USE_MOCK_DATA} from "./mock";
 
 export default function RequestPage() {
   const { user, logout } = useAuth();
@@ -28,8 +29,13 @@ export default function RequestPage() {
       } else if (role === "DEPARTMENT_HEAD") {
         const res = await api.getDeptRequests();
         data = res.data;
+      } else if (role === "SD_STAFF") {
+        // SD Fetch Here
+        // if(USE_MOCK_DATA){
+        //   data = MOCK_REQUESTS;
+        // }
       } else {
-        // SD, Committee, DEAN, VICEDEAN - Need generic fetch or specific
+        // Committee, DEAN, VICEDEAN - Need generic fetch or specific
         // For now using Dept for demo if supported, or empty
         console.warn("No fetcher for role:", role);
       }
@@ -58,7 +64,17 @@ export default function RequestPage() {
 
   // Filter Logic
   const filteredRequests = requests.filter((req) => {
-    const matchesStatus = statusFilter === "ALL" || req.status === statusFilter;
+    // For SD_STAFF, only show PENDING_SD status
+    if (role === "SD_STAFF") {
+      if (req.status !== "PENDING_SD") {
+        return false;
+      }
+    } else {
+      const matchesStatus = statusFilter === "ALL" || req.status === statusFilter;
+      if (!matchesStatus) {
+        return false;
+      }
+    }
 
     const searchLower = search.toLowerCase();
     const matchesSearch =
@@ -67,7 +83,7 @@ export default function RequestPage() {
         .toLowerCase()
         .includes(searchLower);
 
-    return matchesStatus && matchesSearch;
+    return matchesSearch;
   });
 
   const getStatusBadge = (status: string) => {
@@ -135,20 +151,29 @@ export default function RequestPage() {
   return (
     <div className="w-full">
       <div className="mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-800">รายการคำร้อง</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-gray-800">รายการคำร้อง</h1>
+          {role === "SD_STAFF" && (
+            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded">
+              รอกองกิจฯ เท่านั้น
+            </span>
+          )}
+        </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            <option value="ALL">สถานะคำร้อง (ทั้งหมด)</option>
-            <option value="PENDING_HEAD">รอหัวหน้าภาคฯ</option>
-            <option value="PENDING_VICEDEAN">รอรองคณบดี</option>
-            <option value="PENDING_DEAN">รอคณบดี</option>
-            {/* Add more options */}
-          </select>
+          {role !== "SD_STAFF" && (
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-black border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="ALL">สถานะคำร้อง (ทั้งหมด)</option>
+              <option value="PENDING_HEAD">รอหัวหน้าภาคฯ</option>
+              <option value="PENDING_VICEDEAN">รอรองคณบดี</option>
+              <option value="PENDING_DEAN">รอคณบดี</option>
+              {/* Add more options */}
+            </select>
+          )}
 
           <div className="relative flex-1 md:w-64">
             <input
@@ -156,7 +181,7 @@ export default function RequestPage() {
               placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="text-black w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             <svg
               className="absolute left-3 top-2.5 h-4 w-4 text-gray-400"
