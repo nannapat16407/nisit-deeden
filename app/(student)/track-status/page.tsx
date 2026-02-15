@@ -78,7 +78,7 @@ function TrackStatusPage() {
   const latestRequest = requests.length > 0 ? requests[0] : null;
 
   // DEBUG: Set to null for normal operation, or set to a status value for testing
-  const DEBUG_STATUS: RequestStatus | null = "PENDING_VICEDEAN";
+  const DEBUG_STATUS: RequestStatus | null = "COMPLETED";
   const statusToUse = DEBUG_STATUS ?? latestRequest?.status;
 
   const formatDateTime = (dateString: string) => {
@@ -139,33 +139,53 @@ function TrackStatusPage() {
     if (isRejected && currentStep === stepNumber) return "bg-red-500 border-red-500";
     // If rejected, steps after rejected are gray (no status)
     if (isRejected && stepNumber > currentStep) return "bg-gray-300 border-gray-300";
-    // If rejected, steps before rejected are green (completed)
-    if (isRejected && stepNumber < currentStep) return "bg-green-500 border-green-500";
+    // If rejected, steps before rejected are completed
+    if (isRejected && stepNumber < currentStep) return "bg-[#599fa0] border-[#599fa0]";
 
     // For pending/active state (yellow circle)
     if (currentStep === stepNumber) return "bg-[#FCD34D] border-[#FCD34D]";
-    // For completed steps (green circle)
-    if (currentStep > stepNumber) return "bg-green-500 border-green-500";
+    // For completed steps
+    if (currentStep > stepNumber) return "bg-[#599fa0] border-[#599fa0]";
     // For inactive steps (not reached yet - gray circle)
     return "bg-gray-300 border-gray-300";
   };
 
-  const getLineColor = (stepNumber: number): string => {
-    if (!statusToUse) return "bg-gray-300";
+  const getLineStyle = (stepNumber: number) => {
+    if (!statusToUse) {
+      return { backgroundColor: "#D1D5DB" };
+    }
+
     const currentStep = STATUS_TO_STEP[statusToUse];
     const isRejected = isRejectedStatus(statusToUse);
 
-    // If rejected, steps after rejected are gray
-    if (isRejected && stepNumber >= currentStep) return "bg-gray-300";
-    // If rejected, steps before rejected are green
-    if (isRejected && stepNumber < currentStep) return "bg-green-500";
+    const completedColor = "#599fa0"; // เขียว
+    const pendingColor = "#FCD34D";   // เหลือง
+    const rejectedColor = "#EF4444";  // แดง
+    const inactiveColor = "#D1D5DB";  // เทา
 
-    // For pending/active state, line is gray
-    if (currentStep === stepNumber) return "bg-gray-300";
-    // For completed steps, line is green
-    if (currentStep > stepNumber) return "bg-green-500";
-    // For inactive steps, line is gray
-    return "bg-gray-300";
+    // 🟢 COMPLETED → เขียวทั้งหมด
+    if (statusToUse === "COMPLETED") {
+      return { backgroundColor: completedColor };
+    }
+
+    // เส้นก่อนหน้า step ล่าสุด = เขียว
+    if (stepNumber < currentStep - 1) {
+      return { backgroundColor: completedColor };
+    }
+
+    // ⭐ เส้นเดียวที่ทำ blending
+    if (stepNumber === currentStep - 1) {
+      return {
+        background: `linear-gradient(
+          to right,
+          ${completedColor},
+          ${isRejected ? rejectedColor : pendingColor}
+        )`
+      };
+    }
+
+    // เส้นหลังจากสถานะล่าสุด = เทา
+    return { backgroundColor: inactiveColor };
   };
 
   const getStepIcon = (stepNumber: number) => {
@@ -184,7 +204,7 @@ function TrackStatusPage() {
 
     if (isRejected && currentStep === stepNumber) {
       return (
-        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M18 6 6 18" />
           <path d="m6 6 12 12" />
         </svg>
@@ -193,7 +213,7 @@ function TrackStatusPage() {
 
     if (isRejected && currentStep > stepNumber) {
       return (
-        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M20 6 9 17l-5-5" />
         </svg>
       );
@@ -201,15 +221,16 @@ function TrackStatusPage() {
 
     if (currentStep === stepNumber) {
       return (
-        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-7 h-7 text-white animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          <polyline points="21 3 21 12 12 12" />
         </svg>
       );
     }
 
     if (currentStep > stepNumber) {
       return (
-        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M20 6 9 17l-5-5" />
         </svg>
       );
@@ -309,7 +330,8 @@ function TrackStatusPage() {
                             {!isLast && (
                                 <div className="flex-1 mx-4 mt-7">
                                   <div
-                                      className={`h-[2px] w-full ${getLineColor(stepNumber)}`}
+                                      className="h-[2px] w-full"
+                                      style={getLineStyle(stepNumber)}
                                   />
                                 </div>
                             )}
