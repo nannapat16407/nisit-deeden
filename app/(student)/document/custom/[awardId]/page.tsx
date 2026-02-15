@@ -6,16 +6,17 @@ import StudentInfoCard from "@/components/document/application/StudentInfoCard";
 import ApplicationForm from "@/components/document/application/ApplicationForm";
 import { api } from "@/lib/api";
 import { Award } from "@/types/award.type";
-import { StudentProfile } from "@/types/student.type";
+import { StudentProfileFullResponse } from "@/types/student.type";
 
 function CustomAwardPage() {
   const params = useParams();
   const router = useRouter();
 
   const [award, setAward] = useState<Award | null>(null);
-  const [studentInfo, setStudentInfo] = useState<StudentProfile | null>(null);
+  const [studentInfo, setStudentInfo] = useState<StudentProfileFullResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
 
   // ดึงข้อมูล student profile และ award จาก API
   useEffect(() => {
@@ -25,14 +26,11 @@ function CustomAwardPage() {
 
   const fetchStudentProfile = async () => {
     try {
-      const response = await api.getStudentProfile();
-      // Handle the actual response structure: { authenticated, user }
-      if (response.authenticated && response.user) {
-        setStudentInfo(response.user);
-      }
+      const response = await api.getStudentProfileFull();
+      console.log("🔥 PROFILE RESPONSE:", response);
+      setStudentInfo(response.data);
     } catch (err) {
       console.error("Failed to fetch student profile:", err);
-      setError(err instanceof Error ? err.message : "ไม่สามารถดึงข้อมูลนิสิตได้");
     }
   };
 
@@ -60,12 +58,30 @@ function CustomAwardPage() {
     }
   };
 
-  const handleFormSubmit = (file: File) => {
-    // Placeholder: Handle form submission
-    console.log("Form submitted with file:", file.name);
-    console.log("Award ID:", params.awardId);
-    // TODO: Add real submission logic when backend is ready
+  const handleFormSubmit = async (file: File) => {
+    console.log("📤 Form submitted with file:", file.name);
+    console.log("🏆 Award ID:", params.awardId);
+    console.log("🏫 Campus ID:", award?.campus_id);
+
+    const formData = new FormData();
+    formData.append("files", file);
+    formData.append("award_id", params.awardId as string);
+
+    try {
+      console.log("🚀 Calling API...");
+
+      await api.createApplication(formData);
+
+      console.log("✅ Application submitted successfully");
+
+      // ไปหน้าถัดไป (ถ้าต้องการ)
+      router.push("/document");
+
+    } catch (error) {
+      console.error("❌ Submit failed:", error);
+    }
   };
+
 
   if (loading) {
     return (

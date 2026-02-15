@@ -82,28 +82,36 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
   };
 
   // Handle Modal "ยืนยัน" - Submit form
-  const handleModalConfirm = () => {
-    console.log("Form submitted");
-    console.log("Award ID:", awardId);
-    console.log("Selected file:", selectedFile?.name);
+  const handleModalConfirm = async () => {
+    console.log("🔥 MODAL CONFIRM CLICKED");
 
-    // Mock: บันทึก state ลง localStorage
-    const mockAwardId = awardId || "application";
-    localStorage.setItem("submittedAwardId", mockAwardId);
+    if (!selectedFile) {
+      console.log("❌ No file selected");
+      return;
+    }
 
-    // Mock: แสดงชื่อรางวัลจาก props
-    const mockAwardName = awardName || "รางวัลที่เลือก";
-    localStorage.setItem("submittedAwardName", mockAwardName);
+    if (!onSubmit) {
+      console.log("❌ onSubmit is undefined");
+      return;
+    }
 
-    // Mock: แสดง loading state
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      // Mock: Redirect ไปหน้า "ยื่นเอกสาร"
+    try {
+      setIsSubmitting(true);
+
+      console.log("🔥 Calling onSubmit...");
+      await onSubmit(selectedFile);
+
+      console.log("🔥 Backend call finished");
+
       router.push("/document");
-    }, 500);
-    setShowConfirmModal(false);
+    } catch (error) {
+      console.error("Submit error:", error);
+    } finally {
+      setIsSubmitting(false);
+      setShowConfirmModal(false);
+    }
   };
+
 
   return (
     <div className="bg-[#F5F5F5] rounded-xl">

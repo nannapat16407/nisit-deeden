@@ -58,22 +58,30 @@ function ApplicationPage() {
     }
   };
 
-  const handleFormSubmit = (file: File) => {
-    // Placeholder: Handle form submission
-    console.log("Form submitted with file:", file.name);
-    console.log("Award ID:", award?.award_id);
-    console.log("Award Type:", award?.award_type);
-    console.log("Award Name:", award?.award_name);
-    // TODO: Add real submission logic when backend is ready
+  const handleFormSubmit = async (file: File) => {
+    console.log("SUBMIT CLICKED");
+
+    if (!award) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("campus_id", award.campus_id);
+      formData.append("award_id", award.award_id);
+      formData.append("files", file);
+
+      console.log("Sending to backend...");
+
+      await api.createApplication(formData);
+      console.log("AFTER API CALL");
+
+      alert("สมัครสำเร็จ");
+    } catch (err) {
+      console.error(err);
+      alert("สมัครไม่สำเร็จ");
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto flex justify-center items-center py-20">
-        <p className="text-gray-500 text-lg">กำลังโหลดข้อมูล...</p>
-      </div>
-    );
-  }
+
 
   if (error) {
     return (

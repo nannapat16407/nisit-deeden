@@ -88,11 +88,23 @@ function TrackStatusPage() {
   };
 
   const isRejectedStatus = (status: RequestStatus): boolean => status.startsWith("REJECTED_BY_");
+
+  const statusThai: Record<RequestStatus, string> = {
+    PENDING_HEAD: "หัวหน้าภาค อยู่ระหว่างการพิจารณา",
+    PENDING_VICEDEAN: "รองคณบดี อยู่ระหว่างการพิจารณา",
+    PENDING_DEAN: "คณบดี อยู่ระหว่างการพิจารณา",
+    PENDING_SD: "กองพัฒนานิสิต อยู่ระหว่างการตรวจสอบ",
+    PENDING_COMMITTEE: "คณะกรรมการ อยู่ระหว่างการพิจารณา",
+    PENDING_PRESIDENT: "อธิการบดี อนุมัติแล้ว",
+    NEEDS_DOCS: "ต้องการเอกสารเพิ่มเติม",
+    REJECTED_BY_HEAD: "หัวหน้าภาค ไม่อนุมัติ",
+    REJECTED_BY_VICEDEAN: "รองคณบดี ไม่อนุมัติ",
+    REJECTED_BY_DEAN: "คณบดี ไม่อนุมัติ",
+    REJECTED_BY_COMMITTEE: "คณะกรรมการ ไม่อนุมัติ",
+  };
+
   const getStatusLabel = (status: RequestStatus): string => {
-    if (isRejectedStatus(status)) return "ไม่อนุญาติ";
-    if (status === "NEEDS_DOCS") return "ต้องการเอกสารเพิ่มเติม";
-    if (status === "PENDING_PRESIDENT") return "อนุญาติ";
-    return "รับเรื่อง";
+    return statusThai[status];
   };
 
   const getStepState = (stepNumber: number): "completed" | "active" | "rejected" | "inactive" => {
@@ -146,19 +158,19 @@ function TrackStatusPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500 mb-1">ชื่อ-นามสกุล</p>
-                    <p className="text-base font-medium text-gray-900">{latestRequest.Owner?.fname} {latestRequest.Owner?.lname}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">รหัสนิสิต</p>
-                    <p className="text-base font-medium text-gray-900">{latestRequest.Owner?.user_id}</p>
+                    <p className="text-sm text-gray-500 mb-1">รหัสใบสมัคร</p>
+                    <p className="text-base font-medium text-gray-900"> {latestRequest.RequestID} </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 mb-1">ประเภทรางวัล</p>
-                    <p className="text-base font-medium text-gray-900">{latestRequest.Award?.award_name}</p>
+                    <p className="text-base font-medium text-gray-900">{latestRequest.Award?.award_name || "-"}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500 mb-1">สถานะ</p>
+                    <p className="text-sm text-gray-500 mb-1">รอบการพิจารณา</p>
+                    <p className="text-base font-medium text-gray-900">{latestRequest.Award?.award_name || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">สถานะปัจจุบัน</p>
                     <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${currentStatusColors?.bg} ${currentStatusColors?.text} ${currentStatusColors?.border}`}>
                       {getStatusLabel(latestRequest.status)}
                     </span>
