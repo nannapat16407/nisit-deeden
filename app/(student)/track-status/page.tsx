@@ -29,6 +29,7 @@ const STATUS_COLORS = {
   REJECTED_BY_COMMITTEE: { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" },
 };
 
+
 const STATUS_TO_STEP = {
   PENDING_HEAD: 1,
   PENDING_VICEDEAN: 2,
@@ -75,6 +76,10 @@ function TrackStatusPage() {
   }
 
   const latestRequest = requests.length > 0 ? requests[0] : null;
+
+  // DEBUG: Set to null for normal operation, or set to a status value for testing
+  const DEBUG_STATUS: RequestStatus | null = "PENDING_VICEDEAN";
+  const statusToUse = DEBUG_STATUS ?? latestRequest?.status;
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -126,9 +131,9 @@ function TrackStatusPage() {
 
   // New helper functions for horizontal stepper
   const getStepCircleColor = (stepNumber: number): string => {
-    if (!latestRequest) return "bg-gray-300 border-gray-300";
-    const currentStep = STATUS_TO_STEP[latestRequest.status];
-    const isRejected = isRejectedStatus(latestRequest.status);
+    if (!statusToUse) return "bg-gray-300 border-gray-300";
+    const currentStep = STATUS_TO_STEP[statusToUse];
+    const isRejected = isRejectedStatus(statusToUse);
 
     // If rejected, only show red for the rejected step
     if (isRejected && currentStep === stepNumber) return "bg-red-500 border-red-500";
@@ -146,9 +151,9 @@ function TrackStatusPage() {
   };
 
   const getLineColor = (stepNumber: number): string => {
-    if (!latestRequest) return "bg-gray-300";
-    const currentStep = STATUS_TO_STEP[latestRequest.status];
-    const isRejected = isRejectedStatus(latestRequest.status);
+    if (!statusToUse) return "bg-gray-300";
+    const currentStep = STATUS_TO_STEP[statusToUse];
+    const isRejected = isRejectedStatus(statusToUse);
 
     // If rejected, steps after rejected are gray
     if (isRejected && stepNumber >= currentStep) return "bg-gray-300";
@@ -163,6 +168,62 @@ function TrackStatusPage() {
     return "bg-gray-300";
   };
 
+  const getStepIcon = (stepNumber: number) => {
+    if (!statusToUse) {
+      return (
+        <svg className="w-7 h-7 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="1" />
+          <circle cx="19" cy="12" r="1" />
+          <circle cx="5" cy="12" r="1" />
+        </svg>
+      );
+    }
+
+    const currentStep = STATUS_TO_STEP[statusToUse];
+    const isRejected = isRejectedStatus(statusToUse);
+
+    if (isRejected && currentStep === stepNumber) {
+      return (
+        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </svg>
+      );
+    }
+
+    if (isRejected && currentStep > stepNumber) {
+      return (
+        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      );
+    }
+
+    if (currentStep === stepNumber) {
+      return (
+        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+        </svg>
+      );
+    }
+
+    if (currentStep > stepNumber) {
+      return (
+        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      );
+    }
+
+    return (
+      <svg className="w-7 h-7 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="1" />
+        <circle cx="19" cy="12" r="1" />
+        <circle cx="5" cy="12" r="1" />
+      </svg>
+    );
+  };
+
   const getReviewerName = (status: RequestStatus): string => {
     if (status === "PENDING_HEAD" || status === "REJECTED_BY_HEAD") return "หัวหน้าภาค";
     if (status === "PENDING_VICEDEAN" || status === "REJECTED_BY_VICEDEAN") return "รองคณบดี";
@@ -173,19 +234,19 @@ function TrackStatusPage() {
     return "-";
   };
 
-  const currentStatusColors = latestRequest ? STATUS_COLORS[latestRequest.status] : null;
+  const currentStatusColors = statusToUse ? STATUS_COLORS[statusToUse] : null;
 
   return (
     <div className="min-h-screen bg-gray-50 font-noto">
       <div className="max-w-6xl mx-auto space-y-6 py-6">
-        {!latestRequest && (
+        {!latestRequest && !DEBUG_STATUS && (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <p className="text-gray-500 text-xl mb-3">ยังไม่ได้ส่งเอกกสาร</p>
             <p className="text-gray-400">กรุณาสมัครขอรับรางวัลเพื่อติดตามสถานะ</p>
           </div>
         )}
 
-        {latestRequest && (
+        {(latestRequest || DEBUG_STATUS) && (
             <>
               {/* Section 1: ข้อมูลใบสมัคร */}
               <div>
@@ -208,7 +269,7 @@ function TrackStatusPage() {
                       <p className="text-sm text-gray-500 mb-1">สถานะปัจจุบัน</p>
                       <span
                           className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${currentStatusColors?.bg} ${currentStatusColors?.text} ${currentStatusColors?.border}`}>
-                      {getStatusLabel(latestRequest.status)}
+                      {statusToUse && getStatusLabel(statusToUse)}
                     </span>
                     </div>
                   </div>
@@ -234,10 +295,12 @@ function TrackStatusPage() {
                             {/* Circle + Label */}
                             <div className="flex flex-col items-center">
                               <div
-                                  className={`w-14 h-14 rounded-full border-4 
+                                  className={`w-14 h-14 rounded-full border-4
       flex items-center justify-center
       ${getStepCircleColor(stepNumber)}`}
-                              />
+                              >
+                                {getStepIcon(stepNumber)}
+                              </div>
                               <p className="mt-3 text-sm text-gray-700 font-medium text-center whitespace-nowrap">
                                 {step.label}
                               </p>
@@ -271,13 +334,13 @@ function TrackStatusPage() {
                   <div className="flex items-center justify-between py-3 border-b border-gray-100">
                     <span className="text-gray-600">สถานะ</span>
                     <span
-                        className={`font-medium px-2 py-0.5 rounded text-sm ${currentStatusColors?.bg} ${currentStatusColors?.text}`}>{getStatusLabel(latestRequest.status)}</span>
+                        className={`font-medium px-2 py-0.5 rounded text-sm ${currentStatusColors?.bg} ${currentStatusColors?.text}`}>{statusToUse && getStatusLabel(statusToUse)}</span>
                   </div>
                   <div className="flex items-center justify-between py-3">
                     <span className="text-gray-600">ผู้พิจารณา</span>
-                    <span className="font-medium text-gray-900">{getReviewerName(latestRequest.status)}</span>
+                    <span className="font-medium text-gray-900">{statusToUse && getReviewerName(statusToUse)}</span>
                   </div>
-                  {isRejectedStatus(latestRequest.status) && (
+                  {statusToUse && isRejectedStatus(statusToUse) && (
                       <div className="mt-4">
                         <button
                             className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 border border-red-200 text-sm font-medium">
