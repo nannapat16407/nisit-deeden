@@ -78,7 +78,7 @@ function TrackStatusPage() {
   const latestRequest = requests.length > 0 ? requests[0] : null;
 
   // DEBUG: Set to null for normal operation, or set to a status value for testing
-  const DEBUG_STATUS: RequestStatus | null = "COMPLETED";
+  const DEBUG_STATUS: RequestStatus | null = "PENDING_HEAD";
   const statusToUse = DEBUG_STATUS ?? latestRequest?.status;
 
   const formatDateTime = (dateString: string) => {
@@ -221,9 +221,20 @@ function TrackStatusPage() {
 
     if (currentStep === stepNumber) {
       return (
-        <svg className="w-7 h-7 text-white animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-          <polyline points="21 3 21 12 12 12" />
+        <svg
+          className="w-7 h-7 text-white"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          {/* วงโค้งแบบเว้น gap เยอะขึ้น */}
+          <path d="M19 12a7 7 0 1 1-3-5.6" />
+
+          {/* หัวลูกศร ขยับไม่ให้ชนปลายเส้น */}
+          <polyline points="19 5 19 11 13 11" />
         </svg>
       );
     }
@@ -330,7 +341,7 @@ function TrackStatusPage() {
                             {!isLast && (
                                 <div className="flex-1 mx-4 mt-7">
                                   <div
-                                      className="h-[2px] w-full"
+                                      className="h-[4px] w-full"
                                       style={getLineStyle(stepNumber)}
                                   />
                                 </div>
