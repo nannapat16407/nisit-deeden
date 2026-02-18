@@ -4,7 +4,20 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useAuth from "@/hooks/useAuth";
 import { api } from "@/lib/api";
-import { Request, RequestStatus } from "@/types/request.type";
+import { RequestStatus } from "@/types/request.type";
+
+// API Response type matching the backend response
+interface MyRequestResponse {
+  request_id: string;
+  campus_id: number;
+  award_id: string;
+  award_name: string;
+  academic_year: number;
+  semester: number;
+  status: RequestStatus;
+  created_at: string;
+  attachments: unknown[];
+}
 
 const TIMELINE_STEPS = [
   { key: "head", label: "หัวหน้าภาค" },
@@ -47,7 +60,7 @@ const STATUS_TO_STEP = {
 function TrackStatusPage() {
   const router = useRouter();
   const { user, loading: authLoading, isAuthenticated } = useAuth();
-  const [requests, setRequests] = useState<Request[]>([]);
+  const [requests, setRequests] = useState<MyRequestResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,7 +69,12 @@ function TrackStatusPage() {
       if (!isAuthenticated || user?.role !== "STUDENT") return;
       try {
         const res = await api.getMyRequests();
-        setRequests(res.data || []);
+        const data = res.data || [];
+        // Sort by created_at descending to get the latest first
+        const sortedData = data.sort((a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setRequests(sortedData);
       } catch (err) {
         console.error("Failed to fetch requests", err);
         setError("ไม่สามารถโหลดข้อมูลคำร้องได้");
@@ -76,10 +94,21 @@ function TrackStatusPage() {
   }
 
   const latestRequest = requests.length > 0 ? requests[0] : null;
+  const statusToUse = latestRequest?.status;
 
-  // DEBUG: Set to null for normal operation, or set to a status value for testing
-  const DEBUG_STATUS: RequestStatus | null = "PENDING_HEAD";
-  const statusToUse = DEBUG_STATUS ?? latestRequest?.status;
+  // Helper to format semester (1 = ภาคต้น, 2 = ภาคปลาย)
+  const formatSemester = (semester: number | undefined): string => {
+    if (semester === 1) return "ภาคต้น";
+    if (semester === 2) return "ภาคปลาย";
+    return "-";
+  };
+
+  // Helper to format review round
+  const formatReviewRound = (semester: number | undefined, academicYear: number | undefined): string => {
+    const semesterText = formatSemester(semester);
+    const year = academicYear ?? "-";
+    return semesterText !== "-" ? `${semesterText} ปีการศึกษา ${year}` : "-";
+  };
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -162,11 +191,6 @@ function TrackStatusPage() {
     const pendingColor = "#FCD34D";   // เหลือง
     const rejectedColor = "#EF4444";  // แดง
     const inactiveColor = "#D1D5DB";  // เทา
-
-    // 🟢 COMPLETED → เขียวทั้งหมด
-    if (statusToUse === "COMPLETED") {
-      return { backgroundColor: completedColor };
-    }
 
     // เส้นก่อนหน้า step ล่าสุด = เขียว
     if (stepNumber < currentStep - 1) {
@@ -271,14 +295,14 @@ function TrackStatusPage() {
   return (
     <div className="min-h-screen bg-gray-50 font-noto">
       <div className="max-w-6xl mx-auto space-y-6 py-6">
-        {!latestRequest && !DEBUG_STATUS && (
+        {!latestRequest && (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <p className="text-gray-500 text-xl mb-3">ยังไม่ได้ส่งเอกกสาร</p>
             <p className="text-gray-400">กรุณาสมัครขอรับรางวัลเพื่อติดตามสถานะ</p>
           </div>
         )}
 
-        {(latestRequest || DEBUG_STATUS) && (
+        {latestRequest && (
             <>
               {/* Section 1: ข้อมูลใบสมัคร */}
               <div>
@@ -287,15 +311,17 @@ function TrackStatusPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-gray-500 mb-1">รหัสใบสมัคร</p>
-                      <p className="text-base font-medium text-gray-900"> {latestRequest.RequestID} </p>
+                      <p className="text-base font-medium text-gray-900">{latestRequest.request_id || "-"}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500 mb-1">ประเภทรางวัล</p>
-                      <p className="text-base font-medium text-gray-900">{latestRequest.Award?.award_name || "-"}</p>
+                      <p className="text-base font-medium text-gray-900">{latestRequest.award_name || "-"}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500 mb-1">รอบการพิจารณา</p>
-                      <p className="text-base font-medium text-gray-900">{latestRequest.Award?.award_name || "-"}</p>
+                      <p className="text-base font-medium text-gray-900">
+                        {formatReviewRound(latestRequest.semester, latestRequest.academic_year)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500 mb-1">สถานะปัจจุบัน</p>
@@ -362,7 +388,7 @@ function TrackStatusPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between py-3 border-b border-gray-100">
                     <span className="text-gray-600">วันที่ส่งคำร้อง</span>
-                    <span className="font-medium text-gray-900">{formatDateTime(latestRequest.CreatedAt)}</span>
+                    <span className="font-medium text-gray-900">{formatDateTime(latestRequest.created_at)}</span>
                   </div>
                   <div className="flex items-center justify-between py-3 border-b border-gray-100">
                     <span className="text-gray-600">สถานะ</span>
