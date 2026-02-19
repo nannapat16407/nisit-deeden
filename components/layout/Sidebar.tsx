@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { ROUTES_BY_ROLE, getName } from "@/constants/route";
+import { Home, FileText, ClipboardList } from "lucide-react";
 
 interface SidebarProps {
   role?: string;
@@ -16,6 +17,14 @@ const Sidebar: React.FC<SidebarProps> = ({ role = "SD" }) => {
   // Icon Mapping based on route key
   const getIcon = (key: string) => {
     switch (key) {
+      // Student menu icons
+      case "home":
+        return <Home size={20} />;
+      case "document":
+        return <FileText size={20} />;
+      case "track_status":
+        return <ClipboardList size={20} />;
+      // Other role menu icons (keep original SVG icons)
       case "request_period":
         return (
           <svg
@@ -86,23 +95,6 @@ const Sidebar: React.FC<SidebarProps> = ({ role = "SD" }) => {
           >
             <circle cx="12" cy="8" r="7"></circle>
             <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-          </svg>
-        );
-      case "track_status":
-        return (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 20h9"></path>
-            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4"></path>
           </svg>
         );
       case "campus":

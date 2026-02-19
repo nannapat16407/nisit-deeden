@@ -38,6 +38,7 @@ export const ROUTES_BY_ROLE = {
 export const getName = (key: string) => {
     const names: Record<string, string> = {
       home: "หน้าแรก",
+      document: "เอกสาร",
       request_period: "จัดการช่วงเวลารับสมัคร",
       request: "รายการคำร้อง",
       announcement: "ประกาศ",

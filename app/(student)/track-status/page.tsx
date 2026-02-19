@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import useAuth from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import { RequestStatus } from "@/types/request.type";
+import { RefreshCw, X, Check } from "lucide-react";
 
 // API Response type matching the backend response
 interface MyRequestResponse {
@@ -17,6 +18,22 @@ interface MyRequestResponse {
   status: RequestStatus;
   created_at: string;
   attachments: unknown[];
+}
+
+// Detailed request response with logs
+interface RequestDetailResponse {
+  request_id: string;
+  status: RequestStatus;
+  status_thai: string;
+  created_at: string;
+  logs: RequestLog[];
+}
+
+interface RequestLog {
+  action: string;
+  comment: string;
+  approver_name: string;
+  timestamp: string;
 }
 
 const TIMELINE_STEPS = [
@@ -61,9 +78,12 @@ function TrackStatusPage() {
   const router = useRouter();
   const { user, loading: authLoading, isAuthenticated } = useAuth();
   const [requests, setRequests] = useState<MyRequestResponse[]>([]);
+  const [requestDetail, setRequestDetail] = useState<RequestDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch list of requests
   useEffect(() => {
     const fetchRequests = async () => {
       if (!isAuthenticated || user?.role !== "STUDENT") return;
@@ -84,6 +104,36 @@ function TrackStatusPage() {
     };
     fetchRequests();
   }, [isAuthenticated, user]);
+
+  // Fetch detailed request info (logs, status_thai) when we have the latest request_id
+  useEffect(() => {
+    const fetchRequestDetail = async () => {
+      const latestRequestId = requests.length > 0 ? requests[0]?.request_id : null;
+      if (!latestRequestId) {
+        setDetailLoading(false);
+        return;
+      }
+
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8008";
+        const response = await fetch(`${API_URL}/api/student/my-requests/${latestRequestId}`, {
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch request detail");
+        }
+
+        const result = await response.json();
+        setRequestDetail(result.data);
+      } catch (err) {
+        console.error("Failed to fetch request detail", err);
+      } finally {
+        setDetailLoading(false);
+      }
+    };
+    fetchRequestDetail();
+  }, [requests]);
 
   if (authLoading || loading) {
     return (
@@ -108,6 +158,22 @@ function TrackStatusPage() {
     const semesterText = formatSemester(semester);
     const year = academicYear ?? "-";
     return semesterText !== "-" ? `${semesterText} ปีการศึกษา ${year}` : "-";
+  };
+
+  // Helper to format Thai date (for สถานะล่าสุด section)
+  const formatThaiDate = (isoString: string): string => {
+    const date = new Date(isoString);
+    const thaiMonths = [
+      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน",
+      "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
+      "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
+    const day = date.getDate();
+    const month = thaiMonths[date.getMonth()];
+    const year = date.getFullYear() + 543;
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    return `${day} ${month} ${year} เวลา ${hours}:${minutes}`;
   };
 
   const formatDateTime = (dateString: string) => {
@@ -226,6 +292,7 @@ function TrackStatusPage() {
     const currentStep = STATUS_TO_STEP[statusToUse];
     const isRejected = isRejectedStatus(statusToUse);
 
+    // Rejected state at current step
     if (isRejected && currentStep === stepNumber) {
       return (
         <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -235,6 +302,7 @@ function TrackStatusPage() {
       );
     }
 
+    // Completed before rejection
     if (isRejected && currentStep > stepNumber) {
       return (
         <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -243,26 +311,12 @@ function TrackStatusPage() {
       );
     }
 
+    // Pending state - use RefreshCw icon with spin animation
     if (currentStep === stepNumber) {
-      return (
-        <svg
-          className="w-7 h-7 text-white"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          {/* วงโค้งแบบเว้น gap เยอะขึ้น */}
-          <path d="M19 12a7 7 0 1 1-3-5.6" />
-
-          {/* หัวลูกศร ขยับไม่ให้ชนปลายเส้น */}
-          <polyline points="19 5 19 11 13 11" />
-        </svg>
-      );
+      return <RefreshCw className="w-7 h-7 text-white animate-spin" />;
     }
 
+    // Completed step
     if (currentStep > stepNumber) {
       return (
         <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -271,6 +325,7 @@ function TrackStatusPage() {
       );
     }
 
+    // Inactive step
     return (
       <svg className="w-7 h-7 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="1" />
@@ -290,6 +345,41 @@ function TrackStatusPage() {
     return "-";
   };
 
+  // Status icon logic for สถานะล่าสุด section
+  const getStatusIconInfo = (status: RequestStatus): { icon: React.ReactNode; color: string; label: string } => {
+    const pendingStates: RequestStatus[] = [
+      "PENDING_HEAD", "PENDING_VICEDEAN", "PENDING_DEAN",
+      "PENDING_SD", "PENDING_COMMITTEE", "PENDING_PRESIDENT", "NEEDS_DOCS"
+    ];
+    const rejectedStates: RequestStatus[] = [
+      "REJECTED_BY_HEAD", "REJECTED_BY_VICEDEAN",
+      "REJECTED_BY_DEAN", "REJECTED_BY_COMMITTEE"
+    ];
+
+    if (pendingStates.includes(status)) {
+      return {
+        icon: <RefreshCw className="w-16 h-16" />,
+        color: "text-yellow-500",
+        label: "รอพิจารณา"
+      };
+    }
+
+    if (rejectedStates.includes(status)) {
+      return {
+        icon: <X className="w-16 h-16" />,
+        color: "text-red-500",
+        label: "ปฏิเสธ"
+      };
+    }
+
+    // Approved state (PENDING_PRESIDENT means final approval)
+    return {
+      icon: <Check className="w-16 h-16" />,
+      color: "text-green-500",
+      label: "อนุมัติ"
+    };
+  };
+
   const currentStatusColors = statusToUse ? STATUS_COLORS[statusToUse] : null;
 
   return (
@@ -306,7 +396,7 @@ function TrackStatusPage() {
             <>
               {/* Section 1: ข้อมูลใบสมัคร */}
               <div>
-                <h2 className="text-lg font-bold text-gray-900 mb-3">ข้อมูลใบสมัคร</h2>
+                <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-4">ข้อมูลใบสมัคร</h2>
                 <div className="bg-white rounded-lg shadow-sm p-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -336,7 +426,7 @@ function TrackStatusPage() {
 
               {/* Section 2: ติดตามสถานะ */}
               <div>
-                <h2 className="text-lg font-bold text-gray-900 mb-3">
+                <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-4">
                   ติดตามสถานะ
                 </h2>
 
@@ -383,29 +473,59 @@ function TrackStatusPage() {
 
 
               {/* Section 3: สถานะล่าสุด */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">สถานะล่าสุด</h2>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                    <span className="text-gray-600">วันที่ส่งคำร้อง</span>
-                    <span className="font-medium text-gray-900">{formatDateTime(latestRequest.created_at)}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                    <span className="text-gray-600">สถานะ</span>
-                    <span
-                        className={`font-medium px-2 py-0.5 rounded text-sm ${currentStatusColors?.bg} ${currentStatusColors?.text}`}>{statusToUse && getStatusLabel(statusToUse)}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-3">
-                    <span className="text-gray-600">ผู้พิจารณา</span>
-                    <span className="font-medium text-gray-900">{statusToUse && getReviewerName(statusToUse)}</span>
-                  </div>
-                  {statusToUse && isRejectedStatus(statusToUse) && (
-                      <div className="mt-4">
-                        <button
-                            className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 border border-red-200 text-sm font-medium">
-                          เหตุผลการปฏิเสธ
-                        </button>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-4">สถานะล่าสุด</h2>
+                <div className="w-full h-px bg-gray-200 my-4" />
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  {detailLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005F52]"></div>
+                    </div>
+                  ) : requestDetail ? (
+                    <div className="flex gap-6">
+                      {/* LEFT COLUMN: Icon */}
+                      <div className="flex-shrink-0 flex flex-col items-center">
+                        <div className={getStatusIconInfo(requestDetail.status).color}>
+                          {getStatusIconInfo(requestDetail.status).icon}
+                        </div>
+                        <p className="mt-2 text-sm text-black">
+                          {getStatusIconInfo(requestDetail.status).label}
+                        </p>
                       </div>
+
+                      {/* RIGHT COLUMN: Details */}
+                      <div className="flex-1 space-y-4">
+                        {/* วันที่ส่งคำร้อง */}
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">วันที่ส่งคำร้อง</p>
+                          <p className="text-base font-medium text-gray-900">
+                            {formatThaiDate(requestDetail.created_at)}
+                          </p>
+                        </div>
+
+                        {/* สถานะ */}
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">สถานะ</p>
+                          <p className="text-base font-medium text-gray-900">
+                            {requestDetail.status_thai || "-"}
+                          </p>
+                        </div>
+
+                        {/* ผู้พิจารณา */}
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">ผู้พิจารณา</p>
+                          <p className="text-base font-medium text-gray-900">
+                            {requestDetail.logs && requestDetail.logs.length > 0
+                              ? requestDetail.logs[0].approver_name
+                              : "-"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      ไม่พบข้อมูลสถานะ
+                    </div>
                   )}
                 </div>
               </div>
