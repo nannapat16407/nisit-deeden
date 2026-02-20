@@ -1,3 +1,5 @@
+import { DocType } from "./document..type";
+
 export type ConfirmPopUpState = {
   open: boolean;
   title: string;
@@ -19,4 +21,28 @@ export type ConfirmPopUpConfig = {
 export type ConfirmPopUpContextType = {
   state: ConfirmPopUpState;
   trigger: (config: ConfirmPopUpConfig) => void;
+};
+
+export type EditDocListState = {
+  open: boolean;
+  title: string;
+  message: string;
+  currentDocs: DocType[];
+  newDocName: string;
+  isLoading: boolean;
+};
+
+export type EditDocListConfig = {
+  title: string;
+  message: string;
+  currentDocs?: DocType[];
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm: (docs: DocType[]) => void | Promise<void>;
+  onCancel?: () => void | Promise<void>;
+};
+
+export type EditDocListContextType = {
+  state: EditDocListState;
+  trigger: (config: EditDocListConfig) => void;
 };

@@ -9,7 +9,7 @@ const MOCK_REWARD = "นักศึกษาดีเด่น";
 const MOCK_ACADEMIC_YEAR = "2569";
 const MOCK_SEMESTER = "ภาคต้น";
 const MOCK_DESCRIPTION = "นิสิตที่สนใจสมัครขอรับรางวัลนิสิตดีเด่น สามารถสมัครผ่านระบบออนไลน์ได้ตั้งแต่วันนี้เป็นต้นไป โดยต้องเตรียมเอกสารประกอบการสมัครให้ครบถ้วน";
-
+const MOCK_TITLE = "Hello";
 function Welcome() {
   return (
     <div className="bg-white rounded-xl p-4 md:p-10">
@@ -132,8 +132,15 @@ function Announcement() {
       <div className="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg inline-block mb-4">
         <p className="font-bold text-lg">ประกาศ</p>
       </div>
-      <div className="px-6 pb-6">
-        <p className="text-gray-700 text-base">{MOCK_DESCRIPTION}</p>
+      <div className="flex flex-col">
+        <div className="flex flex-col px-6 pb-6 gap-y-2">
+          <p className="text-gray-700 font-bold">เรื่อง {MOCK_TITLE}</p>
+          <p className="text-gray-700 text-base">{MOCK_DESCRIPTION}</p>
+        </div>
+        <div className="flex flex-col px-6 pb-6 gap-y-2">
+          <p className="text-gray-700 font-bold">เรื่อง {MOCK_TITLE}</p>
+          <p className="text-gray-700 text-base">{MOCK_DESCRIPTION}</p>
+        </div>
       </div>
     </div>
   )
