@@ -383,7 +383,7 @@ function TrackStatusPage() {
   const currentStatusColors = statusToUse ? STATUS_COLORS[statusToUse] : null;
 
   return (
-    <div className="min-h-screen bg-gray-50 font-noto">
+    <div className="min-h-screen font-noto">
       <div className="max-w-6xl mx-auto space-y-6 py-6">
         {!latestRequest && (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
@@ -494,32 +494,25 @@ function TrackStatusPage() {
                       </div>
 
                       {/* RIGHT COLUMN: Details */}
-                      <div className="flex-1 space-y-4">
-                        {/* วันที่ส่งคำร้อง */}
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">วันที่ส่งคำร้อง</p>
-                          <p className="text-base font-medium text-gray-900">
-                            {formatThaiDate(requestDetail.created_at)}
-                          </p>
-                        </div>
+                      <div className="flex-1 space-y-3">
+                        {/* วันที่เวลา */}
+                        <p className="text-base text-gray-500">
+                          {formatThaiDate(requestDetail.created_at)}
+                        </p>
 
                         {/* สถานะ */}
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">สถานะ</p>
-                          <p className="text-base font-medium text-gray-900">
-                            {requestDetail.status_thai || "-"}
-                          </p>
-                        </div>
+                        <p className="text-base text-gray-900">
+                          <span className="font-bold">สถานะ</span>{" "}
+                          <span className="font-normal">{requestDetail.status_thai || "-"}</span>
+                        </p>
 
                         {/* ผู้พิจารณา */}
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">ผู้พิจารณา</p>
-                          <p className="text-base font-medium text-gray-900">
-                            {requestDetail.logs && requestDetail.logs.length > 0
-                              ? requestDetail.logs[0].approver_name
-                              : "-"}
-                          </p>
-                        </div>
+                        <p className="text-base text-gray-900">
+                          <span className="font-bold">ผู้พิจารณา</span>{" "}
+                          {requestDetail.logs && requestDetail.logs.length > 0
+                            ? requestDetail.logs[0].approver_name
+                            : "-"}
+                        </p>
                       </div>
                     </div>
                   ) : (
