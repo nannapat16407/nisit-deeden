@@ -31,23 +31,27 @@ const AwardCard: React.FC<AwardCardProps> = ({
         <p
           className={`text-sm mb-4 line-clamp-2 ${award.is_active ? "text-gray-600" : "text-gray-400"}`}
         >
-          {award.description}
+          {award.description || "ไม่มีคำอธิบายเพิ่มเติม"}
         </p>
 
         {/* File Template Mock */}
         <div
           className={`p-3 rounded-lg flex items-center justify-between mb-4 border ${award.is_active ? "bg-gray-50 border-gray-100" : "bg-gray-100 border-gray-200"}`}
         >
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-8 h-8 flex-shrink-0 bg-red-100 text-red-500 rounded flex items-center justify-center font-bold text-[10px]">
-              PDF
+          <div className="flex items-center gap-3 overflow-hidden w-full">
+            <div
+              className={`w-8 h-8 flex-shrink-0 rounded flex items-center justify-center font-bold text-[10px] ${award.template_file_url ? "bg-red-100 text-red-500" : "bg-gray-200 text-gray-400"}`}
+            >
+              {award.template_file_url ? "FILE" : "---"}
             </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold truncate text-gray-700">
-                {award.template_file_url ? "Template.pdf" : "No Template"}
+            <div className="flex flex-col min-w-0 overflow-hidden w-full">
+              <span className="text-xs font-bold text-gray-700 break-words whitespace-normal line-clamp-2">
+                {award.template_file_url
+                  ? award.template_file_url.split("/").pop()
+                  : "ไม่มีไฟล์เทมเพลตแนบ"}
               </span>
               <span className="text-[10px] text-gray-400">
-                Template Uploaded
+                {award.template_file_url ? "มีไฟล์แนบในระบบ" : ""}
               </span>
             </div>
           </div>

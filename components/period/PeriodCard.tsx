@@ -47,8 +47,8 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
               <line x1="8" y1="2" x2="8" y2="6"></line>
               <line x1="3" y1="10" x2="21" y2="10"></line>
             </svg>
-            {new Date(period.period_start).toLocaleDateString("th-TH")} -{" "}
-            {new Date(period.period_end).toLocaleDateString("th-TH")}
+            {new Date(period.start_date).toLocaleDateString("th-TH")} -{" "}
+            {new Date(period.end_date).toLocaleDateString("th-TH")}
           </p>
         </div>
       </div>

@@ -6,12 +6,12 @@ export interface Requirement {
 }
 
 export interface Award {
-  campus_id: string;
   award_id: string;
   award_name: string;
   award_type: string;
-  description: string;
   is_active: boolean;
+  description?: string;
+  campus_id?: string;
   template_file_url?: string; // from backend
   requirement_json?: string; // Serialized Requirement[]
   period_id?: string;
