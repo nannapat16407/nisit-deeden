@@ -1,11 +1,8 @@
 import { AuthResponse, MeResponse } from "@/types/user.type";
 import { Period, CreatePeriodRequest } from "@/types/period.type";
 import { Award, CreateAwardRequest } from "@/types/award.type";
-import {
-  Request as RequestType,
-  CreateApplicationRequest,
-} from "@/types/request.type";
-import { StudentProfileResponse } from "@/types/student.type";
+import { Request as RequestType } from "@/types/request.type";
+import {StudentProfileApiResponse, StudentProfileFullResponse, StudentProfileResponse} from "@/types/student.type";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8008";
 
@@ -138,20 +135,35 @@ class ApiClient {
   async getAvailableAwards(): Promise<{ data: Award[] }> {
     return this.fetch("/api/student/awards");
   }
+
   async createApplication(
-    data: CreateApplicationRequest,
-  ): Promise<{ message: string; data: any }> {
-    return this.fetch("/api/student/apply", {
+      formData: FormData,
+  ): Promise<{ message: string; data: RequestType }> {
+    const response = await fetch(`${this.baseURL}/api/student/apply`, {
       method: "POST",
-      body: JSON.stringify(data),
+      body: formData,
+      credentials: "include", // สำคัญมาก (ส่ง cookie)
     });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || "Submit failed");
+    }
+
+    return response.json();
   }
 
   async getMyRequests(): Promise<{ data: RequestType[] }> {
     return this.fetch("/api/student/my-requests");
   }
 
-  // ============================================
+  async getStudentProfileFull(): Promise<StudentProfileApiResponse> {
+    return this.fetch<StudentProfileApiResponse>(
+        "/api/student/profile"
+    );
+  }
+
+// ============================================
   // Department Head APIs
   // ============================================
 

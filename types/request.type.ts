@@ -2,17 +2,17 @@ import { User } from "./user.type";
 import { Award } from "./award.type";
 
 export type RequestStatus =
-  | "PENDING_HEAD"
-  | "PENDING_VICEDEAN"
-  | "PENDING_DEAN"
-  | "PENDING_SD"
-  | "PENDING_COMMITTEE"
-  | "PENDING_PRESIDENT"
-  | "NEEDS_DOCS"
-  | "REJECTED_BY_HEAD"
-  | "REJECTED_BY_VICEDEAN"
-  | "REJECTED_BY_DEAN"
-  | "REJECTED_BY_COMMITTEE";
+    | "PENDING_HEAD"
+    | "PENDING_VICEDEAN"
+    | "PENDING_DEAN"
+    | "PENDING_SD"
+    | "PENDING_COMMITTEE"
+    | "PENDING_PRESIDENT"
+    | "NEEDS_DOCS"
+    | "REJECTED_BY_HEAD"
+    | "REJECTED_BY_VICEDEAN"
+    | "REJECTED_BY_DEAN"
+    | "REJECTED_BY_COMMITTEE";
 
 export interface Request {
   RequestID: string; // UUID
@@ -20,7 +20,10 @@ export interface Request {
   RequestOwner: string; // UUID of User
   CreatedAt: string; // ISO Date
   AwardID: string; // UUID
+
   status: RequestStatus;
+
+  status_thai?: string;
 
   // Relations
   Owner?: User;

@@ -7,9 +7,15 @@ import usePeriod from "@/hooks/usePeriod";
 import { api } from "@/lib/api";
 import { Award } from "@/types/award.type";
 
+type AwardOption = {
+  id: string;
+  title: string;
+  route: string;
+};
+
 function DocumentPage() {
   const { currentPeriod, loading: periodLoading } = usePeriod();
-  const [awards, setAwards] = useState<Award[]>([]);
+  const [awards, setAwards] = useState<AwardOption[]>([]);
   const [awardsLoading, setAwardsLoading] = useState(true);
   const [awardsError, setAwardsError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);

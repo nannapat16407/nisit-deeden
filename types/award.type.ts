@@ -6,6 +6,7 @@ export interface Requirement {
 }
 
 export interface Award {
+  campus_id: string;
   award_id: string;
   award_name: string;
   award_type: string;
