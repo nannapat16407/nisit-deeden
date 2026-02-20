@@ -22,6 +22,7 @@ export const ROUTES_BY_ROLE = {
     home: "/home",
     document: "/document",
     track_status: "/track-status",
+    announcement: "/announcement",
   },
   SD_STAFF: {
     home: "/home",

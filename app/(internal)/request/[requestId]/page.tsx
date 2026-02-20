@@ -5,15 +5,20 @@ import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import useAuth from "@/hooks/useAuth";
 import { Request } from "@/types/request.type";
-// import { MOCK_REQUESTS, USE_MOCK_DATA } from "../mock";
+import { DocType } from "@/types/document..type";
+import { MOCK_REQUESTS, USE_MOCK_DATA } from "../mock";
 import { useConfirmPopUp, ConfirmPopUpUI } from "@/components/pop-up/ConfirmPopUp";
-
+import {
+  useEditDocListPopUp,
+  EditDocListPopUpUI,
+} from "@/components/pop-up/EditDocList";
 function RequestDetailContent() {
   const { requestId } = useParams();
   const { user } = useAuth();
   const role = user?.role;
   const router = useRouter();
   const { trigger: triggerConfirmPopUp } = useConfirmPopUp();
+  const { trigger: triggerEditDocList } = useEditDocListPopUp();
 
   const [request, setRequest] = useState<Request | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,6 +83,24 @@ function RequestDetailContent() {
       confirmText: "เห็นชอบ",
       cancelText: "ยกเลิก",
       onConfirm: SDApproveCallback,
+    });
+  };
+
+  const handleNeedMoreDocCallback = async (selectedDocs: DocType[]) => {
+    try {
+      console.log("Requesting additional documents:", selectedDocs);
+    } catch (error) {
+      console.error("Failed to request documents:", error);
+      throw error;
+    }
+  };
+
+  const handleNeedMoreDocClick = () => {
+    triggerEditDocList({
+      title: "ขอเอกสารเพิ่มเติม",
+      message: "กรุณาเลือกหรือเพิ่มเอกสารที่ต้องการให้ผู้ยื่นส่งเพิ่มเติม",
+      currentDocs: [],
+      onConfirm: handleNeedMoreDocCallback,
     });
   };
 
@@ -208,7 +231,10 @@ function RequestDetailContent() {
                 >
                   เห็นชอบ (Approve)
                 </button>
-                <button className="flex-1 bg-amber-600 hover:bg-amber-700 hover:cursor-pointer text-white py-3 rounded-lg font-bold shadow-md transition-all">
+                <button
+                  onClick={handleNeedMoreDocClick}
+                  className="flex-1 bg-amber-600 hover:bg-amber-700 hover:cursor-pointer text-white py-3 rounded-lg font-bold shadow-md transition-all"
+                >
                   ขอเอกสารเพิ่มเติม (Need More Document)
                 </button>
               </div>
@@ -222,8 +248,10 @@ function RequestDetailContent() {
 
 export default function RequestDetailPage() {
   return (
-    <ConfirmPopUpUI>
-      <RequestDetailContent />
-    </ConfirmPopUpUI>
+    <EditDocListPopUpUI>
+      <ConfirmPopUpUI>
+        <RequestDetailContent />
+      </ConfirmPopUpUI>
+    </EditDocListPopUpUI>
   );
 }

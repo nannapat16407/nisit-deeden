@@ -5,7 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import useAuth from "@/hooks/useAuth";
 import { Request } from "@/types/request.type";
-// import { MOCK_REQUESTS , USE_MOCK_DATA} from "./mock";
+import { MOCK_REQUESTS , USE_MOCK_DATA} from "./mock";
 
 export default function RequestPage() {
   const { user, logout } = useAuth();
