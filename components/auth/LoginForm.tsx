@@ -34,14 +34,12 @@ function LoginForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Handle traditional email/password login logic
     console.log('Login data:', formData)
   }
 
   const handleGoogleLogin = async () => {
     try {
       await loginWithGoogle()
-      // The loginWithGoogle function will redirect to Google OAuth
     } catch (err) {
       console.error('Google login error:', err)
     }

@@ -35,6 +35,13 @@ export const ROUTES_BY_ROLE = {
   }
 };
 
+export const DEFAULT_ROUTES = {
+  ADMIN: "/dashboard",
+  STUDENT: "/document",
+  SD_STAFF: "/request-period",
+  DEPARTMENT_HEAD: "/request",
+};
+
 export const getName = (key: string) => {
     const names: Record<string, string> = {
       home: "หน้าแรก",

@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import useAuth from "@/hooks/useAuth";
 import { api } from "@/lib/api";
-import { ROUTES_BY_ROLE } from "@/constants/route";
+import { ROUTES_BY_ROLE, DEFAULT_ROUTES } from "@/constants/route";
 
 function CallbackContent() {
   const router = useRouter();
@@ -53,8 +53,7 @@ function CallbackContent() {
           ) as keyof typeof ROUTES_BY_ROLE;
 
           const routes = ROUTES_BY_ROLE[role] as any;
-          const redirectPath =
-            routes?.request || routes?.dashboard || "/dashboard";
+          const redirectPath = DEFAULT_ROUTES[role] || "/home";
 
           console.log("Redirecting to:", redirectPath);
           setTimeout(() => router.push(redirectPath), 1000);
