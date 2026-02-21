@@ -37,7 +37,7 @@ export default function RequestPeriodRewardsPage({
         (p: any) => p.period_id === periodId,
       );
 
-      setAwards(periodGroup ? periodGroup.awards : []);
+      setAwards(periodGroup?.awards || []);
 
       setError(null);
     } catch (err: any) {
@@ -224,7 +224,7 @@ export default function RequestPeriodRewardsPage({
         <div className="text-center py-20 text-red-500">{error}</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {awards.map((award) => (
+          {awards?.map((award) => (
             <AwardCard
               key={award.award_id}
               award={award}
@@ -233,7 +233,7 @@ export default function RequestPeriodRewardsPage({
               onDelete={handleDelete}
             />
           ))}
-          {awards.length === 0 && (
+          {(!awards || awards.length === 0) && (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400 col-span-full border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
               <svg
                 xmlns="http://www.w3.org/2000/svg"

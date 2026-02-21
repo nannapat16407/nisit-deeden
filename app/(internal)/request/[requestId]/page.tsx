@@ -6,8 +6,11 @@ import { api } from "@/lib/api";
 import useAuth from "@/hooks/useAuth";
 import { Request } from "@/types/request.type";
 import { DocType } from "@/types/document..type";
-import { MOCK_REQUESTS, USE_MOCK_DATA } from "../mock";
-import { useConfirmPopUp, ConfirmPopUpUI } from "@/components/pop-up/ConfirmPopUp";
+import PdfViewerFromS3 from "@/components/document/PdfViewerFromS3";
+import {
+  useConfirmPopUp,
+  ConfirmPopUpUI,
+} from "@/components/pop-up/ConfirmPopUp";
 import {
   useEditDocListPopUp,
   EditDocListPopUpUI,
@@ -22,36 +25,50 @@ function RequestDetailContent() {
 
   const [request, setRequest] = useState<Request | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditingAward, setIsEditingAward] = useState(false);
+  const [availableAwards, setAvailableAwards] = useState<any[]>([]);
+  const [selectedAwardId, setSelectedAwardId] = useState("");
+
+  const fetchRequest = async () => {
+    if (!requestId || !role) return;
+
+    try {
+      setLoading(true);
+      let data: Request[] = [];
+      // Reuse list fetchers for now since single GET is missing
+      if (role === "STUDENT") {
+        const res = await api.getMyRequests();
+        data = res.data;
+      } else if (role === "DEPARTMENT_HEAD") {
+        const res = await api.getDeptRequests();
+        data = res.data;
+      } else if (role === "SD_STAFF") {
+        const res = await api.getSDRequests();
+        data = res.data;
+      }
+
+      const found = data.find(
+        (r) => (r.request_id || r.RequestID) === requestId,
+      );
+      setRequest(found || null);
+      if (found) {
+        setSelectedAwardId(found.award_id || found.AwardID || "");
+      }
+
+      if (role === "SD_STAFF") {
+        const awardsRes: any = await api.getAvailableAwards();
+        // awardsRes is grouped by period
+        const flatAwards = awardsRes.data?.flatMap((p: any) => p.awards) || [];
+        setAvailableAwards(flatAwards);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchRequest = async () => {
-      if (!requestId || !role) return;
-
-      try {
-        setLoading(true);
-        let data: Request[] = [];
-        // Reuse list fetchers for now since single GET is missing
-        if (role === "STUDENT") {
-          const res = await api.getMyRequests();
-          data = res.data;
-        } else if (role === "DEPARTMENT_HEAD") {
-          const res = await api.getDeptRequests();
-          data = res.data;
-        } else if (role === "SD_STAFF") {
-          // SD Fetch Here
-          // if(USE_MOCK_DATA){
-          //   data = MOCK_REQUESTS;
-          // }
-        }
-
-        const found = data.find((r) => r.RequestID === requestId);
-        setRequest(found || null);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchRequest();
   }, [requestId, role]);
 
@@ -69,7 +86,8 @@ function RequestDetailContent() {
   // Callback for SD Staff approval action
   const SDApproveCallback = async () => {
     try {
-      console.log("SD Staff approved request:", requestId);
+      await api.reviewSDRequest(requestId as string, "approve");
+      await fetchRequest();
     } catch (error) {
       console.error("Failed to approve request:", error);
       throw error;
@@ -88,7 +106,9 @@ function RequestDetailContent() {
 
   const handleNeedMoreDocCallback = async (selectedDocs: DocType[]) => {
     try {
-      console.log("Requesting additional documents:", selectedDocs);
+      const comment = "ขอเอกสาร: " + selectedDocs.map((d) => d.name).join(", ");
+      await api.reviewSDRequest(requestId as string, "need_docs", comment);
+      await fetchRequest();
     } catch (error) {
       console.error("Failed to request documents:", error);
       throw error;
@@ -102,6 +122,16 @@ function RequestDetailContent() {
       currentDocs: [],
       onConfirm: handleNeedMoreDocCallback,
     });
+  };
+
+  const handleSaveAwardType = async () => {
+    try {
+      await api.updateSDAwardType(requestId as string, selectedAwardId);
+      setIsEditingAward(false);
+      await fetchRequest();
+    } catch (error) {
+      console.error("Failed to update award type:", error);
+    }
   };
 
   return (
@@ -119,14 +149,77 @@ function RequestDetailContent() {
             <h1 className="text-2xl font-bold text-emerald-900 mb-2">
               แบบเสนอรายชื่อนิสิตดีเด่น
             </h1>
-            <p className="text-emerald-700 font-medium">
-              ประเภท: {request.Award?.award_name}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-emerald-700 font-medium">
+                ประเภท:{" "}
+                {isEditingAward ? (
+                  <select
+                    className="border border-emerald-300 rounded px-2 py-1 text-sm bg-white"
+                    value={selectedAwardId}
+                    onChange={(e) => setSelectedAwardId(e.target.value)}
+                  >
+                    {availableAwards.map((a: any) => (
+                      <option key={a.award_id} value={a.award_id}>
+                        {a.award_name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  request.award_name || request.Award?.award_name
+                )}
+              </p>
+              {role === "SD_STAFF" &&
+                (isEditingAward ? (
+                  <div className="flex gap-1 ml-2">
+                    <button
+                      onClick={handleSaveAwardType}
+                      className="bg-emerald-600 text-white text-xs px-2 py-1 rounded"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditingAward(false);
+                        setSelectedAwardId(
+                          request.award_id || request.AwardID || "",
+                        );
+                      }}
+                      className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsEditingAward(true)}
+                    className="text-emerald-600 hover:text-emerald-800 ml-2"
+                  >
+                    {/* Pencil icon */}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                    </svg>
+                  </button>
+                ))}
+            </div>
           </div>
           <div className="text-right">
             <div className="text-sm text-gray-500">
               วันที่ยื่น:{" "}
-              {new Date(request.CreatedAt).toLocaleDateString("th-TH")}
+              {request.created_at || request.CreatedAt
+                ? new Date(
+                    request.created_at || request.CreatedAt!,
+                  ).toLocaleDateString("th-TH")
+                : "-"}
             </div>
             <div className="mt-1 inline-block bg-white px-3 py-1 rounded border border-emerald-200 text-emerald-700 text-sm font-bold shadow-sm">
               {request.status}
@@ -144,61 +237,73 @@ function RequestDetailContent() {
               <div>
                 <span className="text-gray-500 block">ชื่อ-นามสกุล</span>
                 <span className="font-medium text-gray-800 text-lg">
-                  {request.Owner?.prefix} {request.Owner?.fname}{" "}
-                  {request.Owner?.lname}
+                  {request.owner_fname
+                    ? `${request.owner_prefix || ""} ${request.owner_fname} ${request.owner_lname}`
+                    : request.Owner
+                      ? `${request.Owner.prefix} ${request.Owner.fname} ${request.Owner.lname}`
+                      : "-"}
                 </span>
               </div>
               <div>
                 <span className="text-gray-500 block">รหัสนิสิต</span>
                 <span className="font-medium text-gray-800 text-lg">
-                  {request.Owner?.username}{" "}
+                  {request.owner_student_id || request.Owner?.username || "-"}
                 </span>
               </div>
               <div>
                 <span className="text-gray-500 block">Email</span>
                 <span className="font-medium text-gray-800">
-                  {request.Owner?.email}
+                  {request.owner_email || request.Owner?.email || "-"}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Document Preview (Mock) */}
+          {/* Document Preview */}
           <div className="mb-8">
             <h2 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">
               2. เอกสารแนบ
             </h2>
 
-            <div className="border rounded-lg p-4 bg-gray-50 flex flex-col items-center">
-              <div className="w-full h-96 bg-gray-200 rounded flex items-center justify-center text-gray-400 mb-4">
-                {/* In real app, iframe or PDF viewer here using request.attachment_url */}
-                <div className="text-center">
-                  <p>Document Preview</p>
-                  <p className="text-xs">(PDF Placeholder)</p>
-                </div>
-              </div>
-              <a
-                href="#"
-                className="text-primary hover:underline font-medium flex items-center gap-2"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+            {request.attachments && request.attachments.length > 0 ? (
+              request.attachments.map((doc, idx) => (
+                <div
+                  key={doc.attachment_id || idx}
+                  className="border rounded-lg p-4 bg-gray-50 flex flex-col items-center mb-6 last:mb-0"
                 >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                Download Full PDF
-              </a>
-            </div>
+                  <div className="w-full h-auto bg-gray-200 rounded flex items-center justify-center text-gray-400 mb-4 overflow-hidden border">
+                    <PdfViewerFromS3 s3Url={doc.file_url} />
+                  </div>
+                  <a
+                    href={doc.file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline font-medium flex items-center gap-2"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download PDF {idx + 1}
+                  </a>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-10 bg-gray-50 rounded-lg text-gray-500 border border-gray-200 border-dashed">
+                <p>ไม่มีเอกสารแนบ</p>
+              </div>
+            )}
           </div>
 
           {/* Actions (If Dept Head and PENDING_HEAD) */}

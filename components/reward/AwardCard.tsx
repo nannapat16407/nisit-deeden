@@ -45,13 +45,23 @@ const AwardCard: React.FC<AwardCardProps> = ({
               {award.template_file_url ? "FILE" : "---"}
             </div>
             <div className="flex flex-col min-w-0 overflow-hidden w-full">
-              <span className="text-xs font-bold text-gray-700 break-words whitespace-normal line-clamp-2">
-                {award.template_file_url
-                  ? award.template_file_url.split("/").pop()
-                  : "ไม่มีไฟล์เทมเพลตแนบ"}
-              </span>
+              {award.template_file_url ? (
+                <a
+                  href={award.template_file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-bold text-gray-700 break-words whitespace-normal line-clamp-2 hover:text-emerald-600 hover:underline cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {award.template_file_url.split("/").pop()}
+                </a>
+              ) : (
+                <span className="text-xs font-bold text-gray-700 break-words whitespace-normal line-clamp-2">
+                  ไม่มีไฟล์เทมเพลตแนบ
+                </span>
+              )}
               <span className="text-[10px] text-gray-400">
-                {award.template_file_url ? "มีไฟล์แนบในระบบ" : ""}
+                {award.template_file_url ? "คลิกเพื่อดาวน์โหลด" : ""}
               </span>
             </div>
           </div>

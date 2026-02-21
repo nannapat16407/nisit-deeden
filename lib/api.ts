@@ -158,6 +158,32 @@ class ApiClient {
     return this.fetch(`/api/sd/awards/${id}`);
   }
 
+  // SD Request Management
+  async getSDRequests(): Promise<{ data: RequestType[] }> {
+    return this.fetch("/api/sd/requests");
+  }
+
+  async reviewSDRequest(
+    id: string,
+    action: "approve" | "need_docs",
+    comment: string = "",
+  ): Promise<{ message: string; data: any }> {
+    return this.fetch(`/api/sd/requests/${id}/review`, {
+      method: "PATCH",
+      body: JSON.stringify({ action, comment }),
+    });
+  }
+
+  async updateSDAwardType(
+    id: string,
+    newAwardId: string,
+  ): Promise<{ message: string; data: any }> {
+    return this.fetch(`/api/sd/requests/${id}/award-type`, {
+      method: "PUT",
+      body: JSON.stringify({ new_award_id: newAwardId }),
+    });
+  }
+
   async getAvailableAwards(): Promise<{ data: any }> {
     return this.fetch("/api/sd/awards");
   }

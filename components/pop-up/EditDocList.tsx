@@ -29,7 +29,9 @@ const EditDocListContext = React.createContext<
 export const useEditDocListPopUp = () => {
   const ctx = React.useContext(EditDocListContext);
   if (!ctx)
-    throw new Error("useEditDocListPopUp must be used within EditDocListPopUpUI");
+    throw new Error(
+      "useEditDocListPopUp must be used within EditDocListPopUpUI",
+    );
   return ctx;
 };
 
@@ -56,10 +58,11 @@ export const EditDocListPopUpUI: React.FC<React.PropsWithChildren> = ({
     isLoading: false,
   });
 
-  const [selectedFileExtension, setSelectedFileExtension] = React.useState<string>(".pdf");
+  const [selectedFileExtension, setSelectedFileExtension] =
+    React.useState<string>(".pdf");
 
   const [callbacks, setCallbacks] = React.useState<{
-    onConfirm: (docs: string[]) => void | Promise<void>;
+    onConfirm: (docs: DocType[]) => void | Promise<void>;
     onCancel: () => void | Promise<void>;
   }>({
     onConfirm: () => {},
@@ -89,7 +92,7 @@ export const EditDocListPopUpUI: React.FC<React.PropsWithChildren> = ({
 
     // Check for duplicate
     const isDuplicate = state.currentDocs.some(
-      (doc) => doc.name.toLowerCase() === docName.toLowerCase()
+      (doc) => doc.name.toLowerCase() === docName.toLowerCase(),
     );
 
     if (isDuplicate) {
@@ -301,13 +304,12 @@ export const EditDocListPopUpUI: React.FC<React.PropsWithChildren> = ({
                       <button
                         type="button"
                         onClick={() => handleRemoveDoc(index)}
-                        disabled={
-                          state.isLoading || !isRemovable
-                        }
+                        disabled={state.isLoading || !isRemovable}
                         style={{
-                          background: isRemovable && !state.isLoading
-                            ? "#ff4141"
-                            : "#ffabaa",
+                          background:
+                            isRemovable && !state.isLoading
+                              ? "#ff4141"
+                              : "#ffabaa",
                           border: "none",
                           color: "white",
                           cursor:
@@ -329,12 +331,16 @@ export const EditDocListPopUpUI: React.FC<React.PropsWithChildren> = ({
                         }}
                         onMouseEnter={(e) => {
                           if (isRemovable && !state.isLoading) {
-                            (e.target as HTMLButtonElement).style.backgroundColor = "#991b1b";
+                            (
+                              e.target as HTMLButtonElement
+                            ).style.backgroundColor = "#991b1b";
                           }
                         }}
                         onMouseLeave={(e) => {
                           if (isRemovable && !state.isLoading) {
-                            (e.target as HTMLButtonElement).style.backgroundColor = "#dc2626";
+                            (
+                              e.target as HTMLButtonElement
+                            ).style.backgroundColor = "#dc2626";
                           }
                         }}
                         title={

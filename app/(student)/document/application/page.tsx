@@ -11,7 +11,7 @@ import { StudentProfile } from "@/types/student.type";
 function ApplicationPage() {
   const params = useParams();
   const [award, setAward] = useState<Award | null>(null);
-  const [studentInfo, setStudentInfo] = useState<StudentProfile | null>(null);
+  const [studentInfo, setStudentInfo] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +30,9 @@ function ApplicationPage() {
       }
     } catch (err) {
       console.error("Failed to fetch student profile:", err);
-      setError(err instanceof Error ? err.message : "ไม่สามารถดึงข้อมูลนิสิตได้");
+      setError(
+        err instanceof Error ? err.message : "ไม่สามารถดึงข้อมูลนิสิตได้",
+      );
     }
   };
 
@@ -43,7 +45,9 @@ function ApplicationPage() {
       const awards = response.data || [];
 
       // หา award ตาม award_id จาก params
-      const foundAward = awards.find((a: Award) => a.award_id === params.awardId);
+      const foundAward = awards.find(
+        (a: Award) => a.award_id === params.awardId,
+      );
 
       if (foundAward) {
         setAward(foundAward);
@@ -52,7 +56,9 @@ function ApplicationPage() {
       }
     } catch (err) {
       console.error("Failed to fetch award:", err);
-      setError(err instanceof Error ? err.message : "ไม่สามารถดึงข้อมูลรางวัลได้");
+      setError(
+        err instanceof Error ? err.message : "ไม่สามารถดึงข้อมูลรางวัลได้",
+      );
     } finally {
       setLoading(false);
     }
@@ -65,8 +71,8 @@ function ApplicationPage() {
 
     try {
       const formData = new FormData();
-      formData.append("campus_id", award.campus_id);
-      formData.append("award_id", award.award_id);
+      formData.append("campus_id", award.campus_id?.toString() || "");
+      formData.append("award_id", award.award_id || "");
       formData.append("files", file);
 
       console.log("Sending to backend...");
@@ -80,8 +86,6 @@ function ApplicationPage() {
       alert("สมัครไม่สำเร็จ");
     }
   };
-
-
 
   if (error) {
     return (

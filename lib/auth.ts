@@ -3,11 +3,11 @@ import { User } from "@/types/user.type";
 function login(email: string, password: string): Promise<User> {
   // Perform login logic here
   return Promise.resolve({
-    id: "1",
+    user_id: "1",
     email,
     role: "student",
-    first_name: "John",
-    last_name: "Doe",
+    fname: "John",
+    lname: "Doe",
     department: "Computer Science",
   });
 }
