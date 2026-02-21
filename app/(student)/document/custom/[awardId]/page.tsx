@@ -63,9 +63,12 @@ function CustomAwardPage() {
     console.log("🏆 Award ID:", params.awardId);
     console.log("🏫 Campus ID:", award?.campus_id);
 
+    if (!award) return;
+
     const formData = new FormData();
-    formData.append("files", file);
-    formData.append("award_id", params.awardId as string);
+    formData.append("campus_id", String(award.campus_id));
+    formData.append("award_id", award.award_id);
+    formData.append("file", file);  // backend ต้องการ "file" (singular) ไม่ใช่ "files"
 
     try {
       console.log("🚀 Calling API...");

@@ -139,6 +139,16 @@ class ApiClient {
   async createApplication(
       formData: FormData,
   ): Promise<{ message: string; data: RequestType }> {
+    // Debug: แสดง FormData ทั้งหมดที่ส่งไป backend
+    console.log("📤 FormData being sent:");
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`  ${key}: File(name="${value.name}", size=${value.size}, type="${value.type}")`);
+      } else {
+        console.log(`  ${key}: ${value}`);
+      }
+    }
+
     const response = await fetch(`${this.baseURL}/api/student/apply`, {
       method: "POST",
       body: formData,
@@ -147,7 +157,8 @@ class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || "Submit failed");
+      console.error("❌ Backend error response:", errorData);
+      throw new Error(errorData.error || errorData.message || "Submit failed");
     }
 
     return response.json();

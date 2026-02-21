@@ -12,7 +12,8 @@ export type RequestStatus =
     | "REJECTED_BY_HEAD"
     | "REJECTED_BY_VICEDEAN"
     | "REJECTED_BY_DEAN"
-    | "REJECTED_BY_COMMITTEE";
+    | "REJECTED_BY_COMMITTEE"
+    | "COMPLETE";  // รองรับสถานะสมบูรณ์
 
 export interface Request {
   RequestID: string; // UUID

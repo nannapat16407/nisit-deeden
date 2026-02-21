@@ -65,9 +65,9 @@ function ApplicationPage() {
 
     try {
       const formData = new FormData();
-      formData.append("campus_id", award.campus_id);
+      formData.append("campus_id", String(award.campus_id));
       formData.append("award_id", award.award_id);
-      formData.append("files", file);
+      formData.append("file", file);  // backend ต้องการ "file" (singular) ไม่ใช่ "files"
 
       console.log("Sending to backend...");
 

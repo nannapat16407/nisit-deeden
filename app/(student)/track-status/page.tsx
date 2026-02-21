@@ -36,6 +36,17 @@ interface RequestLog {
   timestamp: string;
 }
 
+// Display log type for rendering in UI
+interface DisplayLog {
+  icon: React.ReactNode;
+  color: string;
+  label: string;
+  timestamp: string;
+  statusText: string;
+  approverName?: string;
+  isFromData: boolean;
+}
+
 const TIMELINE_STEPS = [
   { key: "head", label: "หัวหน้าภาค" },
   { key: "vice_dean", label: "รองคณบดี" },
@@ -52,11 +63,12 @@ const STATUS_COLORS = {
   PENDING_SD: { bg: "bg-blue-100", text: "text-blue-800", border: "border-blue-300" },
   PENDING_COMMITTEE: { bg: "bg-indigo-100", text: "text-indigo-800", border: "border-indigo-300" },
   PENDING_PRESIDENT: { bg: "bg-pink-100", text: "text-pink-800", border: "border-pink-300" },
-  NEEDS_DOCS: { bg: "bg-gray-100", text: "text-gray-800", border: "border-gray-300" },
+  NEEDS_DOCS: { bg: "bg-yellow-100", text: "text-yellow-800", border: "border-yellow-300" },
   REJECTED_BY_HEAD: { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" },
   REJECTED_BY_VICEDEAN: { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" },
   REJECTED_BY_DEAN: { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" },
   REJECTED_BY_COMMITTEE: { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" },
+  COMPLETE: { bg: "bg-green-100", text: "text-green-800", border: "border-green-300" },
 };
 
 
@@ -72,6 +84,7 @@ const STATUS_TO_STEP = {
   REJECTED_BY_VICEDEAN: 2,
   REJECTED_BY_DEAN: 3,
   REJECTED_BY_COMMITTEE: 5,
+  COMPLETE: 6,
 };
 
 function TrackStatusPage() {
@@ -189,18 +202,19 @@ function TrackStatusPage() {
 
   const isRejectedStatus = (status: RequestStatus): boolean => status.startsWith("REJECTED_BY_");
 
-  const statusThai: Record<RequestStatus, string> = {
+  const statusThai: Record<RequestStatus | string, string> = {
     PENDING_HEAD: "หัวหน้าภาค อยู่ระหว่างการพิจารณา",
     PENDING_VICEDEAN: "รองคณบดี อยู่ระหว่างการพิจารณา",
     PENDING_DEAN: "คณบดี อยู่ระหว่างการพิจารณา",
     PENDING_SD: "กองพัฒนานิสิต อยู่ระหว่างการตรวจสอบ",
     PENDING_COMMITTEE: "คณะกรรมการ อยู่ระหว่างการพิจารณา",
-    PENDING_PRESIDENT: "อธิการบดี อนุมัติแล้ว",
+    PENDING_PRESIDENT: "อธิการบดี อยู่ระหว่างการพิจารณา",
     NEEDS_DOCS: "ต้องการเอกสารเพิ่มเติม",
     REJECTED_BY_HEAD: "หัวหน้าภาค ไม่อนุมัติ",
     REJECTED_BY_VICEDEAN: "รองคณบดี ไม่อนุมัติ",
     REJECTED_BY_DEAN: "คณบดี ไม่อนุมัติ",
     REJECTED_BY_COMMITTEE: "คณะกรรมการ ไม่อนุมัติ",
+    COMPLETE: "ดำเนินการครบถ้วนสมบูรณ์",
   };
 
   const getStatusLabel = (status: RequestStatus): string => {
@@ -345,42 +359,278 @@ function TrackStatusPage() {
     return "-";
   };
 
-  // Status icon logic for สถานะล่าสุด section
-  const getStatusIconInfo = (status: RequestStatus): { icon: React.ReactNode; color: string; label: string } => {
-    const pendingStates: RequestStatus[] = [
-      "PENDING_HEAD", "PENDING_VICEDEAN", "PENDING_DEAN",
-      "PENDING_SD", "PENDING_COMMITTEE", "PENDING_PRESIDENT", "NEEDS_DOCS"
-    ];
-    const rejectedStates: RequestStatus[] = [
-      "REJECTED_BY_HEAD", "REJECTED_BY_VICEDEAN",
-      "REJECTED_BY_DEAN", "REJECTED_BY_COMMITTEE"
-    ];
+  const currentStatusColors = statusToUse ? STATUS_COLORS[statusToUse] : null;
 
-    if (pendingStates.includes(status)) {
-      return {
-        icon: <RefreshCw className="w-16 h-16" />,
-        color: "text-yellow-500",
-        label: "รอพิจารณา"
-      };
+  // Build display logs for Section 3: สถานะล่าสุด
+  const buildDisplayLogs = (detail: RequestDetailResponse): DisplayLog[] => {
+    const result: DisplayLog[] = [];
+    const logs = detail.logs || [];
+    const currentStatus = detail.status;
+
+    // กรณีไม่มี logs เลย - แสดงกล่องเดียวจาก status
+    if (logs.length === 0) {
+      const displayInfo = getDisplayInfoForAction(currentStatus, "current", "");
+      result.push({
+        icon: displayInfo.icon,
+        color: displayInfo.color,
+        label: displayInfo.label,
+        timestamp: formatThaiDate(detail.created_at),
+        statusText: displayInfo.statusText,
+        approverName: undefined,
+        isFromData: true,
+      });
+      return result;
     }
 
-    if (rejectedStates.includes(status)) {
+    // เงื่อนไขพิเศษ: มีเพียง 1 log และเป็น PENDING_HEAD
+    // แสดงแค่ 1 กล่อง pending head เท่านั้น
+    if (logs.length === 1 && logs[0].action === "PENDING_HEAD") {
+      const displayInfo = getDisplayInfoForAction("PENDING_HEAD", "current", currentStatus);
+      result.push({
+        icon: displayInfo.icon,
+        color: displayInfo.color,
+        label: displayInfo.label,
+        timestamp: formatThaiDate(logs[0].timestamp),
+        statusText: displayInfo.statusText,
+        approverName: undefined,
+        isFromData: false,
+      });
+      return result;
+    }
+
+    // Sort logs by timestamp descending (latest first = บนสุด)
+    const sortedLogs = [...logs].sort((a, b) =>
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+    // ประมวลผล logs ทั้งหมด
+    for (let i = 0; i < sortedLogs.length; i++) {
+      const log = sortedLogs[i];
+      const isLatest = i === 0;
+      const action = log.action;
+
+      // ถ้ามีหลาย logs และเจอ PENDING_HEAD ให้ข้าม (ห้ามแสดง)
+      if (action === "PENDING_HEAD") {
+        continue;
+      }
+
+      // กำหนด mode สำหรับ getDisplayInfoForAction
+      let mode: "current" | "accept" = "current";
+
+      // ถ้าไม่ใช่ล่าสุด และเป็น PENDING_* ให้ถือว่าเป็น accept ของขั้นก่อนหน้า
+      if (!isLatest && action.startsWith("PENDING_")) {
+        mode = "accept";
+      }
+
+      // กำหนดว่าต้องแสดงผู้พิจารณาหรือไม่
+      let showApprover = false;
+
+      if (!isLatest) {
+        // log เก่า: แสดงผู้พิจารณาเสมอ (accept)
+        showApprover = true;
+      } else {
+        // log ล่าสุด: แสดงผู้พิจารณาเฉพาะกรณีที่กำหนด
+        const isRejected = action.startsWith("REJECTED_BY_");
+        const isComplete = action === "COMPLETE";
+        showApprover = isRejected || isComplete;
+      }
+
+      const displayInfo = getDisplayInfoForAction(action, mode, currentStatus);
+
+      result.push({
+        icon: displayInfo.icon,
+        color: displayInfo.color,
+        label: displayInfo.label,
+        timestamp: formatThaiDate(log.timestamp),
+        statusText: displayInfo.statusText,
+        approverName: showApprover ? (log.approver_name || "-") : undefined,
+        isFromData: false,
+      });
+
+      // กรณี log ล่าสุด = PENDING_{VICEDEAN/DEAN/SD/COMMITTEE/PRESIDENT}
+      // ต้องสร้าง 2 กล่อง: current (รอ) + accept (ของก่อนหน้า)
+      if (isLatest && ["PENDING_VICEDEAN", "PENDING_DEAN", "PENDING_SD", "PENDING_COMMITTEE", "PENDING_PRESIDENT"].includes(action)) {
+        // เพิ่มกล่อง accept ของขั้นก่อนหน้า (ใช้ log เดียวกัน แต่ mode = accept)
+        const acceptDisplayInfo = getDisplayInfoForAction(action, "accept", currentStatus);
+        result.push({
+          icon: acceptDisplayInfo.icon,
+          color: acceptDisplayInfo.color,
+          label: acceptDisplayInfo.label,
+          timestamp: formatThaiDate(log.timestamp), // ใช้ timestamp เดียวกัน
+          statusText: acceptDisplayInfo.statusText,
+          approverName: log.approver_name || "-",
+          isFromData: false,
+        });
+      }
+    }
+
+    // เรียง logs ตาม timestamp จากใหม่ → เก่า (บน-ล่าง)
+    // result อยู่ในลำดับที่ถูกต้องแล้ว (latest first)
+    return result;
+  };
+
+  // Get display info (icon, color, label, statusText) from action
+  // mode: "current" = ขั้นตอนปัจจุบัน, "accept" = accept ของขั้นก่อนหน้า
+  const getDisplayInfoForAction = (
+    action: string,
+    mode: "current" | "accept",
+    currentStatus: string
+  ): {
+    icon: React.ReactNode;
+    color: string;
+    label: string;
+    statusText: string;
+  } => {
+    // REJECTED_BY_X states
+    if (action.startsWith("REJECTED_BY_")) {
+      const statusText = getStatusTextFromAction(action);
       return {
         icon: <X className="w-16 h-16" />,
         color: "text-red-500",
-        label: "ปฏิเสธ"
+        label: "ปฏิเสธ",
+        statusText,
       };
     }
 
-    // Approved state (PENDING_PRESIDENT means final approval)
+    // NEEDS_DOC state
+    if (action === "NEEDS_DOC") {
+      return {
+        icon: <RefreshCw className="w-16 h-16" />,
+        color: "text-red-500",
+        label: "รอพิจารณา",
+        statusText: "กองพัฒนานิสิต ต้องการเอกสารเพิ่มเติม",
+      };
+    }
+
+    // COMPLETE state
+    if (action === "COMPLETE") {
+      return {
+        icon: <Check className="w-16 h-16" />,
+        color: "text-green-500",
+        label: "อนุมัติ",
+        statusText: "อธิการบดี อนุมัติ",
+      };
+    }
+
+    // PENDING states mapping
+    const pendingMapping: Record<string, {
+      currentStep: { statusText: string; label: string; color: string };
+      acceptStep: { statusText: string; label: string; color: string };
+    }> = {
+      PENDING_VICEDEAN: {
+        currentStep: {
+          statusText: "รองคณบดี อยู่ระหว่างการพิจารณา",
+          label: "รอพิจารณา",
+          color: "text-yellow-500"
+        },
+        acceptStep: {
+          statusText: "หัวหน้าภาค อนุมัติแล้ว",
+          label: "อนุมัติแล้ว",
+          color: "text-green-500"
+        },
+      },
+      PENDING_DEAN: {
+        currentStep: {
+          statusText: "คณบดี อยู่ระหว่างการพิจารณา",
+          label: "รอพิจารณา",
+          color: "text-yellow-500"
+        },
+        acceptStep: {
+          statusText: "รองคณบดี อนุมัติแล้ว",
+          label: "อนุมัติแล้ว",
+          color: "text-green-500"
+        },
+      },
+      PENDING_SD: {
+        currentStep: {
+          statusText: "กองพัฒนานิสิต อยู่ระหว่างการพิจารณา",
+          label: "รอพิจารณา",
+          color: "text-yellow-500"
+        },
+        acceptStep: {
+          statusText: "คณบดี อนุมัติแล้ว",
+          label: "อนุมัติแล้ว",
+          color: "text-green-500"
+        },
+      },
+      PENDING_COMMITTEE: {
+        currentStep: {
+          statusText: "คณะกรรมการ อยู่ระหว่างการพิจารณา",
+          label: "รอพิจารณา",
+          color: "text-yellow-500"
+        },
+        acceptStep: {
+          statusText: "กองพัฒนานิสิต อนุมัติแล้ว",
+          label: "อนุมัติแล้ว",
+          color: "text-green-500"
+        },
+      },
+      PENDING_PRESIDENT: {
+        currentStep: {
+          statusText: "อธิการบดี อยู่ระหว่างการพิจารณา",
+          label: "รอพิจารณา",
+          color: "text-yellow-500"
+        },
+        acceptStep: {
+          statusText: "คณะกรรมการ อนุมัติแล้ว",
+          label: "อนุมัติแล้ว",
+          color: "text-green-500"
+        },
+      },
+      PENDING_HEAD: {
+        currentStep: {
+          statusText: "หัวหน้าภาค อยู่ระหว่างการพิจารณา",
+          label: "รอพิจารณา",
+          color: "text-yellow-500"
+        },
+        acceptStep: {
+          statusText: "หัวหน้าภาค อยู่ระหว่างการพิจารณา",
+          label: "รอพิจารณา",
+          color: "text-yellow-500"
+        },
+      },
+    };
+
+    const mapping = pendingMapping[action];
+    if (mapping) {
+      if (mode === "current") {
+        // กล่องบนสุด (ขั้นตอนปัจจุบัน) = รอพิจารณา (เหลือง)
+        return {
+          icon: <RefreshCw className="w-16 h-16" />,
+          color: mapping.currentStep.color,
+          label: mapping.currentStep.label,
+          statusText: mapping.currentStep.statusText,
+        };
+      } else {
+        // กล่อง accept (ขั้นก่อนหน้า) = อนุมัติแล้ว (เขียว)
+        return {
+          icon: <Check className="w-16 h-16" />,
+          color: mapping.acceptStep.color,
+          label: mapping.acceptStep.label,
+          statusText: mapping.acceptStep.statusText,
+        };
+      }
+    }
+
+    // Fallback
     return {
-      icon: <Check className="w-16 h-16" />,
-      color: "text-green-500",
-      label: "อนุมัติ"
+      icon: <RefreshCw className="w-16 h-16" />,
+      color: "text-yellow-500",
+      label: "รอพิจารณา",
+      statusText: action,
     };
   };
 
-  const currentStatusColors = statusToUse ? STATUS_COLORS[statusToUse] : null;
+  // Get Thai status text from action string (สำหรับ REJECTED_BY_X)
+  const getStatusTextFromAction = (action: string): string => {
+    const statusMap: Record<string, string> = {
+      REJECTED_BY_HEAD: "หัวหน้าภาค ไม่อนุมัติ",
+      REJECTED_BY_VICEDEAN: "รองคณบดี ไม่อนุมัติ",
+      REJECTED_BY_DEAN: "คณบดี ไม่อนุมัติ",
+      REJECTED_BY_COMMITTEE: "คณะกรรมการ ไม่อนุมัติ",
+    };
+    return statusMap[action] || action;
+  };
 
   return (
     <div className="min-h-screen font-noto">
@@ -476,51 +726,59 @@ function TrackStatusPage() {
               <div>
                 <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-4">สถานะล่าสุด</h2>
                 <div className="w-full h-px bg-gray-200 my-4" />
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  {detailLoading ? (
+                {detailLoading ? (
+                  <div className="bg-white rounded-lg shadow-sm p-6">
                     <div className="flex items-center justify-center py-12">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005F52]"></div>
                     </div>
-                  ) : requestDetail ? (
-                    <div className="flex gap-6">
-                      {/* LEFT COLUMN: Icon */}
-                      <div className="flex-shrink-0 flex flex-col items-center">
-                        <div className={getStatusIconInfo(requestDetail.status).color}>
-                          {getStatusIconInfo(requestDetail.status).icon}
+                  </div>
+                ) : requestDetail ? (
+                  <div className="space-y-3">
+                    {buildDisplayLogs(requestDetail).map((log, index) => (
+                      <div key={index} className="bg-white rounded-lg shadow-sm p-6">
+                        <div className="flex gap-6">
+                          {/* LEFT COLUMN: Icon */}
+                          <div className="flex-shrink-0 flex flex-col items-center">
+                            <div className={log.color}>
+                              {log.icon}
+                            </div>
+                            <p className="mt-2 text-sm text-black">
+                              {log.label}
+                            </p>
+                          </div>
+
+                          {/* RIGHT COLUMN: Details */}
+                          <div className="flex-1 space-y-3">
+                            {/* วันที่เวลา */}
+                            <p className="text-base text-gray-500">
+                              {log.timestamp}
+                            </p>
+
+                            {/* สถานะ */}
+                            <p className="text-base text-gray-900">
+                              <span className="font-bold">สถานะ</span>{" "}
+                              <span className="font-normal">{log.statusText}</span>
+                            </p>
+
+                            {/* ผู้พิจารณา - แสดงเฉพาะ log boxes (ไม่ใช่กล่องบนสุดจาก data) */}
+                            {!log.isFromData && log.approverName && (
+                              <p className="text-base text-gray-900">
+                                <span className="font-bold">ผู้พิจารณา</span>{" "}
+                                <span className="font-normal">{log.approverName}</span>
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <p className="mt-2 text-sm text-black">
-                          {getStatusIconInfo(requestDetail.status).label}
-                        </p>
                       </div>
-
-                      {/* RIGHT COLUMN: Details */}
-                      <div className="flex-1 space-y-3">
-                        {/* วันที่เวลา */}
-                        <p className="text-base text-gray-500">
-                          {formatThaiDate(requestDetail.created_at)}
-                        </p>
-
-                        {/* สถานะ */}
-                        <p className="text-base text-gray-900">
-                          <span className="font-bold">สถานะ</span>{" "}
-                          <span className="font-normal">{requestDetail.status_thai || "-"}</span>
-                        </p>
-
-                        {/* ผู้พิจารณา */}
-                        <p className="text-base text-gray-900">
-                          <span className="font-bold">ผู้พิจารณา</span>{" "}
-                          {requestDetail.logs && requestDetail.logs.length > 0
-                            ? requestDetail.logs[0].approver_name
-                            : "-"}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-lg shadow-sm p-6">
                     <div className="text-center py-8 text-gray-400">
                       ไม่พบข้อมูลสถานะ
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </>
         )}
