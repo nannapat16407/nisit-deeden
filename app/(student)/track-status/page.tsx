@@ -45,6 +45,8 @@ interface DisplayLog {
   statusText: string;
   approverName?: string;
   isFromData: boolean;
+  comment?: string;
+  isReject?: boolean;
 }
 
 const TIMELINE_STEPS = [
@@ -95,6 +97,8 @@ function TrackStatusPage() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openRejectModal, setOpenRejectModal] = useState(false);
+  const [rejectComment, setRejectComment] = useState<string>("");
 
   // Fetch list of requests
   useEffect(() => {
@@ -384,6 +388,8 @@ function TrackStatusPage() {
         statusText: displayInfo.statusText,
         approverName: undefined,
         isFromData: true,
+        comment: undefined,
+        isReject: false,
       });
       return result;
     }
@@ -400,6 +406,8 @@ function TrackStatusPage() {
         statusText: displayInfo.statusText,
         approverName: undefined,
         isFromData: false,
+        comment: logs[0].comment,
+        isReject: false,
       });
       return result;
     }
@@ -414,6 +422,7 @@ function TrackStatusPage() {
       const log = sortedLogs[i];
       const isLatest = i === 0;
       const action = log.action;
+      const isRejected = action.startsWith("REJECTED_BY_");
 
       // ถ้ามีหลาย logs และเจอ PENDING_HEAD ให้ข้าม (ห้ามแสดง)
       if (action === "PENDING_HEAD") {
@@ -436,7 +445,6 @@ function TrackStatusPage() {
         showApprover = true;
       } else {
         // log ล่าสุด: แสดงผู้พิจารณาเฉพาะกรณีที่กำหนด
-        const isRejected = action.startsWith("REJECTED_BY_");
         const isComplete = action === "COMPLETE";
         showApprover = isRejected || isComplete;
       }
@@ -451,6 +459,8 @@ function TrackStatusPage() {
         statusText: displayInfo.statusText,
         approverName: showApprover ? (log.approver_name || "-") : undefined,
         isFromData: false,
+        comment: log.comment,
+        isReject: isRejected,
       });
 
       // กรณี log ล่าสุด = PENDING_{VICEDEAN/DEAN/SD/COMMITTEE/PRESIDENT}
@@ -466,6 +476,8 @@ function TrackStatusPage() {
           statusText: acceptDisplayInfo.statusText,
           approverName: log.approver_name || "-",
           isFromData: false,
+          comment: log.comment,
+          isReject: false,
         });
       }
     }
@@ -774,6 +786,21 @@ function TrackStatusPage() {
                               </p>
                             )}
                           </div>
+
+                          {/* ปุ่มเหตุผลการปฏิเสธ - เฉพาะกรณี reject */}
+                          {log.isReject && (
+                            <div className="flex-shrink-0 flex items-start">
+                              <button
+                                className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors text-sm font-medium"
+                                onClick={() => {
+                                  setRejectComment(log.comment || "-");
+                                  setOpenRejectModal(true);
+                                }}
+                              >
+                                เหตุผลการปฏิเสธ &gt;
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -797,6 +824,40 @@ function TrackStatusPage() {
                 ลองใหม่
               </button>
             </div>
+        )}
+
+        {/* Modal: เหตุผลการปฏิเสธ */}
+        {openRejectModal && (
+          <div
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+            onClick={() => setOpenRejectModal(false)}
+          >
+            <div
+              className="bg-white w-[90%] max-w-[600px] rounded-xl shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header: สีแดง */}
+              <div className="relative bg-red-500 text-white py-4 px-6">
+                <h2 className="text-lg font-semibold text-center">
+                  เหตุผลการปฏิเสธ
+                </h2>
+
+                <button
+                  onClick={() => setOpenRejectModal(false)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-xl hover:opacity-80 transition-opacity"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Body: แสดงเหตุผล */}
+              <div className="p-8 min-h-[240px] max-h-[400px] overflow-y-auto">
+                <p className="text-gray-700 text-base leading-relaxed whitespace-pre-wrap">
+                  {rejectComment}
+                </p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
