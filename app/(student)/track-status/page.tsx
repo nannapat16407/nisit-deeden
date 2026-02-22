@@ -79,7 +79,7 @@ const STATUS_TO_STEP = {
   PENDING_SD: 4,
   PENDING_COMMITTEE: 5,
   PENDING_PRESIDENT: 6,
-  NEEDS_DOCS: 5,
+  NEEDS_DOCS: 4,  // กองพัฒนานิสิต
   REJECTED_BY_HEAD: 1,
   REJECTED_BY_VICEDEAN: 2,
   REJECTED_BY_DEAN: 3,
@@ -305,6 +305,7 @@ function TrackStatusPage() {
 
     const currentStep = STATUS_TO_STEP[statusToUse];
     const isRejected = isRejectedStatus(statusToUse);
+    const isNeedsDocs = statusToUse === "NEEDS_DOCS" || statusToUse === "NEEDS_DOC";
 
     // Rejected state at current step
     if (isRejected && currentStep === stepNumber) {
@@ -323,6 +324,11 @@ function TrackStatusPage() {
           <path d="M20 6 9 17l-5-5" />
         </svg>
       );
+    }
+
+    // NEEDS_DOCS state - use exclamation mark icon
+    if (isNeedsDocs && currentStep === stepNumber) {
+      return <span className="text-3xl font-bold text-white">!</span>;
     }
 
     // Pending state - use RefreshCw icon with spin animation
@@ -492,12 +498,12 @@ function TrackStatusPage() {
       };
     }
 
-    // NEEDS_DOC state
-    if (action === "NEEDS_DOC") {
+    // NEEDS_DOC / NEEDS_DOCS state
+    if (action === "NEEDS_DOCS") {
       return {
-        icon: <RefreshCw className="w-16 h-16" />,
-        color: "text-red-500",
-        label: "รอพิจารณา",
+        icon: <span className="text-6xl font-bold text-yellow-500">!</span>,
+        color: "text-yellow-500",
+        label: "เอกสารเพิ่ม",
         statusText: "กองพัฒนานิสิต ต้องการเอกสารเพิ่มเติม",
       };
     }
@@ -506,7 +512,7 @@ function TrackStatusPage() {
     if (action === "COMPLETE") {
       return {
         icon: <Check className="w-16 h-16" />,
-        color: "text-green-500",
+        color: "text-[#599fa0]",
         label: "อนุมัติ",
         statusText: "อธิการบดี อนุมัติ",
       };
@@ -526,7 +532,7 @@ function TrackStatusPage() {
         acceptStep: {
           statusText: "หัวหน้าภาค อนุมัติแล้ว",
           label: "อนุมัติแล้ว",
-          color: "text-green-500"
+          color: "text-[#599fa0]"
         },
       },
       PENDING_DEAN: {
@@ -538,7 +544,7 @@ function TrackStatusPage() {
         acceptStep: {
           statusText: "รองคณบดี อนุมัติแล้ว",
           label: "อนุมัติแล้ว",
-          color: "text-green-500"
+          color: "text-[#599fa0]"
         },
       },
       PENDING_SD: {
@@ -550,7 +556,7 @@ function TrackStatusPage() {
         acceptStep: {
           statusText: "คณบดี อนุมัติแล้ว",
           label: "อนุมัติแล้ว",
-          color: "text-green-500"
+          color: "text-[#599fa0]"
         },
       },
       PENDING_COMMITTEE: {
@@ -562,7 +568,7 @@ function TrackStatusPage() {
         acceptStep: {
           statusText: "กองพัฒนานิสิต อนุมัติแล้ว",
           label: "อนุมัติแล้ว",
-          color: "text-green-500"
+          color: "text-[#599fa0]"
         },
       },
       PENDING_PRESIDENT: {
@@ -574,7 +580,7 @@ function TrackStatusPage() {
         acceptStep: {
           statusText: "คณะกรรมการ อนุมัติแล้ว",
           label: "อนุมัติแล้ว",
-          color: "text-green-500"
+          color: "text-[#599fa0]"
         },
       },
       PENDING_HEAD: {
