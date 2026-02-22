@@ -30,16 +30,14 @@ export default function RequestPeriodRewardsPage({
   const fetchAwards = async () => {
     try {
       setLoading(true);
-      // Fetch all awards and filter by period_id client-side as fallback mechanism
-      // This assumes api.getAvailableAwards() (student endpoint) or a similar endpoint.
-      // Ideally we should use a proper endpoint like GET /sd/periods/:id/awards
-      // But based on available API methods in lib/api.ts, we reuse existing methods.
-      const response = await api.getAvailableAwards();
+      const response: any = await api.getAvailableAwards();
+      console.log(response.data);
 
-      const periodAwards = response.data.filter(
-        (a) => a.period_id === periodId,
+      const periodGroup = response.data?.find(
+        (p: any) => p.period_id === periodId,
       );
-      setAwards(periodAwards);
+
+      setAwards(periodGroup?.awards || []);
 
       setError(null);
     } catch (err: any) {
@@ -62,17 +60,55 @@ export default function RequestPeriodRewardsPage({
     setIsModalOpen(true);
   };
 
-  const handleEdit = (award: Award) => {
-    setEditingAward(award);
-    setIsModalOpen(true);
+  const handleEdit = async (award: Award) => {
+    try {
+      const res = await api.getAward(award.award_id);
+      setEditingAward(res.data);
+      setIsModalOpen(true);
+    } catch (e) {
+      setAlert({
+        open: true,
+        msg: "ไม่สามารถดึงข้อมูลรายละเอียดเพิ่มเติมได้",
+        severity: "error",
+      });
+    }
   };
 
-  const handleToggleStatus = (id: string, currentStatus: boolean) => {
-    setAlert({
-      open: true,
-      msg: "ระบบเปลี่ยนสถานะยังไม่เปิดใช้งาน",
-      severity: "info",
-    });
+  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
+    const awardToUpdate = awards.find((a) => a.award_id === id);
+    if (!awardToUpdate) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("award_type", awardToUpdate.award_type || "General");
+      formData.append("award_name", awardToUpdate.award_name);
+      formData.append("description", awardToUpdate.description || "");
+      formData.append(
+        "requirement_json",
+        awardToUpdate.requirement_json || "[]",
+      );
+      formData.append("is_active", (!currentStatus).toString());
+      formData.append("campus_id", awardToUpdate.campus_id?.toString() || "1");
+      formData.append("period_id", periodId);
+
+      const res = await api.updateAward(id, formData);
+
+      setAwards(awards.map((a) => (a.award_id === id ? res.data : a)));
+
+      setAlert({
+        open: true,
+        msg: `เปลี่ยนสถานะรางวัลเป็น ${!currentStatus ? "เปิดใช้งาน" : "ปิดใช้งาน"} สำเร็จ`,
+        severity: "success",
+      });
+    } catch (err: any) {
+      setAlert({
+        open: true,
+        msg:
+          "เกิดข้อผิดพลาดในการเปลี่ยนสถานะ: " +
+          (err.message || "Unknown error"),
+        severity: "error",
+      });
+    }
   };
 
   const handlDelete = async (id: string) => {
@@ -98,33 +134,17 @@ export default function RequestPeriodRewardsPage({
   // Typo fix: handleDelete
   const handleDelete = handlDelete;
 
-  const handleSave = async (awardData: Partial<Award>) => {
+  const handleSave = async (formData: FormData, awardId?: string) => {
     try {
-      // Validated Payload
-      const payload = {
-        campus_id: 1, // Default
-        award_type: "General",
-        award_name: awardData.award_name || "New Award",
-        description: awardData.description || "",
-        template_file_url: awardData.template_file_url || "",
-        requirement_json: awardData.requirement_json || "[]",
-        is_active:
-          awardData.is_active !== undefined ? awardData.is_active : true,
-        period_id: periodId,
-      };
+      formData.append("campus_id", "1"); // Default
+      formData.append("period_id", periodId);
 
-      if (awardData.award_id) {
+      if (awardId) {
         // Edit
-        await api.updateAward(awardData.award_id, payload);
+        const res = await api.updateAward(awardId, formData);
 
         // Update local state
-        setAwards(
-          awards.map((a) =>
-            a.award_id === awardData.award_id
-              ? { ...a, ...payload, award_id: awardData.award_id }
-              : a,
-          ),
-        );
+        setAwards(awards.map((a) => (a.award_id === awardId ? res.data : a)));
 
         setAlert({
           open: true,
@@ -133,7 +153,7 @@ export default function RequestPeriodRewardsPage({
         });
       } else {
         // Create
-        await api.createAward(payload);
+        await api.createAward(formData);
         await fetchAwards();
         setAlert({ open: true, msg: "สร้างรางวัลสำเร็จ", severity: "success" });
       }
@@ -204,7 +224,7 @@ export default function RequestPeriodRewardsPage({
         <div className="text-center py-20 text-red-500">{error}</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {awards.map((award) => (
+          {awards?.map((award) => (
             <AwardCard
               key={award.award_id}
               award={award}
@@ -213,7 +233,7 @@ export default function RequestPeriodRewardsPage({
               onDelete={handleDelete}
             />
           ))}
-          {awards.length === 0 && (
+          {(!awards || awards.length === 0) && (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400 col-span-full border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
               <svg
                 xmlns="http://www.w3.org/2000/svg"

@@ -78,10 +78,10 @@ function RequestPeriod() {
       const academicYearNum = parseInt(academicYearStr);
       const semesterNum = parseInt(semesterStr);
       const startDate = new Date(
-        periodData.period_start || new Date().toISOString(),
+        periodData.start_date || new Date().toISOString(),
       );
       const endDate = new Date(
-        periodData.period_end || new Date().toISOString(),
+        periodData.end_date || new Date().toISOString(),
       );
 
       // --- Business Logic Validation ---
@@ -140,8 +140,8 @@ function RequestPeriod() {
       const payload = {
         academic_year: academicYearNum,
         semester: semesterNum,
-        period_start: startDate.toISOString(),
-        period_end: endDate.toISOString(),
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
         campus_id: 1,
         is_active: periodData.is_active,
       };

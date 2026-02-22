@@ -21,12 +21,14 @@ function DocumentPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Mock: ตรวจสอบว่ายื่นรางวัลแล้วหรือไม่ (จาก localStorage)
-  const submittedAwardId = typeof window !== "undefined"
-    ? localStorage.getItem("submittedAwardId")
-    : null;
-  const submittedAwardName = typeof window !== "undefined"
-    ? localStorage.getItem("submittedAwardName")
-    : null;
+  const submittedAwardId =
+    typeof window !== "undefined"
+      ? localStorage.getItem("submittedAwardId")
+      : null;
+  const submittedAwardName =
+    typeof window !== "undefined"
+      ? localStorage.getItem("submittedAwardName")
+      : null;
 
   // Fetch awards from API
   useEffect(() => {
@@ -36,7 +38,7 @@ function DocumentPage() {
         const awardData = res.data || [];
 
         // Map API data to component format
-        const awardTypes = awardData.map((award) => ({
+        const awardTypes = awardData.map((award: any) => ({
           id: award.award_id,
           title: award.award_name,
           route: `/document/custom/${award.award_id}`,
@@ -68,8 +70,8 @@ function DocumentPage() {
       {/* กล่องนับถอยหลัง (Countdown Box) - ใช้ component ของ Document */}
       {currentPeriod && (
         <CountDownBox
-          periodStart={currentPeriod.period_start}
-          periodEnd={currentPeriod.period_end}
+          periodStart={currentPeriod.start_date}
+          periodEnd={currentPeriod.end_date}
           academicYear={currentPeriod.academic_year}
           semester={currentPeriod.semester}
         />

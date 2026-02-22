@@ -73,7 +73,6 @@ const STATUS_COLORS = {
   COMPLETE: { bg: "bg-green-100", text: "text-green-800", border: "border-green-300" },
 };
 
-
 const STATUS_TO_STEP = {
   PENDING_HEAD: 1,
   PENDING_VICEDEAN: 2,
@@ -93,7 +92,8 @@ function TrackStatusPage() {
   const router = useRouter();
   const { user, loading: authLoading, isAuthenticated } = useAuth();
   const [requests, setRequests] = useState<MyRequestResponse[]>([]);
-  const [requestDetail, setRequestDetail] = useState<RequestDetailResponse | null>(null);
+  const [requestDetail, setRequestDetail] =
+    useState<RequestDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,10 +108,12 @@ function TrackStatusPage() {
         const res = await api.getMyRequests();
         const data = res.data || [];
         // Sort by created_at descending to get the latest first
-        const sortedData = data.sort((a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        const sortedData = data.sort(
+          (a, b) =>
+            new Date(b.created_at || b.CreatedAt || 0).getTime() -
+            new Date(a.created_at || a.CreatedAt || 0).getTime(),
         );
-        setRequests(sortedData);
+        setRequests(sortedData as any);
       } catch (err) {
         console.error("Failed to fetch requests", err);
         setError("ไม่สามารถโหลดข้อมูลคำร้องได้");
@@ -125,17 +127,22 @@ function TrackStatusPage() {
   // Fetch detailed request info (logs, status_thai) when we have the latest request_id
   useEffect(() => {
     const fetchRequestDetail = async () => {
-      const latestRequestId = requests.length > 0 ? requests[0]?.request_id : null;
+      const latestRequestId =
+        requests.length > 0 ? requests[0]?.request_id : null;
       if (!latestRequestId) {
         setDetailLoading(false);
         return;
       }
 
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8008";
-        const response = await fetch(`${API_URL}/api/student/my-requests/${latestRequestId}`, {
-          credentials: "include",
-        });
+        const API_URL =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8008";
+        const response = await fetch(
+          `${API_URL}/api/student/my-requests/${latestRequestId}`,
+          {
+            credentials: "include",
+          },
+        );
 
         if (!response.ok) {
           throw new Error("Failed to fetch request detail");
@@ -171,7 +178,10 @@ function TrackStatusPage() {
   };
 
   // Helper to format review round
-  const formatReviewRound = (semester: number | undefined, academicYear: number | undefined): string => {
+  const formatReviewRound = (
+    semester: number | undefined,
+    academicYear: number | undefined,
+  ): string => {
     const semesterText = formatSemester(semester);
     const year = academicYear ?? "-";
     return semesterText !== "-" ? `${semesterText} ปีการศึกษา ${year}` : "-";
@@ -181,9 +191,18 @@ function TrackStatusPage() {
   const formatThaiDate = (isoString: string): string => {
     const date = new Date(isoString);
     const thaiMonths = [
-      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน",
-      "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม",
-      "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+      "มกราคม",
+      "กุมภาพันธ์",
+      "มีนาคม",
+      "เมษายน",
+      "พฤษภาคม",
+      "มิถุนายน",
+      "กรกฎาคม",
+      "สิงหาคม",
+      "กันยายน",
+      "ตุลาคม",
+      "พฤศจิกายน",
+      "ธันวาคม",
     ];
     const day = date.getDate();
     const month = thaiMonths[date.getMonth()];
@@ -195,7 +214,20 @@ function TrackStatusPage() {
 
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
-    const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+    const thaiMonths = [
+      "ม.ค.",
+      "ก.พ.",
+      "มี.ค.",
+      "เม.ย.",
+      "พ.ค.",
+      "มิ.ย.",
+      "ก.ค.",
+      "ส.ค.",
+      "ก.ย.",
+      "ต.ค.",
+      "พ.ย.",
+      "ธ.ค.",
+    ];
     const day = date.getDate();
     const month = thaiMonths[date.getMonth()];
     const year = date.getFullYear() + 543;
@@ -204,7 +236,8 @@ function TrackStatusPage() {
     return `${day} ${month} ${year} เวลา ${hours}:${minutes}`;
   };
 
-  const isRejectedStatus = (status: RequestStatus): boolean => status.startsWith("REJECTED_BY_");
+  const isRejectedStatus = (status: RequestStatus): boolean =>
+    status.startsWith("REJECTED_BY_");
 
   const statusThai: Record<RequestStatus | string, string> = {
     PENDING_HEAD: "หัวหน้าภาค อยู่ระหว่างการพิจารณา",
@@ -225,7 +258,9 @@ function TrackStatusPage() {
     return statusThai[status];
   };
 
-  const getStepState = (stepNumber: number): "completed" | "active" | "rejected" | "inactive" => {
+  const getStepState = (
+    stepNumber: number,
+  ): "completed" | "active" | "rejected" | "inactive" => {
     if (!latestRequest) return "inactive";
     const currentStep = STATUS_TO_STEP[latestRequest.status];
     const isRejected = isRejectedStatus(latestRequest.status);
@@ -236,10 +271,29 @@ function TrackStatusPage() {
   };
 
   const getStepColors = (state: string) => {
-    if (state === "completed") return { circle: "bg-green-500 border-green-500", text: "text-green-600", icon: "✓" };
-    if (state === "active") return { circle: "bg-[#599fa0] border-[#599fa0]", text: "text-[#599fa0]", icon: "" };
-    if (state === "rejected") return { circle: "bg-red-500 border-red-500", text: "text-red-600", icon: "✗" };
-    return { circle: "bg-gray-300 border-gray-300", text: "text-gray-400", icon: "" };
+    if (state === "completed")
+      return {
+        circle: "bg-green-500 border-green-500",
+        text: "text-green-600",
+        icon: "✓",
+      };
+    if (state === "active")
+      return {
+        circle: "bg-[#599fa0] border-[#599fa0]",
+        text: "text-[#599fa0]",
+        icon: "",
+      };
+    if (state === "rejected")
+      return {
+        circle: "bg-red-500 border-red-500",
+        text: "text-red-600",
+        icon: "✗",
+      };
+    return {
+      circle: "bg-gray-300 border-gray-300",
+      text: "text-gray-400",
+      icon: "",
+    };
   };
 
   // New helper functions for horizontal stepper
@@ -249,11 +303,14 @@ function TrackStatusPage() {
     const isRejected = isRejectedStatus(statusToUse);
 
     // If rejected, only show red for the rejected step
-    if (isRejected && currentStep === stepNumber) return "bg-red-500 border-red-500";
+    if (isRejected && currentStep === stepNumber)
+      return "bg-red-500 border-red-500";
     // If rejected, steps after rejected are gray (no status)
-    if (isRejected && stepNumber > currentStep) return "bg-gray-300 border-gray-300";
+    if (isRejected && stepNumber > currentStep)
+      return "bg-gray-300 border-gray-300";
     // If rejected, steps before rejected are completed
-    if (isRejected && stepNumber < currentStep) return "bg-[#599fa0] border-[#599fa0]";
+    if (isRejected && stepNumber < currentStep)
+      return "bg-[#599fa0] border-[#599fa0]";
 
     // For pending/active state (yellow circle)
     if (currentStep === stepNumber) return "bg-[#FCD34D] border-[#FCD34D]";
@@ -272,9 +329,9 @@ function TrackStatusPage() {
     const isRejected = isRejectedStatus(statusToUse);
 
     const completedColor = "#599fa0"; // เขียว
-    const pendingColor = "#FCD34D";   // เหลือง
-    const rejectedColor = "#EF4444";  // แดง
-    const inactiveColor = "#D1D5DB";  // เทา
+    const pendingColor = "#FCD34D"; // เหลือง
+    const rejectedColor = "#EF4444"; // แดง
+    const inactiveColor = "#D1D5DB"; // เทา
 
     // เส้นก่อนหน้า step ล่าสุด = เขียว
     if (stepNumber < currentStep - 1) {
@@ -288,7 +345,7 @@ function TrackStatusPage() {
           to right,
           ${completedColor},
           ${isRejected ? rejectedColor : pendingColor}
-        )`
+        )`,
       };
     }
 
@@ -299,7 +356,15 @@ function TrackStatusPage() {
   const getStepIcon = (stepNumber: number) => {
     if (!statusToUse) {
       return (
-        <svg className="w-7 h-7 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          className="w-7 h-7 text-gray-500"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <circle cx="12" cy="12" r="1" />
           <circle cx="19" cy="12" r="1" />
           <circle cx="5" cy="12" r="1" />
@@ -309,12 +374,20 @@ function TrackStatusPage() {
 
     const currentStep = STATUS_TO_STEP[statusToUse];
     const isRejected = isRejectedStatus(statusToUse);
-    const isNeedsDocs = statusToUse === "NEEDS_DOCS" || statusToUse === "NEEDS_DOC";
+    const isNeedsDocs = statusToUse === "NEEDS_DOCS";
 
     // Rejected state at current step
     if (isRejected && currentStep === stepNumber) {
       return (
-        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          className="w-7 h-7 text-white"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M18 6 6 18" />
           <path d="m6 6 12 12" />
         </svg>
@@ -324,7 +397,15 @@ function TrackStatusPage() {
     // Completed before rejection
     if (isRejected && currentStep > stepNumber) {
       return (
-        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          className="w-7 h-7 text-white"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M20 6 9 17l-5-5" />
         </svg>
       );
@@ -343,7 +424,15 @@ function TrackStatusPage() {
     // Completed step
     if (currentStep > stepNumber) {
       return (
-        <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          className="w-7 h-7 text-white"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="M20 6 9 17l-5-5" />
         </svg>
       );
@@ -351,7 +440,15 @@ function TrackStatusPage() {
 
     // Inactive step
     return (
-      <svg className="w-7 h-7 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        className="w-7 h-7 text-gray-500"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <circle cx="12" cy="12" r="1" />
         <circle cx="19" cy="12" r="1" />
         <circle cx="5" cy="12" r="1" />
@@ -360,11 +457,15 @@ function TrackStatusPage() {
   };
 
   const getReviewerName = (status: RequestStatus): string => {
-    if (status === "PENDING_HEAD" || status === "REJECTED_BY_HEAD") return "หัวหน้าภาค";
-    if (status === "PENDING_VICEDEAN" || status === "REJECTED_BY_VICEDEAN") return "รองคณบดี";
-    if (status === "PENDING_DEAN" || status === "REJECTED_BY_DEAN") return "คณบดี";
+    if (status === "PENDING_HEAD" || status === "REJECTED_BY_HEAD")
+      return "หัวหน้าภาค";
+    if (status === "PENDING_VICEDEAN" || status === "REJECTED_BY_VICEDEAN")
+      return "รองคณบดี";
+    if (status === "PENDING_DEAN" || status === "REJECTED_BY_DEAN")
+      return "คณบดี";
     if (status === "PENDING_SD") return "กองพัฒนานิสิต";
-    if (status === "PENDING_COMMITTEE" || status === "REJECTED_BY_COMMITTEE") return "คณะกรรมการ";
+    if (status === "PENDING_COMMITTEE" || status === "REJECTED_BY_COMMITTEE")
+      return "คณะกรรมการ";
     if (status === "PENDING_PRESIDENT") return "อธิการบดี";
     return "-";
   };
@@ -656,62 +757,72 @@ function TrackStatusPage() {
         {!latestRequest && (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <p className="text-gray-500 text-xl mb-3">ยังไม่ได้ส่งเอกกสาร</p>
-            <p className="text-gray-400">กรุณาสมัครขอรับรางวัลเพื่อติดตามสถานะ</p>
+            <p className="text-gray-400">
+              กรุณาสมัครขอรับรางวัลเพื่อติดตามสถานะ
+            </p>
           </div>
         )}
 
         {latestRequest && (
-            <>
-              {/* Section 1: ข้อมูลใบสมัคร */}
-              <div>
-                <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-4">ข้อมูลใบสมัคร</h2>
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500 mb-1">รหัสใบสมัคร</p>
-                      <p className="text-base font-medium text-gray-900">{latestRequest.request_id || "-"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 mb-1">ประเภทรางวัล</p>
-                      <p className="text-base font-medium text-gray-900">{latestRequest.award_name || "-"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 mb-1">รอบการพิจารณา</p>
-                      <p className="text-base font-medium text-gray-900">
-                        {formatReviewRound(latestRequest.semester, latestRequest.academic_year)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 mb-1">สถานะปัจจุบัน</p>
-                      <span
-                          className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${currentStatusColors?.bg} ${currentStatusColors?.text} ${currentStatusColors?.border}`}>
+          <>
+            {/* Section 1: ข้อมูลใบสมัคร */}
+            <div>
+              <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-4">
+                ข้อมูลใบสมัคร
+              </h2>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">รหัสใบสมัคร</p>
+                    <p className="text-base font-medium text-gray-900">
+                      {latestRequest.request_id || "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">ประเภทรางวัล</p>
+                    <p className="text-base font-medium text-gray-900">
+                      {latestRequest.award_name || "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">รอบการพิจารณา</p>
+                    <p className="text-base font-medium text-gray-900">
+                      {formatReviewRound(
+                        latestRequest.semester,
+                        latestRequest.academic_year,
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">สถานะปัจจุบัน</p>
+                    <span
+                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${currentStatusColors?.bg} ${currentStatusColors?.text} ${currentStatusColors?.border}`}
+                    >
                       {statusToUse && getStatusLabel(statusToUse)}
                     </span>
-                    </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Section 2: ติดตามสถานะ */}
-              <div>
-                <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-4">
-                  ติดตามสถานะ
-                </h2>
+            {/* Section 2: ติดตามสถานะ */}
+            <div>
+              <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-4">
+                ติดตามสถานะ
+              </h2>
 
-                <div className="bg-white rounded-lg shadow-sm px-12 py-10 w-full">
-                  <div className="flex w-full items-start">
+              <div className="bg-white rounded-lg shadow-sm px-12 py-10 w-full">
+                <div className="flex w-full items-start">
+                  {TIMELINE_STEPS.map((step, index) => {
+                    const stepNumber = index + 1;
+                    const isLast = index === TIMELINE_STEPS.length - 1;
 
-                    {TIMELINE_STEPS.map((step, index) => {
-                      const stepNumber = index + 1;
-                      const isLast = index === TIMELINE_STEPS.length - 1;
-
-                      return (
-                          <React.Fragment key={step.key}>
-
-                            {/* Circle + Label */}
-                            <div className="flex flex-col items-center">
-                              <div
-                                  className={`w-14 h-14 rounded-full border-4
+                    return (
+                      <React.Fragment key={step.key}>
+                        {/* Circle + Label */}
+                        <div className="flex flex-col items-center">
+                          <div
+                            className={`w-14 h-14 rounded-full border-4
       flex items-center justify-center
       ${getStepCircleColor(stepNumber)}`}
                               >
@@ -813,17 +924,20 @@ function TrackStatusPage() {
                   </div>
                 )}
               </div>
-            </>
+
+          </>
         )}
 
         {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-              <p className="text-red-600 mb-3">{error}</p>
-              <button onClick={() => window.location.reload()}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-                ลองใหม่
-              </button>
-            </div>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+            <p className="text-red-600 mb-3">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
+              ลองใหม่
+            </button>
+          </div>
         )}
 
         {/* Modal: เหตุผลการปฏิเสธ */}

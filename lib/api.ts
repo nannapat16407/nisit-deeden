@@ -2,7 +2,11 @@ import { AuthResponse, MeResponse } from "@/types/user.type";
 import { Period, CreatePeriodRequest } from "@/types/period.type";
 import { Award, CreateAwardRequest } from "@/types/award.type";
 import { Request as RequestType } from "@/types/request.type";
-import {StudentProfileApiResponse, StudentProfileFullResponse, StudentProfileResponse} from "@/types/student.type";
+import {
+  StudentProfileApiResponse,
+  StudentProfileFullResponse,
+  StudentProfileResponse,
+} from "@/types/student.type";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8008";
 
@@ -98,22 +102,40 @@ class ApiClient {
   }
 
   async createAward(
-    data: CreateAwardRequest,
+    formData: FormData,
   ): Promise<{ message: string; data: Award }> {
-    return this.fetch("/api/sd/awards", {
+    const response = await fetch(`${this.baseURL}/api/sd/awards`, {
       method: "POST",
-      body: JSON.stringify(data),
+      body: formData,
+      credentials: "include",
     });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || errorData.message || "Failed to create award",
+      );
+    }
+    return response.json();
   }
 
   async updateAward(
     id: string,
-    data: Partial<CreateAwardRequest>,
+    formData: FormData,
   ): Promise<{ message: string; data: Award }> {
-    return this.fetch(`/api/sd/awards/${id}`, {
+    const response = await fetch(`${this.baseURL}/api/sd/awards/${id}`, {
       method: "PUT",
-      body: JSON.stringify(data),
+      body: formData,
+      credentials: "include",
     });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || errorData.message || "Failed to update award",
+      );
+    }
+    return response.json();
   }
 
   async deleteAward(id: string): Promise<{ message: string }> {
@@ -132,12 +154,42 @@ class ApiClient {
     return this.fetch("/api/auth/me");
   }
 
-  async getAvailableAwards(): Promise<{ data: Award[] }> {
-    return this.fetch("/api/student/awards");
+  async getAward(id: string): Promise<{ message: string; data: Award }> {
+    return this.fetch(`/api/sd/awards/${id}`);
+  }
+
+  // SD Request Management
+  async getSDRequests(): Promise<{ data: RequestType[] }> {
+    return this.fetch("/api/sd/requests");
+  }
+
+  async reviewSDRequest(
+    id: string,
+    action: "approve" | "need_docs",
+    comment: string = "",
+  ): Promise<{ message: string; data: any }> {
+    return this.fetch(`/api/sd/requests/${id}/review`, {
+      method: "PATCH",
+      body: JSON.stringify({ action, comment }),
+    });
+  }
+
+  async updateSDAwardType(
+    id: string,
+    newAwardId: string,
+  ): Promise<{ message: string; data: any }> {
+    return this.fetch(`/api/sd/requests/${id}/award-type`, {
+      method: "PUT",
+      body: JSON.stringify({ new_award_id: newAwardId }),
+    });
+  }
+
+  async getAvailableAwards(): Promise<{ data: any }> {
+    return this.fetch("/api/sd/awards");
   }
 
   async createApplication(
-      formData: FormData,
+    formData: FormData,
   ): Promise<{ message: string; data: RequestType }> {
     // Debug: แสดง FormData ทั้งหมดที่ส่งไป backend
     console.log("📤 FormData being sent:");
@@ -169,12 +221,10 @@ class ApiClient {
   }
 
   async getStudentProfileFull(): Promise<StudentProfileApiResponse> {
-    return this.fetch<StudentProfileApiResponse>(
-        "/api/student/profile"
-    );
+    return this.fetch<StudentProfileApiResponse>("/api/student/profile");
   }
 
-// ============================================
+  // ============================================
   // Department Head APIs
   // ============================================
 

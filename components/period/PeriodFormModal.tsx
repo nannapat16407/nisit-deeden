@@ -27,10 +27,10 @@ const PeriodFormModal: React.FC<PeriodFormModalProps> = ({
       setSemester(String(initialData.semester));
       // Format date to YYYY-MM-DD for input
       setStartDate(
-        initialData.period_start ? initialData.period_start.split("T")[0] : "",
+        initialData.start_date ? initialData.start_date.split("T")[0] : "",
       );
       setEndDate(
-        initialData.period_end ? initialData.period_end.split("T")[0] : "",
+        initialData.end_date ? initialData.end_date.split("T")[0] : "",
       );
       setIsActive(initialData.is_active ?? false);
     } else if (isOpen) {
@@ -50,8 +50,8 @@ const PeriodFormModal: React.FC<PeriodFormModalProps> = ({
       period_id: initialData?.period_id,
       academic_year: academicYear,
       semester,
-      period_start: new Date(startDate).toISOString(),
-      period_end: new Date(endDate).toISOString(),
+      start_date: new Date(startDate).toISOString(),
+      end_date: new Date(endDate).toISOString(),
       is_active: isActive,
     });
   };

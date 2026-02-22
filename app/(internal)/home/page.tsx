@@ -38,8 +38,8 @@ function HomePage() {
         const now = new Date();
         // Find current active period
         const current = periods.find((p) => {
-          const start = new Date(p.period_start);
-          const end = new Date(p.period_end);
+          const start = new Date(p.start_date);
+          const end = new Date(p.end_date);
           return now >= start && now <= end;
         });
 
@@ -64,7 +64,7 @@ function HomePage() {
     if (!activePeriod) return;
 
     const calculateTimeLeft = () => {
-      const endDate = new Date(activePeriod.period_end).getTime();
+      const endDate = new Date(activePeriod.end_date).getTime();
       const now = new Date().getTime();
       const difference = endDate - now;
 
@@ -104,9 +104,14 @@ function HomePage() {
     });
   };
 
-  const semesterText = typeof activePeriod?.semester === 'number'
-    ? (activePeriod.semester === 1 ? 'ภาคต้น' : activePeriod.semester === 2 ? 'ภาคปลาย' : `ภาค ${activePeriod.semester}`)
-    : activePeriod?.semester;
+  const semesterText =
+    typeof activePeriod?.semester === "number"
+      ? activePeriod.semester === 1
+        ? "ภาคต้น"
+        : activePeriod.semester === 2
+          ? "ภาคปลาย"
+          : `ภาค ${activePeriod.semester}`
+      : activePeriod?.semester;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-noto">
@@ -158,8 +163,8 @@ function HomePage() {
         <div className="bg-[#B8CFCC] bg-opacity-40 rounded-lg p-8 text-center text-gray-800">
           <p className="mb-6 font-medium">
             ช่วงเวลาที่กำหนด: "ระหว่างวันที่{" "}
-            {activePeriod ? formatDate(activePeriod.period_start) : "..."} -{" "}
-            {activePeriod ? formatDate(activePeriod.period_end) : "..."}"
+            {activePeriod ? formatDate(activePeriod.start_date) : "..."} -{" "}
+            {activePeriod ? formatDate(activePeriod.end_date) : "..."}"
           </p>
 
           <div className="flex justify-center gap-4 text-gray-800">

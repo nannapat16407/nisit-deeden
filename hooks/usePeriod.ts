@@ -1,46 +1,46 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Period } from '@/types/period.type'
-import { api } from '@/lib/api'
+import { useState, useEffect } from "react";
+import { Period } from "@/types/period.type";
+import { api } from "@/lib/api";
 
 function usePeriod() {
-  const [periods, setPeriods] = useState<Period[]>([])
-  const [currentPeriod, setCurrentPeriod] = useState<Period | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
+  const [periods, setPeriods] = useState<Period[]>([]);
+  const [currentPeriod, setCurrentPeriod] = useState<Period | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch periods on mount
   useEffect(() => {
-    fetchPeriods()
-  }, [])
+    fetchPeriods();
+  }, []);
 
   const fetchPeriods = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
-      const response = await api.getPeriods()
-      const periodData = response.data || []
+      const response = await api.getPeriods();
+      const periodData = response.data || [];
 
-      setPeriods(periodData)
+      setPeriods(periodData);
 
       // Find current period: currentDate >= period_start && currentDate <= period_end
-      const now = new Date()
+      const now = new Date();
       const active = periodData.find((period: Period) => {
-        const startDate = new Date(period.period_start)
-        const endDate = new Date(period.period_end)
-        return now >= startDate && now <= endDate
-      })
+        const startDate = new Date(period.start_date);
+        const endDate = new Date(period.end_date);
+        return now >= startDate && now <= endDate;
+      });
 
-      setCurrentPeriod(active || null)
+      setCurrentPeriod(active || null);
     } catch (err) {
-      console.error('Period fetch failed:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch periods')
+      console.error("Period fetch failed:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch periods");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return {
     periods,
@@ -48,7 +48,7 @@ function usePeriod() {
     loading,
     error,
     refetch: fetchPeriods,
-  }
+  };
 }
 
-export default usePeriod
+export default usePeriod;

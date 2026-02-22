@@ -4,7 +4,7 @@ import { Award, Requirement } from "@/types/award.type";
 interface AwardFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (award: Partial<Award>) => void;
+  onSave: (formData: FormData, awardId?: string) => void;
   initialData?: Award | null;
 }
 
@@ -21,14 +21,15 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [fileName, setFileName] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Dynamic Requirements State
   const [requirements, setRequirements] = useState<Requirement[]>([]);
 
   useEffect(() => {
     if (isOpen && initialData) {
-      setName(initialData.award_name);
-      setDescription(initialData.description);
+      setName(initialData.award_name || "");
+      setDescription(initialData.description || "");
       setIsActive(initialData.is_active);
       setFileName(initialData.template_file_url || "");
       try {
@@ -39,6 +40,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
       } catch (e) {
         setRequirements([]);
       }
+      setSelectedFile(null);
     } else if (isOpen) {
       // Reset
       setName("");
@@ -46,6 +48,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
       setIsActive(true);
       setFileName("");
       setRequirements([]);
+      setSelectedFile(null);
     }
   }, [isOpen, initialData]);
 
@@ -88,15 +91,19 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
-      award_id: initialData?.award_id,
-      award_name: name,
-      description,
-      template_file_url: fileName || "Template_Default.pdf",
-      is_active: isActive,
-      requirement_json: JSON.stringify(requirements),
-    });
-    // Don't close here, let parent handle success/fail
+
+    const formData = new FormData();
+    formData.append("award_name", name);
+    formData.append("award_type", "General"); // Defaulting correctly
+    formData.append("description", description);
+    formData.append("is_active", isActive ? "true" : "false");
+    formData.append("requirement_json", JSON.stringify(requirements));
+
+    if (selectedFile) {
+      formData.append("template_file", selectedFile);
+    }
+
+    onSave(formData, initialData?.award_id);
   };
 
   return (
@@ -186,18 +193,32 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                 </div>
               </div>
 
-              {/* File Upload Mock */}
+              {/* File Upload Element */}
               <div className="space-y-1 md:col-span-2">
                 <label className="text-sm font-medium text-gray-700">
                   แบบฟอร์มใบสมัคร (ถ้ามี)
                 </label>
-                <div className="border border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-col items-center justify-center text-center">
-                  <span className="text-sm text-gray-500">
-                    {fileName ? fileName : "ยังไม่ได้เลือกไฟล์"}
+                <div className="border border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-col items-center justify-center text-center relative cursor-pointer hover:bg-gray-100 transition-colors">
+                  <span className="text-sm text-gray-500 max-w-full truncate px-2">
+                    {selectedFile
+                      ? selectedFile.name
+                      : fileName
+                        ? fileName.split("/").pop()
+                        : "ยังไม่ได้เลือกไฟล์"}
                   </span>
+                  <input
+                    type="file"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-[0px]"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setSelectedFile(e.target.files[0]);
+                      }
+                    }}
+                    accept=".pdf,.doc,.docx"
+                  />
                   <button
                     type="button"
-                    className="mt-2 text-xs text-emerald-600 font-medium hover:underline"
+                    className="mt-2 text-xs text-emerald-600 font-medium hover:underline pointer-events-none"
                   >
                     เลือกไฟล์ (PDF/Docx)
                   </button>

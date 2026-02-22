@@ -5,7 +5,6 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import useAuth from "@/hooks/useAuth";
 import { Request } from "@/types/request.type";
-// import { MOCK_REQUESTS , USE_MOCK_DATA} from "./mock";
 
 export default function RequestPage() {
   const { user, logout } = useAuth();
@@ -30,10 +29,8 @@ export default function RequestPage() {
         const res = await api.getDeptRequests();
         data = res.data;
       } else if (role === "SD_STAFF") {
-        // SD Fetch Here
-        // if(USE_MOCK_DATA){
-        //   data = MOCK_REQUESTS;
-        // }
+        const res = await api.getSDRequests();
+        data = res.data;
       } else {
         // Committee, DEAN, VICEDEAN - Need generic fetch or specific
         // For now using Dept for demo if supported, or empty
@@ -70,18 +67,26 @@ export default function RequestPage() {
         return false;
       }
     } else {
-      const matchesStatus = statusFilter === "ALL" || req.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "ALL" || req.status === statusFilter;
       if (!matchesStatus) {
         return false;
       }
     }
 
     const searchLower = search.toLowerCase();
+    const getName = (req: Request) =>
+      req.owner_fname
+        ? `${req.owner_fname} ${req.owner_lname}`
+        : req.Owner
+          ? `${req.Owner.fname} ${req.Owner.lname}`
+          : "";
+    const getAwardName = (req: Request) =>
+      req.award_name || req.Award?.award_name || "";
+
     const matchesSearch =
-      req.Award?.award_name.toLowerCase().includes(searchLower) ||
-      (req.Owner?.fname + " " + req.Owner?.lname)
-        .toLowerCase()
-        .includes(searchLower);
+      getAwardName(req).toLowerCase().includes(searchLower) ||
+      getName(req).toLowerCase().includes(searchLower);
 
     return matchesSearch;
   });
@@ -233,26 +238,32 @@ export default function RequestPage() {
                   </td>
                 </tr>
               ) : (
-                filteredRequests.map((req) => (
+                filteredRequests.map((req, idx) => (
                   <tr
-                    key={req.RequestID}
+                    key={req.request_id || req.RequestID || idx}
                     className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-6 py-4">
-                      {new Date(req.CreatedAt).toLocaleDateString("th-TH")}
-                    </td>
-                    <td className="px-6 py-4">
-                      {req.Award?.award_name || "-"}
-                    </td>
-                    <td className="px-6 py-4">
-                      {req.Owner
-                        ? `${req.Owner.fname} ${req.Owner.lname}`
+                      {req.created_at || req.CreatedAt
+                        ? new Date(
+                            req.created_at || req.CreatedAt!,
+                          ).toLocaleDateString("th-TH")
                         : "-"}
+                    </td>
+                    <td className="px-6 py-4">
+                      {req.award_name || req.Award?.award_name || "-"}
+                    </td>
+                    <td className="px-6 py-4">
+                      {req.owner_fname
+                        ? `${req.owner_fname} ${req.owner_lname}`
+                        : req.Owner
+                          ? `${req.Owner.fname} ${req.Owner.lname}`
+                          : "-"}
                     </td>
                     <td className="px-6 py-4">{getStatusBadge(req.status)}</td>
                     <td className="px-6 py-4 text-right">
                       <Link
-                        href={`/request/${req.RequestID}`}
+                        href={`/request/${req.request_id || req.RequestID}`}
                         className="text-emerald-600 hover:text-emerald-800 font-medium"
                       >
                         ดูรายละเอียด &gt;

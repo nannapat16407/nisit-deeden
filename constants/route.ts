@@ -22,6 +22,7 @@ export const ROUTES_BY_ROLE = {
     home: "/home",
     document: "/document",
     track_status: "/track-status",
+    announcement: "/announcement",
   },
   SD_STAFF: {
     home: "/home",
@@ -33,6 +34,13 @@ export const ROUTES_BY_ROLE = {
     home: "/home",
     request: "/request",
   }
+};
+
+export const DEFAULT_ROUTES = {
+  ADMIN: "/dashboard",
+  STUDENT: "/document",
+  SD_STAFF: "/request-period",
+  DEPARTMENT_HEAD: "/request",
 };
 
 export const getName = (key: string) => {
