@@ -2,6 +2,7 @@ import { AuthResponse, MeResponse } from "@/types/user.type";
 import { Period, CreatePeriodRequest } from "@/types/period.type";
 import { Award, CreateAwardRequest } from "@/types/award.type";
 import { Request as RequestType } from "@/types/request.type";
+import { Announcement, AnnouncementResponse } from "@/types/announcement.type";
 import {
   StudentProfileApiResponse,
   StudentProfileFullResponse,
@@ -188,9 +189,23 @@ class ApiClient {
     return this.fetch("/api/sd/awards");
   }
 
+  async getAnnouncementById(id: string): Promise<AnnouncementResponse> {
+    return this.fetch(`/api/sd/announcements/${id}`);
+  }
+
   async createApplication(
     formData: FormData,
   ): Promise<{ message: string; data: RequestType }> {
+    // Debug: แสดง FormData ทั้งหมดที่ส่งไป backend
+    console.log("📤 FormData being sent:");
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`  ${key}: File(name="${value.name}", size=${value.size}, type="${value.type}")`);
+      } else {
+        console.log(`  ${key}: ${value}`);
+      }
+    }
+
     const response = await fetch(`${this.baseURL}/api/student/apply`, {
       method: "POST",
       body: formData,
@@ -199,7 +214,8 @@ class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || "Submit failed");
+      console.error("❌ Backend error response:", errorData);
+      throw new Error(errorData.error || errorData.message || "Submit failed");
     }
 
     return response.json();
@@ -211,6 +227,20 @@ class ApiClient {
 
   async getStudentProfileFull(): Promise<StudentProfileApiResponse> {
     return this.fetch<StudentProfileApiResponse>("/api/student/profile");
+  }
+
+  async getCurrentPeriodAwards(): Promise<{
+    message: string;
+    data: {
+      period_id: string;
+      awards: Award[];
+    };
+  }> {
+    return this.fetch("/api/student/current-period");
+  }
+
+  async checkApplication(periodId: string): Promise<{ is_applied: boolean }> {
+    return this.fetch(`/api/student/check-application?period_id=${periodId}`);
   }
 
   // ============================================

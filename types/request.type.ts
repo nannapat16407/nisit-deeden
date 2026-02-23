@@ -2,17 +2,19 @@ import { User } from "./user.type";
 import { Award } from "./award.type";
 
 export type RequestStatus =
-  | "PENDING_HEAD"
-  | "PENDING_VICEDEAN"
-  | "PENDING_DEAN"
-  | "PENDING_SD"
-  | "PENDING_COMMITTEE"
-  | "PENDING_PRESIDENT"
-  | "NEEDS_DOCS"
-  | "REJECTED_BY_HEAD"
-  | "REJECTED_BY_VICEDEAN"
-  | "REJECTED_BY_DEAN"
-  | "REJECTED_BY_COMMITTEE";
+    | "PENDING_HEAD"
+    | "PENDING_VICEDEAN"
+    | "PENDING_DEAN"
+    | "PENDING_SD"
+    | "PENDING_COMMITTEE"
+    | "PENDING_PRESIDENT"
+    | "NEEDS_DOCS"
+    | "REJECTED_BY_HEAD"
+    | "REJECTED_BY_VICEDEAN"
+    | "REJECTED_BY_DEAN"
+    | "REJECTED_BY_COMMITTEE"
+    | "COMPLETE";  // รองรับ bg อนาคต
+
 
 export interface Request {
   RequestID?: string; // UUID

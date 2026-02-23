@@ -6,14 +6,19 @@ import Link from "next/link";
 import useAuth from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import { Period } from "@/types/period.type";
+import { Announcement } from "@/types/announcement.type";
 import { ROUTES_BY_ROLE } from "@/constants/route";
 import CountDownBox from "@/components/home/CountdownBox";
+
+// ID ของประกาศที่ต้องดึง
+const ANNOUNCEMENT_ID = "8f170e15-e5c0-4485-9ae8-c01dad52fed0";
 
 function HomePage() {
   const router = useRouter();
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const [activePeriod, setActivePeriod] = useState<Period | null>(null);
+  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -21,6 +26,8 @@ function HomePage() {
     seconds: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [announcementLoading, setAnnouncementLoading] = useState(true);
+  const [announcementError, setAnnouncementError] = useState<string | null>(null);
 
   // Auth Protection
   useEffect(() => {
@@ -56,6 +63,34 @@ function HomePage() {
 
     if (isAuthenticated) {
       fetchData();
+    }
+  }, [isAuthenticated]);
+
+  // Fetch Announcement
+  useEffect(() => {
+    const fetchAnnouncement = async () => {
+      try {
+        setAnnouncementLoading(true);
+        setAnnouncementError(null);
+
+        const res = await api.getAnnouncementById(ANNOUNCEMENT_ID);
+
+        // แสดงเฉพาะประกาศที่ is_active === true
+        if (res.data.is_active) {
+          setAnnouncement(res.data);
+        } else {
+          setAnnouncement(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch announcement", error);
+        setAnnouncementError("ไม่สามารถโหลดประกาศได้");
+      } finally {
+        setAnnouncementLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchAnnouncement();
     }
   }, [isAuthenticated]);
 
@@ -113,6 +148,9 @@ function HomePage() {
           : `ภาค ${activePeriod.semester}`
       : activePeriod?.semester;
 
+  // Get user role (handle both string and object types)
+  const userRole = typeof user.role === "string" ? user.role : user.role?.RoleName;
+
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-noto">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -134,26 +172,16 @@ function HomePage() {
               )}
             </div>
           </div>
-          {/* <Link
-            href={ROUTES_BY_ROLE.STUDENT.request}
-            className="bg-[#599fa0] hover:bg-[#4a8a8a] text-white px-8 py-3 rounded-lg text-lg font-bold shadow-md transition-all flex items-center gap-2 z-10"
-          >
-            สมัครเลย
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+
+          {/* ปุ่มสมัคร - แสดงเฉพาะ STUDENT */}
+          {userRole === "STUDENT" && (
+            <button
+              onClick={() => router.push("/document")}
+              className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 z-10"
             >
-              <path d="M5 12h14"></path>
-              <path d="m12 5 7 7-7 7"></path>
-            </svg>
-          </Link> */}
+              สมัคร <span>{">"}</span>
+            </button>
+          )}
 
           {/* Decorative Background Element */}
           <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-green-50 to-transparent pointer-events-none"></div>
@@ -182,25 +210,23 @@ function HomePage() {
           <div className="bg-[#599fa0] px-6 py-4">
             <h2 className="text-white text-xl font-bold text-center">ประกาศ</h2>
           </div>
-          <div className="p-8 text-gray-700 leading-relaxed space-y-4">
-            <p>
-              มหาวิทยาลัยเกษตรศาสตร์
-              เปิดรับสมัครนักศึกษาเพื่อขอรับการพิจารณารางวัล นักศึกษาดีเด่น
-              (นิสิตดีเด่น) ประจำปีการศึกษา 2568 นิสิตที่มีคุณสมบัติตามเกณฑ์
-              สามารถเสนอชื่อตนเองเพื่อสมัครรับรางวัลได้ ประเภทละ 1 รางวัล
-              ต่อรอบการสมัคร โดยคำร้องจะผ่านกระบวนการพิจารณาหลายระดับ ได้แก่
-            </p>
-            <ul className="list-disc list-inside pl-4 space-y-1">
-              <li>การพิจารณาโดยหน่วยงานทางวิชาการ</li>
-              <li>การพิจารณาโดยคณะ</li>
-              <li>การประเมินและลงมติโดยคณะกรรมการ</li>
-            </ul>
-            <p>
-              ทั้งนี้ เป็นไปตามระเบียบและข้อบังคับของมหาวิทยาลัย <br />
-              ผู้สมัครควรตรวจสอบคุณสมบัติและจัดเตรียมข้อมูล
-              รวมถึงเอกสารประกอบการสมัครให้ครบถ้วน
-              และยื่นคำร้องภายในระยะเวลาที่กำหนด
-            </p>
+          <div className="p-8 text-gray-700 leading-relaxed">
+            {announcementLoading ? (
+              <div className="text-center py-4">
+                <p className="text-gray-500">กำลังโหลดข้อมูล...</p>
+              </div>
+            ) : announcementError ? (
+              <div className="text-center py-4">
+                <p className="text-red-500">{announcementError}</p>
+              </div>
+            ) : announcement ? (
+              <>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">{announcement.title}</h3>
+                <p className="text-gray-700 whitespace-pre-line">{announcement.description}</p>
+              </>
+            ) : (
+              <p className="text-gray-500 text-center">ไม่มีประกาศในขณะนี้</p>
+            )}
           </div>
         </div>
       </div>
