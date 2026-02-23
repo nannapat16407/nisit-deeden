@@ -17,11 +17,12 @@ function CustomAwardPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-
   // ดึงข้อมูล student profile และ award จาก API
   useEffect(() => {
-    fetchStudentProfile();
-    fetchAward();
+    const fetchData = async () => {
+      await Promise.all([fetchStudentProfile(), fetchAward()]);
+    };
+    fetchData();
   }, [params.awardId]);
 
   const fetchStudentProfile = async () => {
@@ -39,11 +40,8 @@ function CustomAwardPage() {
       setLoading(true);
       setError(null);
 
-      const response = await api.getAvailableAwards();
-      const awards = response.data || [];
-
-      // หา award ตาม award_id จาก params
-      const foundAward = awards.find((a: Award) => a.award_id === params.awardId);
+      const response = await api.getAward(params.awardId as string);
+      const foundAward = response.data;
 
       if (foundAward) {
         setAward(foundAward);
@@ -61,14 +59,16 @@ function CustomAwardPage() {
   const handleFormSubmit = async (file: File) => {
     console.log("📤 Form submitted with file:", file.name);
     console.log("🏆 Award ID:", params.awardId);
-    console.log("🏫 Campus ID:", award?.campus_id);
 
-    if (!award) return;
+    if (!award || !studentInfo) {
+      alert("ข้อมูลไม่ครบ กรุณาลองใหม่");
+      return;
+    }
 
     const formData = new FormData();
-    formData.append("campus_id", String(award.campus_id));
+    formData.append("campus_id", String(studentInfo.campus_id));
     formData.append("award_id", award.award_id);
-    formData.append("file", file);  // backend ต้องการ "file" (singular) ไม่ใช่ "files"
+    formData.append("file", file);
 
     try {
       console.log("🚀 Calling API...");
@@ -77,7 +77,6 @@ function CustomAwardPage() {
 
       console.log("✅ Application submitted successfully");
 
-      // ไปหน้าถัดไป (ถ้าต้องการ)
       router.push("/document");
 
     } catch (error) {

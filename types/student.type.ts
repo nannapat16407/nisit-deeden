@@ -21,6 +21,7 @@ export interface StudentProfileFullResponse {
   lname: string;
   username: string;
   year: number;
+  campus_id: number;
 }
 
 export interface StudentProfileApiResponse {

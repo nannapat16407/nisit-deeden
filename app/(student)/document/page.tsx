@@ -20,25 +20,25 @@ function DocumentPage() {
   const [awardsError, setAwardsError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Mock: ตรวจสอบว่ายื่นรางวัลแล้วหรือไม่ (จาก localStorage)
-  const submittedAwardId =
-    typeof window !== "undefined"
-      ? localStorage.getItem("submittedAwardId")
-      : null;
-  const submittedAwardName =
-    typeof window !== "undefined"
-      ? localStorage.getItem("submittedAwardName")
-      : null;
+  // สำหรับเช็คว่าเคยสมัครในรอบนี้หรือยัง
+  const [isApplied, setIsApplied] = useState<boolean | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [checkError, setCheckError] = useState<string | null>(null);
 
   // Fetch awards from API
   useEffect(() => {
     const fetchAwards = async () => {
       try {
-        const res = await api.getAvailableAwards();
-        const awardData = res.data || [];
+        const res = await api.getCurrentPeriodAwards();
 
-        // Map API data to component format
-        const awardTypes = awardData.map((award: any) => ({
+        // ดึงข้อมูลจาก response.data.awards
+        const awardData = res?.data?.awards || [];
+
+        // กรองเฉพาะ awards ที่ is_active === true
+        const activeAwards = awardData.filter((award: Award) => award.is_active === true);
+
+        // Map API data to component format (แสดงเฉพาะ award_name)
+        const awardTypes: AwardOption[] = activeAwards.map((award: Award) => ({
           id: award.award_id,
           title: award.award_name,
           route: `/document/custom/${award.award_id}`,
@@ -56,8 +56,33 @@ function DocumentPage() {
     fetchAwards();
   }, []);
 
+  // เช็คว่าเคยสมัครในรอบนี้หรือยัง
+  useEffect(() => {
+    const checkApplicationStatus = async () => {
+      if (!currentPeriod?.period_id) {
+        setChecking(false);
+        return;
+      }
+
+      try {
+        setChecking(true);
+        setCheckError(null);
+
+        const res = await api.checkApplication(currentPeriod.period_id);
+        setIsApplied(res.is_applied);
+      } catch (error) {
+        console.error("Failed to check application status", error);
+        setCheckError("ไม่สามารถตรวจสอบสถานะการสมัครได้");
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    checkApplicationStatus();
+  }, [currentPeriod?.period_id]);
+
   // แสดง loading state
-  if (periodLoading || awardsLoading) {
+  if (periodLoading || awardsLoading || checking) {
     return (
       <div className="max-w-6xl mx-auto flex justify-center items-center py-20">
         <p className="text-gray-500 text-lg">กำลังโหลดข้อมูล...</p>
@@ -65,9 +90,59 @@ function DocumentPage() {
     );
   }
 
+  // แสดง error state (จากการ check application)
+  if (checkError) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        {currentPeriod && (
+          <CountDownBox
+            periodStart={currentPeriod.start_date}
+            periodEnd={currentPeriod.end_date}
+            academicYear={currentPeriod.academic_year}
+            semester={currentPeriod.semester}
+          />
+        )}
+        <div className="bg-white rounded-xl p-8 shadow-sm text-center">
+          <p className="text-red-500 text-lg mb-4">{checkError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+          >
+            ลองใหม่
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // แสดง error state (จากการ fetch awards)
+  if (awardsError) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        {currentPeriod && (
+          <CountDownBox
+            periodStart={currentPeriod.start_date}
+            periodEnd={currentPeriod.end_date}
+            academicYear={currentPeriod.academic_year}
+            semester={currentPeriod.semester}
+          />
+        )}
+        <div className="bg-white rounded-xl p-8 shadow-sm text-center">
+          <p className="text-red-500 text-lg mb-4">{awardsError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+          >
+            ลองใหม่
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* กล่องนับถอยหลัง (Countdown Box) - ใช้ component ของ Document */}
+      {/* กล่องนับถอยหลัง (Countdown Box) */}
       {currentPeriod && (
         <CountDownBox
           periodStart={currentPeriod.start_date}
@@ -78,24 +153,27 @@ function DocumentPage() {
       )}
 
       {/* ประเภทการเสนอขอรับรางวัลนิสิตดีเด่น */}
-      {awardsError ? (
-        <div className="bg-white rounded-xl p-8 shadow-sm text-center">
-          <p className="text-red-500 text-lg mb-4">{awardsError}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-          >
-            ลองใหม่
-          </button>
-        </div>
-      ) : awards.length > 0 ? (
+      {isApplied === true ? (
+        /* เคยสมัครแล้ว - แสดง UI แจ้งเตือน */
         <AwardTypeSelector
           awardTypes={awards}
           selectedId={selectedId}
           onSelect={setSelectedId}
-          submittedAwardId={submittedAwardId}
-          submittedAwardName={submittedAwardName || undefined}
+          submittedAwardId={currentPeriod?.period_id}
+          submittedAwardName=""
         />
+      ) : isApplied === false && awards.length > 0 ? (
+        /* ยังไม่เคยสมัคร - แสดงตัวเลือกรางวัล */
+        <AwardTypeSelector
+          awardTypes={awards}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+        />
+      ) : awards.length === 0 ? (
+        /* ไม่มีรางวัลที่เปิดรับสมัคร */
+        <div className="bg-white rounded-xl p-8 shadow-sm text-center">
+          <p className="text-gray-500 text-lg">ขณะนี้ยังไม่มีรางวัลที่เปิดรับสมัคร</p>
+        </div>
       ) : null}
     </div>
   );

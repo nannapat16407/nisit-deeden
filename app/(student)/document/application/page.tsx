@@ -6,28 +6,28 @@ import StudentInfoCard from "@/components/document/application/StudentInfoCard";
 import ApplicationForm from "@/components/document/application/ApplicationForm";
 import { api } from "@/lib/api";
 import { Award } from "@/types/award.type";
-import { StudentProfile } from "@/types/student.type";
+import { StudentProfileFullResponse } from "@/types/student.type";
 
 function ApplicationPage() {
   const params = useParams();
+
   const [award, setAward] = useState<Award | null>(null);
-  const [studentInfo, setStudentInfo] = useState<StudentProfile | null>(null);
+  const [studentInfo, setStudentInfo] = useState<StudentProfileFullResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // ดึงข้อมูล student profile จาก API
   useEffect(() => {
-    fetchStudentProfile();
-    fetchAward();
+    const fetchData = async () => {
+      await Promise.all([fetchStudentProfile(), fetchAward()]);
+    };
+    fetchData();
   }, [params.awardId]);
 
   const fetchStudentProfile = async () => {
     try {
-      const response = await api.getStudentProfile();
-      // Handle the actual response structure: { authenticated, user }
-      if (response.authenticated && response.user) {
-        setStudentInfo(response.user);
-      }
+      const response = await api.getStudentProfileFull();
+      setStudentInfo(response.data);
     } catch (err) {
       console.error("Failed to fetch student profile:", err);
       setError(
@@ -41,13 +41,8 @@ function ApplicationPage() {
       setLoading(true);
       setError(null);
 
-      const response = await api.getAvailableAwards();
-      const awards = response.data || [];
-
-      // หา award ตาม award_id จาก params
-      const foundAward = awards.find(
-        (a: Award) => a.award_id === params.awardId,
-      );
+      const response = await api.getAward(params.awardId as string);
+      const foundAward = response.data;
 
       if (foundAward) {
         setAward(foundAward);
@@ -67,14 +62,16 @@ function ApplicationPage() {
   const handleFormSubmit = async (file: File) => {
     console.log("SUBMIT CLICKED");
 
-    if (!award) return;
+    if (!award || !studentInfo) {
+      alert("ข้อมูลไม่ครบ กรุณาลองใหม่");
+      return;
+    }
 
     try {
       const formData = new FormData();
-      formData.append("campus_id", String(award.campus_id));
+      formData.append("campus_id", String(studentInfo.campus_id));
       formData.append("award_id", award.award_id);
       formData.append("file", file);
-
 
       console.log("Sending to backend...");
 
@@ -87,6 +84,14 @@ function ApplicationPage() {
       alert("สมัครไม่สำเร็จ");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto flex justify-center items-center py-20">
+        <p className="text-gray-500 text-lg">กำลังโหลดข้อมูล...</p>
+      </div>
+    );
+  }
 
   if (error) {
     return (

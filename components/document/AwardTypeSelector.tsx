@@ -64,24 +64,11 @@ const AwardTypeSelector: React.FC<AwardTypeSelectorProps> = ({
         {/* Track Status Button */}
         <div className="flex justify-center">
           <button
-            onClick={() => router.push("/document/track-status")}
+            onClick={() => router.push("/track-status")}
             className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg font-medium text-sm hover:bg-primary-hover transition-colors"
           >
             <span>ติดตามสถานะ</span>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="9 18 15 12 18 15"></polyline>
-              <path d="M21 12h-6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2z"></path>
-            </svg>
+            <span className="ml-1">{">"}</span>
           </button>
         </div>
       </div>

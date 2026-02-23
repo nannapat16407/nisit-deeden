@@ -224,6 +224,20 @@ class ApiClient {
     return this.fetch<StudentProfileApiResponse>("/api/student/profile");
   }
 
+  async getCurrentPeriodAwards(): Promise<{
+    message: string;
+    data: {
+      period_id: string;
+      awards: Award[];
+    };
+  }> {
+    return this.fetch("/api/student/current-period");
+  }
+
+  async checkApplication(periodId: string): Promise<{ is_applied: boolean }> {
+    return this.fetch(`/api/student/check-application?period_id=${periodId}`);
+  }
+
   // ============================================
   // Department Head APIs
   // ============================================
