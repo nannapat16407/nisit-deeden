@@ -2,6 +2,7 @@ import { AuthResponse, MeResponse } from "@/types/user.type";
 import { Period, CreatePeriodRequest } from "@/types/period.type";
 import { Award, CreateAwardRequest } from "@/types/award.type";
 import { Request as RequestType } from "@/types/request.type";
+import { Announcement, AnnouncementResponse } from "@/types/announcement.type";
 import {
   StudentProfileApiResponse,
   StudentProfileFullResponse,
@@ -186,6 +187,10 @@ class ApiClient {
 
   async getAvailableAwards(): Promise<{ data: any }> {
     return this.fetch("/api/sd/awards");
+  }
+
+  async getAnnouncementById(id: string): Promise<AnnouncementResponse> {
+    return this.fetch(`/api/sd/announcements/${id}`);
   }
 
   async createApplication(
