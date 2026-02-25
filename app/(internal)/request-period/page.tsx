@@ -6,6 +6,7 @@ import PeriodCard from "@/components/period/PeriodCard";
 import PeriodFormModal from "@/components/period/PeriodFormModal";
 import { api } from "@/lib/api";
 import { useAlertPopUp } from "@/components/pop-up/AlertPopUp";
+import { MOCK_PERIODS, USE_MOCK_DATA } from "./mock";
 
 function RequestPeriod() {
   // State and Hooks
@@ -19,6 +20,11 @@ function RequestPeriod() {
   const fetchPeriods = async () => {
     try {
       setLoading(true);
+      if (USE_MOCK_DATA) {
+        setPeriods(MOCK_PERIODS);
+        setError(null);
+        return;
+      }
       const response = await api.getPeriods();
       setPeriods(response.data || []);
       setError(null);
