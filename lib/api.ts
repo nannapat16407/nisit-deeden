@@ -200,7 +200,9 @@ class ApiClient {
     console.log("📤 FormData being sent:");
     for (const [key, value] of formData.entries()) {
       if (value instanceof File) {
-        console.log(`  ${key}: File(name="${value.name}", size=${value.size}, type="${value.type}")`);
+        console.log(
+          `  ${key}: File(name="${value.name}", size=${value.size}, type="${value.type}")`,
+        );
       } else {
         console.log(`  ${key}: ${value}`);
       }
@@ -249,6 +251,58 @@ class ApiClient {
 
   async getDeptRequests(): Promise<{ message: string; data: RequestType[] }> {
     return this.fetch("/api/department-head/requests");
+  }
+
+  async reviewDeptHeadRequest(
+    id: string,
+    action: "approve" | "reject",
+    comment: string = "",
+  ): Promise<{ message: string; data: any }> {
+    return this.fetch(`/api/department-head/requests/${id}/review`, {
+      method: "PATCH",
+      body: JSON.stringify({ action, comment }),
+    });
+  }
+
+  // ============================================
+  // Vice Dean APIs
+  // ============================================
+
+  async getViceDeanRequests(): Promise<{
+    message: string;
+    data: RequestType[];
+  }> {
+    return this.fetch("/api/vicedean/requests");
+  }
+
+  async reviewViceDeanRequest(
+    id: string,
+    action: "approve" | "reject",
+    comment: string = "",
+  ): Promise<{ message: string; data: any }> {
+    return this.fetch(`/api/vicedean/requests/${id}/review`, {
+      method: "PATCH",
+      body: JSON.stringify({ action, comment }),
+    });
+  }
+
+  // ============================================
+  // Dean APIs
+  // ============================================
+
+  async getDeanRequests(): Promise<{ message: string; data: RequestType[] }> {
+    return this.fetch("/api/dean/requests");
+  }
+
+  async reviewDeanRequest(
+    id: string,
+    action: "approve" | "reject",
+    comment: string = "",
+  ): Promise<{ message: string; data: any }> {
+    return this.fetch(`/api/dean/requests/${id}/review`, {
+      method: "PATCH",
+      body: JSON.stringify({ action, comment }),
+    });
   }
 
   // ============================================
