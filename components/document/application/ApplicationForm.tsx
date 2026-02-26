@@ -39,34 +39,33 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
   };
 
   // Handle download form template from API
-  const handleDownloadForm = async () => {
+  const handleDownloadForm = () => {
     if (!templateFileUrl) {
       console.log("No template file URL available");
       return;
     }
 
     try {
-      // Fetch the template file from API URL
-      const response = await fetch(templateFileUrl);
-      const blob = await response.blob();
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
+      // ใช้ <a> tag กับ target="_blank" เพื่อเปิดใน tab ใหม่
+      // วิธีนี้ไม่โดน CORS เพราะเป็น browser navigation (ไม่ใช่ fetch)
       const link = document.createElement("a");
-      link.href = url;
-      // Use award name for filename, fallback to "AwardForm.docx"
-      const filename = `${awardName || "AwardForm"}.docx`;
+      link.href = templateFileUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer"; // security best practice
+
+      // พยายามตั้งชื่อไฟล์ (อาจไม่ทำงาน cross-origin แต่ไม่เสียหาย)
+      const filename = `${awardName || "AwardForm"}.pdf`;
       link.download = filename;
+
       document.body.appendChild(link);
       link.click();
-
-      // Cleanup
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
 
-      console.log("Downloaded template from API:", filename);
+      console.log("Opening template from API:", filename);
     } catch (error) {
-      console.error("Failed to download template:", error);
+      console.error("Failed to open template:", error);
+      // Fallback: ใช้ window.open
+      window.open(templateFileUrl, "_blank", "noopener,noreferrer");
     }
   };
 
