@@ -10,15 +10,12 @@ import { Announcement } from "@/types/announcement.type";
 import { ROUTES_BY_ROLE } from "@/constants/route";
 import CountDownBox from "@/components/home/CountdownBox";
 
-// ID ของประกาศที่ต้องดึง
-const ANNOUNCEMENT_ID = "8f170e15-e5c0-4485-9ae8-c01dad52fed0";
-
 function HomePage() {
   const router = useRouter();
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const [activePeriod, setActivePeriod] = useState<Period | null>(null);
-  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -66,23 +63,25 @@ function HomePage() {
     }
   }, [isAuthenticated]);
 
-  // Fetch Announcement
+  // Fetch Announcements
   useEffect(() => {
-    const fetchAnnouncement = async () => {
+    const fetchAnnouncements = async () => {
       try {
         setAnnouncementLoading(true);
         setAnnouncementError(null);
 
-        const res = await api.getAnnouncementById(ANNOUNCEMENT_ID);
+        const res = await api.getAnnouncements();
+        const data = res.data;
 
-        // แสดงเฉพาะประกาศที่ is_active === true
-        if (res.data.is_active) {
-          setAnnouncement(res.data);
-        } else {
-          setAnnouncement(null);
-        }
+        // Filter เฉพาะ is_active === true
+        // Sort ตาม created_at เก่า -> ใหม่
+        const activeAnnouncements = data
+          .filter((a) => a.is_active)
+          .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+        setAnnouncements(activeAnnouncements);
       } catch (error) {
-        console.error("Failed to fetch announcement", error);
+        console.error("Failed to fetch announcements", error);
         setAnnouncementError("ไม่สามารถโหลดประกาศได้");
       } finally {
         setAnnouncementLoading(false);
@@ -90,7 +89,7 @@ function HomePage() {
     };
 
     if (isAuthenticated) {
-      fetchAnnouncement();
+      fetchAnnouncements();
     }
   }, [isAuthenticated]);
 
@@ -219,11 +218,15 @@ function HomePage() {
               <div className="text-center py-4">
                 <p className="text-red-500">{announcementError}</p>
               </div>
-            ) : announcement ? (
-              <>
-                <h3 className="text-lg font-bold text-gray-900 mb-4">{announcement.title}</h3>
-                <p className="text-gray-700 whitespace-pre-line">{announcement.description}</p>
-              </>
+            ) : announcements.length > 0 ? (
+              <div className="space-y-6">
+                {announcements.map((item) => (
+                  <div key={item.announcement_id}>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">{item.title}</h3>
+                    <p className="text-gray-700 whitespace-pre-line">{item.description}</p>
+                  </div>
+                ))}
+              </div>
             ) : (
               <p className="text-gray-500 text-center">ไม่มีประกาศในขณะนี้</p>
             )}

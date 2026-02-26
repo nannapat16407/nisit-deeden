@@ -416,9 +416,9 @@ function TrackStatusPage() {
       return <span className="text-3xl font-bold text-white">!</span>;
     }
 
-    // Pending state - use RefreshCw icon with spin animation
+    // Pending state - use RefreshCw icon with slow spin animation
     if (currentStep === stepNumber) {
-      return <RefreshCw className="w-7 h-7 text-white animate-spin" />;
+      return <RefreshCw className="w-7 h-7 text-white animate-spin [animation-duration:3s]" />;
     }
 
     // Completed step
