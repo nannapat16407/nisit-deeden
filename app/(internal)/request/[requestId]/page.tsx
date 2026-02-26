@@ -7,6 +7,7 @@ import useAuth from "@/hooks/useAuth";
 import { Request } from "@/types/request.type";
 import { DocType } from "@/types/document..type";
 import PdfViewerFromS3 from "@/components/document/PdfViewerFromS3";
+
 import {
   useConfirmPopUp,
   ConfirmPopUpUI,
@@ -48,6 +49,9 @@ function RequestDetailContent() {
         data = res.data;
       } else if (role === "SD_STAFF") {
         const res = await api.getSDRequests();
+        data = res.data;
+      } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD"){
+        const res = await api.getCommitteeRequest();
         data = res.data;
       }
 

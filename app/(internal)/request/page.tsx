@@ -17,6 +17,12 @@ export default function RequestPage() {
   // Filters
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
+  const roleBadgeMap: Record<string, string> = {
+    SD_STAFF: "รอกองกิจฯ เท่านั้น",
+    COMMITTEE: "รอคณะกรรมการ เท่านั้น",
+    COMMITTEE_HEAD: "รอคณะกรรมการ เท่านั้น",
+  };
+  const roleBadge = role ? roleBadgeMap[role] : undefined;
 
   const fetchRequests = async () => {
     try {
@@ -37,6 +43,9 @@ export default function RequestPage() {
         data = res.data;
       } else if (role === "DEAN") {
         const res = await api.getDeanRequests();
+        // SD Fetch Here
+      } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD"){
+        const res = await api.getCommitteeRequest();
         data = res.data;
       } else {
         console.warn("No fetcher for role:", role);
@@ -71,6 +80,11 @@ export default function RequestPage() {
       if (req.status !== "PENDING_SD") {
         return false;
       }
+    } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
+      if (req.status !== "PENDING_COMMITTEE") {
+        return false;
+      }
+    
     } else {
       const matchesStatus =
         statusFilter === "ALL" || req.status === statusFilter;
@@ -101,15 +115,15 @@ export default function RequestPage() {
       <div className="mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-gray-800">รายการคำร้อง</h1>
-          {role === "SD_STAFF" && (
+          {roleBadge && (
             <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded">
-              รอกองกิจฯ เท่านั้น
+              {roleBadge}
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          {role !== "SD_STAFF" && (
+          {!roleBadge && (
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}

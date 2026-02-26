@@ -31,13 +31,13 @@ export default function RequestPeriodRewardsPage({
     try {
       setLoading(true);
       const response: any = await api.getAvailableAwards();
-      console.log(response.data);
+      console.log(response);
 
-      const periodGroup = response.data?.find(
+      const periodGroup = response.data?.filter(
         (p: any) => p.period_id === periodId,
       );
 
-      setAwards(periodGroup?.awards || []);
+      setAwards(periodGroup || []);
 
       setError(null);
     } catch (err: any) {
