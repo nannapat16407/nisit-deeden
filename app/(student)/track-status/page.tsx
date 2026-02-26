@@ -299,6 +299,12 @@ function TrackStatusPage() {
   // New helper functions for horizontal stepper
   const getStepCircleColor = (stepNumber: number): string => {
     if (!statusToUse) return "bg-gray-300 border-gray-300";
+
+    // Handle COMPLETE / COMPLETED status - all steps should be completed color
+    if (statusToUse === "COMPLETE" || statusToUse === "COMPLETED") {
+      return "bg-[#599fa0] border-[#599fa0]";
+    }
+
     const currentStep = STATUS_TO_STEP[statusToUse];
     const isRejected = isRejectedStatus(statusToUse);
 
@@ -323,6 +329,11 @@ function TrackStatusPage() {
   const getLineStyle = (stepNumber: number) => {
     if (!statusToUse) {
       return { backgroundColor: "#D1D5DB" };
+    }
+
+    // Handle COMPLETE / COMPLETED status - all lines should be completed color
+    if (statusToUse === "COMPLETE" || statusToUse === "COMPLETED") {
+      return { backgroundColor: "#599fa0" };
     }
 
     const currentStep = STATUS_TO_STEP[statusToUse];
@@ -368,6 +379,23 @@ function TrackStatusPage() {
           <circle cx="12" cy="12" r="1" />
           <circle cx="19" cy="12" r="1" />
           <circle cx="5" cy="12" r="1" />
+        </svg>
+      );
+    }
+
+    // Handle COMPLETE / COMPLETED status - all steps show checkmark
+    if (statusToUse === "COMPLETE" || statusToUse === "COMPLETED") {
+      return (
+        <svg
+          className="w-7 h-7 text-white"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M20 6 9 17l-5-5" />
         </svg>
       );
     }
