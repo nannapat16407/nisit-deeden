@@ -35,13 +35,11 @@ export const ROUTES_BY_ROLE = {
     request: "/request",
   },
   COMMITTEE: {
-    home: "/home",
-    request: "/request",
+    home: "/request",
     request_period: "/request-period",
   },
   COMMITTEE_HEAD: {
-    home: "/home",
-    request: "/request",
+    home: "/request",
     request_period: "/request-period",
   }
 };

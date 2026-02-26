@@ -6,27 +6,33 @@ import PeriodCard from "@/components/period/PeriodCard";
 import PeriodFormModal from "@/components/period/PeriodFormModal";
 import { api } from "@/lib/api";
 import { useAlertPopUp } from "@/components/pop-up/AlertPopUp";
-import { MOCK_PERIODS, USE_MOCK_DATA } from "./mock";
+import useAuth from "@/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
 function RequestPeriod() {
   // State and Hooks
   const { setAlert } = useAlertPopUp();
+  const { user } = useAuth();
+  const router = useRouter();
   const [periods, setPeriods] = useState<Period[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<Period | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [periodCommitteeState, setPeriodCommitteeState] = useState<
+    Record<string, boolean>
+  >({});
+
+  // Check if user is COMMITTEE or COMMITTEE_HEAD
+  const isCommitteeRole = user?.role === "COMMITTEE" || user?.role === "COMMITTEE_HEAD";
 
   const fetchPeriods = async () => {
     try {
+      console.log(user)
       setLoading(true);
-      if (USE_MOCK_DATA) {
-        setPeriods(MOCK_PERIODS);
-        setError(null);
-        return;
-      }
       const response = await api.getPeriods();
-      setPeriods(response.data || []);
+      console.log("ASDSD",response)
+      setPeriods(response?.data);
       setError(null);
     } catch (err: any) {
       console.error("Failed to fetch periods:", err);
@@ -40,6 +46,31 @@ function RequestPeriod() {
   useEffect(() => {
     fetchPeriods();
   }, []);
+
+  useEffect(() => {
+    const loadPeriodStates = async () => {
+      if (periods.length === 0) {
+        setPeriodCommitteeState({});
+        return;
+      }
+
+      const entries = await Promise.all(
+        periods.map(async (period) => {
+          try {
+            const state = await api.getPeriodState(period.period_id);
+            return [period.period_id, state.committee_state] as const;
+          } catch (err) {
+            console.error("Failed to fetch period state:", err);
+            return [period.period_id, false] as const;
+          }
+        }),
+      );
+
+      setPeriodCommitteeState(Object.fromEntries(entries));
+    };
+
+    loadPeriodStates();
+  }, [periods]);
 
   // Handlers
   const handleCreate = () => {
@@ -191,32 +222,61 @@ function RequestPeriod() {
     }
   };
 
+  const CommitteePDFViewCallback = async (periodId: string) => {
+    try {
+      const state = await api.getPeriodState(periodId);
+      if (!state.committee_file_url) {
+        setAlert({
+          open: true,
+          msg: "ไม่พบไฟล์เอกสารคณะกรรมการสำหรับรอบนี้",
+          severity: "warning",
+        });
+        return;
+      }
+
+      window.open(state.committee_file_url, "_blank", "noopener,noreferrer");
+    } catch (err: any) {
+      setAlert({
+        open: true,
+        msg: "เปิดเอกสารไม่สำเร็จ",
+        severity: "error",
+      });
+    }
+  };
+
+  // Filter periods based on role
+  const filteredPeriods = isCommitteeRole
+    ? periods.filter((p) => p.is_active)
+    : periods;
+
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold font-noto text-gray-800">
-          ช่วงเวลารับสมัคร
+          {isCommitteeRole ? "ช่วงเวลาที่ต้องอนุมัติ" : "ช่วงเวลารับสมัคร"}
         </h1>
-        <button
-          onClick={handleCreate}
-          className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-lg shadow-md transition-all font-medium"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        {!isCommitteeRole && (
+          <button
+            onClick={handleCreate}
+            className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-lg shadow-md transition-all font-medium"
           >
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-          สร้างช่วงเวลาใหม่
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            สร้างช่วงเวลาใหม่
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -227,29 +287,39 @@ function RequestPeriod() {
         <div className="text-center py-20 text-red-500">{error}</div>
       ) : (
         <div className="flex flex-col gap-4">
-          {periods.map((period) => (
+          {filteredPeriods.map((period) => (
             <PeriodCard
               key={period.period_id}
               period={period}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              showButtons={!isCommitteeRole}
+              isCommitteeRole={isCommitteeRole}
+              committeeDocumentAvailable={
+                periodCommitteeState[period.period_id] ?? false
+              }
+              onCommitteePDFView={CommitteePDFViewCallback}
             />
           ))}
 
-          {periods.length === 0 && (
+          {filteredPeriods.length === 0 && (
             <div className="text-center py-20 text-gray-400">
-              ไม่พบข้อมูลช่วงเวลารับสมัคร
+              {isCommitteeRole
+                ? "ไม่พบข้อมูลช่วงเวลาที่ต้องอนุมัติ"
+                : "ไม่พบข้อมูลช่วงเวลารับสมัคร"}
             </div>
           )}
         </div>
       )}
 
-      <PeriodFormModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-        initialData={editingPeriod}
-      />
+      {!isCommitteeRole && (
+        <PeriodFormModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSave}
+          initialData={editingPeriod}
+        />
+      )}
     </div>
   );
 }

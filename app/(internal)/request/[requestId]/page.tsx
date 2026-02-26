@@ -7,7 +7,6 @@ import useAuth from "@/hooks/useAuth";
 import { Request } from "@/types/request.type";
 import { DocType } from "@/types/document..type";
 import PdfViewerFromS3 from "@/components/document/PdfViewerFromS3";
-import { MOCK_REQUESTS, USE_MOCK_DATA } from "../mock";
 
 import {
   useConfirmPopUp,
@@ -50,9 +49,8 @@ function RequestDetailContent() {
         const res = await api.getSDRequests();
         data = res.data;
       } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD"){
-          if(USE_MOCK_DATA){
-            data = MOCK_REQUESTS;
-          }
+        const res = await api.getCommitteeRequest();
+        data = res.data;
       }
 
       const found = data.find(

@@ -6,7 +6,6 @@ import { api } from "@/lib/api";
 import useAuth from "@/hooks/useAuth";
 import { Request } from "@/types/request.type";
 import { getStatusBadge } from "@/components/StatusBadge";
-import { MOCK_REQUESTS, USE_MOCK_DATA } from "./mock";
 
 export default function RequestPage() {
   const { user, logout } = useAuth();
@@ -41,10 +40,8 @@ export default function RequestPage() {
         data = res.data;
         // SD Fetch Here
       } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD"){
-
-        if(USE_MOCK_DATA){
-          data = MOCK_REQUESTS;
-        }
+        const res = await api.getCommitteeRequest();
+        data = res.data;
       } else {
         // Committee, DEAN, VICEDEAN - Need generic fetch or specific
         // For now using Dept for demo if supported, or empty

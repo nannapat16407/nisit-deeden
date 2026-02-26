@@ -6,13 +6,12 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import useAuth from "@/hooks/useAuth";
 import { Request } from "@/types/request.type";
-import { MOCK_REQUESTS, USE_MOCK_DATA } from "@/app/(internal)/request/mock";
 import { useAlertPopUp } from "@/components/pop-up/AlertPopUp";
-import { MOCK_PERIOD_AWARDS } from "../../mock";
 import {
   useConfirmPopUp,
   ConfirmPopUpUI,
 } from "@/components/pop-up/ConfirmPopUp";
+import { Award } from "@/types/award.type";
 
 type Params = Promise<{ id: string }>;
 
@@ -42,9 +41,9 @@ function RequestPeriodRequestContent({
       let data: Request[] = [];
 
       if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
-        if (USE_MOCK_DATA) {
-          data = MOCK_REQUESTS;
-        }
+        const res = await api.getCommitteeRequest();
+        data = res.data;
+        // console.log(data)
       } else if (role !== "STUDENT"){
         const res = await api.getDeptRequests();
         data = res.data;
@@ -53,14 +52,20 @@ function RequestPeriodRequestContent({
         router.back();
       }
 
+      const res = await api.getAvailableAwards();
+      const awards = res.data?.flatMap((p: any) => p.awards) || [];
+      // console.log(awards)
+
       const periodAwardIds = new Set(
-        MOCK_PERIOD_AWARDS.filter((award) => award.period_id === periodId).map(
+        awards.filter((award) => award.period_id === periodId).map(
           (award) => award.award_id,
         ),
       );
+      // console.log(periodAwardIds)
       const filteredByPeriod = data.filter((req) =>
-        periodAwardIds.has(req.AwardID),
+        periodAwardIds.has(req.award_id),
       );
+      console.log(filteredByPeriod)
       setRequests(filteredByPeriod);
     } catch (err: any) {
       console.error("Failed to fetch requests:", err);
@@ -89,24 +94,24 @@ function RequestPeriodRequestContent({
 
     const searchLower = search.toLowerCase();
     const matchesSearch =
-      req.Award?.award_name.toLowerCase().includes(searchLower) ||
-      (req.Owner?.fname + " " + req.Owner?.lname).toLowerCase().includes(searchLower);
+      req.award_name?.toLowerCase().includes(searchLower) ||
+      (req.owner_fname + " " + req.owner_lname).toLowerCase().includes(searchLower);
 
     return matchesSearch;
   });
 
   const allSelected =
     filteredRequests.length > 0 &&
-    filteredRequests.every((req) => selectedRequestIds.includes(req.RequestID));
+    filteredRequests.every((req) => selectedRequestIds.includes(req.request_id as string));
 
   const toggleSelectAll = () => {
     if (allSelected) {
-      const visibleIds = new Set(filteredRequests.map((r) => r.RequestID));
+      const visibleIds = new Set(filteredRequests.map((r) => r.request_id));
       setSelectedRequestIds((prev) => prev.filter((id) => !visibleIds.has(id)));
       return;
     }
     const merged = new Set(selectedRequestIds);
-    filteredRequests.forEach((req) => merged.add(req.RequestID));
+    filteredRequests.forEach((req) => merged.add(req.request_id as string));
     setSelectedRequestIds(Array.from(merged));
   };
 
@@ -129,27 +134,91 @@ function RequestPeriodRequestContent({
     }
 
     try {
-      const payload = {
-        period_id: periodId,
-        request_ids: selectedRequestIds,
-        approved_by_role: "COMMITTEE_HEAD",
-      };
+      const selectedRequests = requests.filter((req) =>
+        selectedRequestIds.includes(req.RequestID || req.request_id || ""),
+      );
 
-      // setRequests((prev) =>
-      //   prev.map((req) =>
-      //     selectedRequestIds.includes(req.RequestID)
-      //       ? { ...req, status: "PENDING_PRESIDENT" }
-      //       : req,
-      //   ),
-      // );
+      const groupMap = new Map<string, Request[]>();
+      selectedRequests.forEach((req) => {
+        const awardId = req.AwardID || req.award_id || req.Award?.award_id || "unknown-award";
+        const current = groupMap.get(awardId) || [];
+        current.push({ ...req, status: "PENDING_PRESIDENT" });
+        groupMap.set(awardId, current);
+      });
 
-      // setSelectedRequestIds([]);
+      const award_groups_req = Array.from(groupMap.entries()).map(
+        ([award_id, groupedRequests]) => ({
+          award_id,
+          requests: groupedRequests,
+        }),
+      );
 
-      // CALL API
+      const res = await api.getPeriods();
+      const periods = res.data;
+      const targetPeriod =
+        periods.find((period) => period.period_id === periodId) ||
+        ({
+          period_id: periodId,
+          academic_year: new Date().getFullYear() + 543,
+          semester: 1,
+          start_date: new Date().toISOString(),
+          end_date: new Date().toISOString(),
+        } as any);
+
+      if (!user) {
+        throw new Error("Missing issue account");
+      }
+
+      const pdfResponse = await fetch("/api/committee-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          issue_account: user,
+          period: targetPeriod,
+          award_groups_req,
+        }),
+      });
+
+      if (!pdfResponse.ok) {
+        throw new Error("Generate committee PDF failed");
+      }
+
+      const pdfResult = await pdfResponse.json();
+      const approveIds = selectedRequestIds;
+      const rejectIds = requests
+        .map((req) => req.RequestID || req.request_id || "")
+        .filter((id): id is string => Boolean(id) && !approveIds.includes(id));
+
+      await api.committeeApprove(
+        approveIds,
+        rejectIds,
+        `Committee bulk review for period ${periodId}`,
+      );
+
+      const generatedPdfPath = pdfResult?.data?.publicPath as string | undefined;
+      if (!generatedPdfPath) {
+        throw new Error("Missing generated PDF path");
+      }
+
+      const generatedPdfResponse = await fetch(generatedPdfPath);
+      if (!generatedPdfResponse.ok) {
+        throw new Error("Failed to read generated PDF");
+      }
+
+      const generatedPdfBlob = await generatedPdfResponse.blob();
+      const uploadFile = new File(
+        [generatedPdfBlob],
+        `committee-approve-${periodId}.pdf`,
+        { type: "application/pdf" },
+      );
+
+      await api.uploadCommitteePeriodPdf(periodId, uploadFile);
 
       setAlert({
         open: true,
-        msg: `อนุมัติแล้ว ${payload.request_ids.length} รายการ`,
+        msg: `อนุมัติแล้ว ${approveIds.length} รายการ และอัปโหลดเอกสารสำเร็จ`,
         severity: "success",
       });
       router.back();
@@ -303,32 +372,30 @@ function RequestPeriodRequestContent({
                     {isCommitteeHead && (
                       <td
                         className="px-4 py-4 cursor-pointer"
-                        onClick={() => toggleSelectOne(req.RequestID)}
+                        onClick={() => toggleSelectOne(req.request_id as string)}
                       >
                         <input
                           type="checkbox"
                           className="h-5 w-5 cursor-pointer accent-emerald-600"
-                          checked={selectedRequestIds.includes(req.RequestID)}
-                          onChange={() => toggleSelectOne(req.RequestID)}
+                          checked={selectedRequestIds.includes(req.request_id as string)}
+                          onChange={() => toggleSelectOne(req.request_id as string)}
                           onClick={(e) => e.stopPropagation()}
                         />
                       </td>
                     )}
                     <td className="px-6 py-4">
-                      {new Date(req.CreatedAt).toLocaleDateString("th-TH")}
+                      {new Date(req.created_at).toLocaleDateString("th-TH")}
                     </td>
                     <td className="px-6 py-4">
-                      {req.Award?.award_name || "-"}
+                      {req.award_name || "-"}
                     </td>
                     <td className="px-6 py-4">
-                      {req.Owner
-                        ? `${req.Owner.fname} ${req.Owner.lname}`
-                        : "-"}
+                      {`${req.owner_fname} ${req.owner_lname}`}
                     </td>
                     <td className="px-6 py-4">{getStatusBadge(req.status)}</td>
                     <td className="px-6 py-4 text-right">
                       <Link
-                        href={`/request/${req.RequestID}`}
+                        href={`/request/${req.request_id}`}
                         className="text-emerald-600 hover:text-emerald-800 font-medium"
                       >
                         ดูรายละเอียด &gt;
