@@ -1,0 +1,40 @@
+name: Discord Notification
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    types: [opened, closed, reopened, synchronize]
+    branches:
+      - develop
+      - main
+
+jobs:
+  discord-notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Discord Notification
+        uses: sarisia/actions-status-discord@v1
+        if: always()
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          title: "🔔 มีการเคลื่อนไหวที่ Repository (Frontend)"
+
+          # Use Logic: Push shows Commit Message, PR shows Title
+          description: |
+            **Event:** `${{ github.event_name }}`
+            **Repo:** [${{ github.repository }}](${{ github.event.repository.html_url }})
+            **Branch:** `${{ github.ref_name }}`
+            **User:** ${{ github.actor }}
+            **Message:** `${{ github.event.head_commit.message || github.event.pull_request.title }}`
+            **Status:** ${{ job.status }}
+
+            ${{ github.event_name == 'pull_request' && format('[👉 ไปที่ Pull Request]({0})', github.event.pull_request.html_url) || '' }}
+
+          # Green=Success, Red=Failure, Yellow=Cancelled
+          color: ${{ job.status == 'success' && '0x28a745' || job.status == 'failure' && '0xdc3545' || '0xffc107' }}
+          username: GitHub Bot
+          avatar_url: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png

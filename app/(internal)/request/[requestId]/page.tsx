@@ -15,6 +15,8 @@ import {
   useEditDocListPopUp,
   EditDocListPopUpUI,
 } from "@/components/pop-up/EditDocList";
+import { getStatusBadge } from "@/components/StatusBadge";
+
 function RequestDetailContent() {
   const { requestId } = useParams();
   const { user } = useAuth();
@@ -87,7 +89,7 @@ function RequestDetailContent() {
   const SDApproveCallback = async () => {
     try {
       await api.reviewSDRequest(requestId as string, "approve");
-      await fetchRequest();
+      router.push("/request");
     } catch (error) {
       console.error("Failed to approve request:", error);
       throw error;
@@ -108,7 +110,7 @@ function RequestDetailContent() {
     try {
       const comment = "ขอเอกสาร: " + selectedDocs.map((d) => d.name).join(", ");
       await api.reviewSDRequest(requestId as string, "need_docs", comment);
-      await fetchRequest();
+      router.push("/request");
     } catch (error) {
       console.error("Failed to request documents:", error);
       throw error;
@@ -121,6 +123,41 @@ function RequestDetailContent() {
       message: "กรุณาเลือกหรือเพิ่มเอกสารที่ต้องการให้ผู้ยื่นส่งเพิ่มเติม",
       currentDocs: [],
       onConfirm: handleNeedMoreDocCallback,
+    });
+  };
+
+  const handleRoleReview = async (
+    roleName: string,
+    action: "approve" | "reject",
+  ) => {
+    try {
+      if (roleName === "DEPARTMENT_HEAD") {
+        await api.reviewDeptHeadRequest(requestId as string, action);
+      } else if (roleName === "VICEDEAN") {
+        await api.reviewViceDeanRequest(requestId as string, action);
+      } else if (roleName === "DEAN") {
+        await api.reviewDeanRequest(requestId as string, action);
+      }
+      router.push("/request");
+    } catch (error) {
+      console.error(`Failed to review request as ${roleName}:`, error);
+      throw error;
+    }
+  };
+
+  const handleReviewClick = (
+    roleName: string,
+    action: "approve" | "reject",
+  ) => {
+    const isApprove = action === "approve";
+    triggerConfirmPopUp({
+      title: isApprove ? "ยืนยันการเห็นชอบ" : "ยืนยันการไม่อนุมัติ",
+      message: isApprove
+        ? "คุณแน่ใจหรือว่าต้องการให้เห็นชอบคำร้องนี้?"
+        : "คุณแน่ใจหรือว่าต้องการไม่อนุมัติคำร้องนี้?",
+      confirmText: isApprove ? "เห็นชอบ" : "ปฏิเสธ",
+      cancelText: "ยกเลิก",
+      onConfirm: () => handleRoleReview(roleName, action),
     });
   };
 
@@ -221,9 +258,7 @@ function RequestDetailContent() {
                   ).toLocaleDateString("th-TH")
                 : "-"}
             </div>
-            <div className="mt-1 inline-block bg-white px-3 py-1 rounded border border-emerald-200 text-emerald-700 text-sm font-bold shadow-sm">
-              {request.status}
-            </div>
+            {getStatusBadge(request.status)}
           </div>
         </div>
 
@@ -313,10 +348,62 @@ function RequestDetailContent() {
                 ส่วนสำหรับหัวหน้าภาควิชา
               </h3>
               <div className="flex gap-4">
-                <button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-bold shadow-md transition-all">
+                <button
+                  onClick={() =>
+                    handleReviewClick("DEPARTMENT_HEAD", "approve")
+                  }
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-bold shadow-md transition-all"
+                >
                   เห็นชอบ (Approve)
                 </button>
-                <button className="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 py-3 rounded-lg font-bold shadow-sm transition-all">
+                <button
+                  onClick={() => handleReviewClick("DEPARTMENT_HEAD", "reject")}
+                  className="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 py-3 rounded-lg font-bold shadow-sm transition-all"
+                >
+                  ไม่เห็นชอบ (Reject)
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Actions (If Vice Dean and PENDING_VICEDEAN) */}
+          {role === "VICEDEAN" && request.status === "PENDING_VICEDEAN" && (
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+              <h3 className="font-bold text-gray-800 mb-4">
+                ส่วนสำหรับรองคณบดี
+              </h3>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => handleReviewClick("VICEDEAN", "approve")}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-bold shadow-md transition-all"
+                >
+                  เห็นชอบ (Approve)
+                </button>
+                <button
+                  onClick={() => handleReviewClick("VICEDEAN", "reject")}
+                  className="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 py-3 rounded-lg font-bold shadow-sm transition-all"
+                >
+                  ไม่เห็นชอบ (Reject)
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Actions (If Dean and PENDING_DEAN) */}
+          {role === "DEAN" && request.status === "PENDING_DEAN" && (
+            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+              <h3 className="font-bold text-gray-800 mb-4">ส่วนสำหรับคณบดี</h3>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => handleReviewClick("DEAN", "approve")}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-bold shadow-md transition-all"
+                >
+                  เห็นชอบ (Approve)
+                </button>
+                <button
+                  onClick={() => handleReviewClick("DEAN", "reject")}
+                  className="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 py-3 rounded-lg font-bold shadow-sm transition-all"
+                >
                   ไม่เห็นชอบ (Reject)
                 </button>
               </div>
