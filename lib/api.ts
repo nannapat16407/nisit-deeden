@@ -1,5 +1,5 @@
 import { AuthResponse, MeResponse } from "@/types/user.type";
-import { Period, CreatePeriodRequest } from "@/types/period.type";
+import { Period, CreatePeriodRequest, PeriodState } from "@/types/period.type";
 import { Award, CreateAwardRequest } from "@/types/award.type";
 import { Request as RequestType } from "@/types/request.type";
 import { Announcement, AnnouncementResponse, AnnouncementsResponse } from "@/types/announcement.type";
@@ -393,6 +393,89 @@ class ApiClient {
     );
 
     return response;
+  }
+
+  // ============================================
+  // COMMITTEE API 
+  // ============================================
+
+  async getCommitteeRequest(): Promise<{ data: RequestType[] }> {
+    return this.fetch("/api/committee/requests");
+  }
+
+  async committeeApprove(
+    approve_ids: string[],
+    reject_ids: string[],
+    comment: string = "",
+  ): Promise<{ message: string; data: any }> {
+    return this.fetch("/api/committee/applications/bulk-review", {
+      method: "POST",
+      body: JSON.stringify({
+        approve_ids,
+        reject_ids,
+        comment,
+      }),
+    });
+  }
+
+  async uploadCommitteePeriodPdf(
+    periodId: string,
+    file: File,
+  ): Promise<{ message: string; data: any }> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(
+      `${this.baseURL}/api/committee/upload/period/${periodId}`,
+      {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || errorData.message || "Failed to upload committee PDF",
+      );
+    }
+
+    return response.json();
+  }
+
+  async getPeriodById(id: string): Promise<{
+    data: {
+      period_id: string;
+      academic_year: number;
+      semester: number;
+      period_start: string;
+      period_end: string;
+      campus_id: number;
+      campus?: {
+        id: number;
+        name: string;
+        is_active: boolean;
+      };
+      committee_file_url?: string;
+      president_file_url?: string;
+    };
+    message: string;
+  }> {
+    return this.fetch(`/api/sd/periods/${id}`);
+  }
+
+  async getPeriodState(period_id: string): Promise<PeriodState> {
+    const response = await this.getPeriodById(period_id);
+    const committeeFileUrl = response.data?.committee_file_url?.trim();
+    const presidentFileUrl = response.data?.president_file_url?.trim();
+
+    return {
+      committee_state: Boolean(committeeFileUrl),
+      president_state: Boolean(presidentFileUrl),
+      committee_file_url: committeeFileUrl,
+      president_file_url: presidentFileUrl,
+    };
   }
 }
 

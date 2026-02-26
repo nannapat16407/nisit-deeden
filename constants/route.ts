@@ -33,6 +33,14 @@ export const ROUTES_BY_ROLE = {
   DEPARTMENT_HEAD: {
     home: "/home",
     request: "/request",
+  },
+  COMMITTEE: {
+    home: "/request",
+    request_period: "/request-period",
+  },
+  COMMITTEE_HEAD: {
+    home: "/request",
+    request_period: "/request-period",
   }
 };
 
