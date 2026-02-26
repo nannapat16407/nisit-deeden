@@ -11,3 +11,8 @@ export interface AnnouncementResponse {
   data: Announcement;
   message: string;
 }
+
+export interface AnnouncementsResponse {
+  data: Announcement[];
+  message: string;
+}
