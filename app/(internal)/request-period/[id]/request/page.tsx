@@ -53,15 +53,17 @@ function RequestPeriodRequestContent({
       }
 
       const res = await api.getAvailableAwards();
-      const awards = res.data?.flatMap((p: any) => p.awards) || [];
-      // console.log(awards)
+      const awards: Award[] = Array.isArray(res.data)
+        ? res.data
+            .flatMap((p: any) => (Array.isArray(p?.awards) ? p.awards : []))
+            .filter((award): award is Award => Boolean(award))
+        : [];
 
       const periodAwardIds = new Set(
-        awards.filter((award) => award.period_id === periodId).map(
-          (award) => award.award_id,
-        ),
+        awards
+          .filter((award) => award?.period_id === periodId)
+          .map((award) => award.award_id),
       );
-      // console.log(periodAwardIds)
       const filteredByPeriod = data.filter((req) =>
         periodAwardIds.has(req.award_id),
       );
