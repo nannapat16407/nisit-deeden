@@ -255,13 +255,23 @@ class ApiClient {
 
   async reviewDeptHeadRequest(
     id: string,
-    action: "approve" | "reject",
-    comment: string = "",
+    formData: FormData,
   ): Promise<{ message: string; data: any }> {
-    return this.fetch(`/api/department-head/requests/${id}/review`, {
-      method: "PATCH",
-      body: JSON.stringify({ action, comment }),
-    });
+    const response = await fetch(
+      `${this.baseURL}/api/department-head/requests/${id}/review`,
+      {
+        method: "PATCH",
+        body: formData,
+        credentials: "include",
+      },
+    );
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || errorData.message || "Failed to review",
+      );
+    }
+    return response.json();
   }
 
   // ============================================
@@ -277,13 +287,23 @@ class ApiClient {
 
   async reviewViceDeanRequest(
     id: string,
-    action: "approve" | "reject",
-    comment: string = "",
+    formData: FormData,
   ): Promise<{ message: string; data: any }> {
-    return this.fetch(`/api/vicedean/requests/${id}/review`, {
-      method: "PATCH",
-      body: JSON.stringify({ action, comment }),
-    });
+    const response = await fetch(
+      `${this.baseURL}/api/vicedean/requests/${id}/review`,
+      {
+        method: "PATCH",
+        body: formData,
+        credentials: "include",
+      },
+    );
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || errorData.message || "Failed to review",
+      );
+    }
+    return response.json();
   }
 
   // ============================================
@@ -296,13 +316,23 @@ class ApiClient {
 
   async reviewDeanRequest(
     id: string,
-    action: "approve" | "reject",
-    comment: string = "",
+    formData: FormData,
   ): Promise<{ message: string; data: any }> {
-    return this.fetch(`/api/dean/requests/${id}/review`, {
-      method: "PATCH",
-      body: JSON.stringify({ action, comment }),
-    });
+    const response = await fetch(
+      `${this.baseURL}/api/dean/requests/${id}/review`,
+      {
+        method: "PATCH",
+        body: formData,
+        credentials: "include",
+      },
+    );
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || errorData.message || "Failed to review",
+      );
+    }
+    return response.json();
   }
 
   // ============================================

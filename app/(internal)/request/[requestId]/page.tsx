@@ -30,6 +30,8 @@ function RequestDetailContent() {
   const [isEditingAward, setIsEditingAward] = useState(false);
   const [availableAwards, setAvailableAwards] = useState<any[]>([]);
   const [selectedAwardId, setSelectedAwardId] = useState("");
+  const [reviewFile, setReviewFile] = useState<File | null>(null);
+  const [reviewComment, setReviewComment] = useState("");
 
   const fetchRequest = async () => {
     if (!requestId || !role) return;
@@ -131,16 +133,22 @@ function RequestDetailContent() {
     action: "approve" | "reject",
   ) => {
     try {
+      const formData = new FormData();
+      formData.append("action", action);
+      if (reviewComment) formData.append("comment", reviewComment);
+      if (reviewFile) formData.append("signed_file", reviewFile);
+
       if (roleName === "DEPARTMENT_HEAD") {
-        await api.reviewDeptHeadRequest(requestId as string, action);
+        await api.reviewDeptHeadRequest(requestId as string, formData);
       } else if (roleName === "VICEDEAN") {
-        await api.reviewViceDeanRequest(requestId as string, action);
+        await api.reviewViceDeanRequest(requestId as string, formData);
       } else if (roleName === "DEAN") {
-        await api.reviewDeanRequest(requestId as string, action);
+        await api.reviewDeanRequest(requestId as string, formData);
       }
       router.push("/request");
     } catch (error) {
       console.error(`Failed to review request as ${roleName}:`, error);
+      alert(error instanceof Error ? error.message : "Failed to review");
       throw error;
     }
   };
@@ -347,6 +355,61 @@ function RequestDetailContent() {
               <h3 className="font-bold text-gray-800 mb-4">
                 ส่วนสำหรับหัวหน้าภาควิชา
               </h3>
+
+              <div className="mb-6 space-y-4">
+                <div>
+                  <a
+                    href={
+                      request.attachments?.[request.attachments.length - 1]
+                        ?.file_url || "#"
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors text-sm font-medium"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    ดาวน์โหลดไฟล์ล่าสุดเพื่อนำไปเซ็น
+                  </a>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    อัปโหลดเอกสารที่เซ็นแล้ว (บังคับสำหรับการ Approve)
+                  </label>
+                  <input
+                    type="file"
+                    onChange={(e) => setReviewFile(e.target.files?.[0] || null)}
+                    className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
+                    accept=".pdf"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    เหตุผล / ความคิดเห็น (บังคับสำหรับการ Reject)
+                  </label>
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="ระบุเหตุผล..."
+                    className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
               <div className="flex gap-4">
                 <button
                   onClick={() =>
@@ -372,6 +435,61 @@ function RequestDetailContent() {
               <h3 className="font-bold text-gray-800 mb-4">
                 ส่วนสำหรับรองคณบดี
               </h3>
+
+              <div className="mb-6 space-y-4">
+                <div>
+                  <a
+                    href={
+                      request.attachments?.[request.attachments.length - 1]
+                        ?.file_url || "#"
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors text-sm font-medium"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    ดาวน์โหลดไฟล์ล่าสุดเพื่อนำไปเซ็น
+                  </a>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    อัปโหลดเอกสารที่เซ็นแล้ว (บังคับสำหรับการ Approve)
+                  </label>
+                  <input
+                    type="file"
+                    onChange={(e) => setReviewFile(e.target.files?.[0] || null)}
+                    className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
+                    accept=".pdf"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    เหตุผล / ความคิดเห็น (บังคับสำหรับการ Reject)
+                  </label>
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="ระบุเหตุผล..."
+                    className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
               <div className="flex gap-4">
                 <button
                   onClick={() => handleReviewClick("VICEDEAN", "approve")}
@@ -393,6 +511,61 @@ function RequestDetailContent() {
           {role === "DEAN" && request.status === "PENDING_DEAN" && (
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
               <h3 className="font-bold text-gray-800 mb-4">ส่วนสำหรับคณบดี</h3>
+
+              <div className="mb-6 space-y-4">
+                <div>
+                  <a
+                    href={
+                      request.attachments?.[request.attachments.length - 1]
+                        ?.file_url || "#"
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors text-sm font-medium"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    ดาวน์โหลดไฟล์ล่าสุดเพื่อนำไปเซ็น
+                  </a>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    อัปโหลดเอกสารที่เซ็นแล้ว (บังคับสำหรับการ Approve)
+                  </label>
+                  <input
+                    type="file"
+                    onChange={(e) => setReviewFile(e.target.files?.[0] || null)}
+                    className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
+                    accept=".pdf"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    เหตุผล / ความคิดเห็น (บังคับสำหรับการ Reject)
+                  </label>
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="ระบุเหตุผล..."
+                    className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
               <div className="flex gap-4">
                 <button
                   onClick={() => handleReviewClick("DEAN", "approve")}
