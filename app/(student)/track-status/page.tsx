@@ -574,7 +574,8 @@ function TrackStatusPage() {
         showApprover = true;
       } else {
         // log ล่าสุด: แสดงผู้พิจารณาเฉพาะกรณีที่กำหนด
-        const isComplete = action === "COMPLETE";
+        // ✅ เพิ่ม COMPLETED เพื่อรองรับ action ที่ส่งมาจาก API
+        const isComplete = action === "COMPLETE" || action === "COMPLETED";
         showApprover = isRejected || isComplete;
       }
 
@@ -649,13 +650,13 @@ function TrackStatusPage() {
       };
     }
 
-    // COMPLETE state
-    if (action === "COMPLETE") {
+    // COMPLETE / COMPLETED state - เมื่ออธิการบดีอนุมัติแล้ว
+    if (action === "COMPLETE" || action === "COMPLETED") {
       return {
         icon: <Check className="w-16 h-16" />,
         color: "text-[#599fa0]",
-        label: "อนุมัติ",
-        statusText: "อธิการบดี อนุมัติ",
+        label: "อนุมัติแล้ว",
+        statusText: "อธิการบดี อนุมัติแล้ว",
       };
     }
 
