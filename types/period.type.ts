@@ -8,6 +8,14 @@ export interface Period {
   is_active?: boolean; // Calculated?
 }
 
+export interface PeriodState {
+  committee_state: boolean;//approve?
+  president_state: boolean;//state?
+  committee_file_url?: string;
+  president_file_url?: string;
+  
+}
+
 export interface CreatePeriodRequest {
   academic_year: number;
   semester: number;

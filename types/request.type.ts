@@ -52,3 +52,8 @@ export interface CreateApplicationRequest {
   award_id: string;
   files: File[];
 }
+
+export interface RequestAwardGroup{
+  award_id: string;
+  requests: Request[];
+}
