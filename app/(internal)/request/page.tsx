@@ -32,9 +32,13 @@ export default function RequestPage() {
       } else if (role === "SD_STAFF") {
         const res = await api.getSDRequests();
         data = res.data;
+      } else if (role === "VICEDEAN") {
+        const res = await api.getViceDeanRequests();
+        data = res.data;
+      } else if (role === "DEAN") {
+        const res = await api.getDeanRequests();
+        data = res.data;
       } else {
-        // Committee, DEAN, VICEDEAN - Need generic fetch or specific
-        // For now using Dept for demo if supported, or empty
         console.warn("No fetcher for role:", role);
       }
 

@@ -11,7 +11,7 @@ export interface Period {
 export interface CreatePeriodRequest {
   academic_year: number;
   semester: number;
-  start_date: string;
-  end_date: string;
-  campus_id: number;
+  period_start: string;
+  period_end: string;
+  is_active?: boolean;
 }

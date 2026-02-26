@@ -80,9 +80,7 @@ function RequestPeriod() {
       const startDate = new Date(
         periodData.start_date || new Date().toISOString(),
       );
-      const endDate = new Date(
-        periodData.end_date || new Date().toISOString(),
-      );
+      const endDate = new Date(periodData.end_date || new Date().toISOString());
 
       // --- Business Logic Validation ---
 
@@ -137,13 +135,12 @@ function RequestPeriod() {
 
       // --- End Business Logic ---
 
-      const payload = {
+      const payload: any = {
         academic_year: academicYearNum,
         semester: semesterNum,
-        start_date: startDate.toISOString(),
-        end_date: endDate.toISOString(),
-        campus_id: 1,
-        is_active: periodData.is_active,
+        period_start: startDate.toISOString(),
+        period_end: endDate.toISOString(),
+        is_active: periodData.is_active ?? false,
       };
 
       if (periodData.period_id) {
@@ -153,7 +150,13 @@ function RequestPeriod() {
         setPeriods(
           periods.map((p) =>
             p.period_id === periodData.period_id
-              ? { ...p, ...payload, period_id: periodData.period_id! } // Ensure ID is present
+              ? {
+                  ...p,
+                  ...payload,
+                  start_date: payload.period_start,
+                  end_date: payload.period_end,
+                  period_id: periodData.period_id!,
+                }
               : p,
           ),
         );

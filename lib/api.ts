@@ -79,6 +79,7 @@ class ApiClient {
   async createPeriod(
     data: CreatePeriodRequest,
   ): Promise<{ message: string; data: Period }> {
+    console.log("SENDING TO CREATE PERIOD:", JSON.stringify(data));
     return this.fetch("/api/sd/periods", {
       method: "POST",
       body: JSON.stringify(data),
@@ -89,6 +90,7 @@ class ApiClient {
     id: string,
     data: Partial<CreatePeriodRequest>,
   ): Promise<{ message: string; data: Period }> {
+    console.log("SENDING TO UPDATE PERIOD:", JSON.stringify(data));
     return this.fetch(`/api/sd/periods/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
