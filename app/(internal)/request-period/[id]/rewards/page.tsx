@@ -31,20 +31,37 @@ export default function RequestPeriodRewardsPage({
     try {
       setLoading(true);
       const response: any = await api.getAvailableAwards();
-      console.log("Awards Response:", response);
+      console.log("=== DEBUG: Awards Fetch ===");
+      console.log("Full Response:", response);
+      console.log("Current Period ID from URL:", periodId);
 
-      const periodGroup = response.data?.filter(
-        (p: any) => p.period_id === periodId,
-      );
+      if (response.data && Array.isArray(response.data)) {
+        console.log("Periods Array:", response.data);
 
-      console.log("Filtered Awards:", periodGroup);
+        // Find the matching period
+        const matchingPeriod = response.data.find(
+          (period: any) =>
+            String(period.period_id).trim() === String(periodId).trim(),
+        );
 
-      // Ensure we have valid data
-      const validAwards = (periodGroup || []).filter(
-        (award: any) => award && award.award_id,
-      );
+        console.log("Matching Period:", matchingPeriod);
 
-      setAwards(validAwards);
+        if (matchingPeriod && matchingPeriod.awards) {
+          console.log("Awards in Period:", matchingPeriod.awards);
+          const validAwards = matchingPeriod.awards.filter(
+            (award: any) => award && award.award_id,
+          );
+          console.log("Valid Awards Count:", validAwards.length);
+          setAwards(validAwards);
+        } else {
+          console.log("No awards found for this period");
+          setAwards([]);
+        }
+      } else {
+        console.log("No data in response");
+        setAwards([]);
+      }
+
       setError(null);
     } catch (err: any) {
       console.error("Failed to fetch awards:", err);
