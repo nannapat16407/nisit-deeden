@@ -296,7 +296,7 @@ class ApiClient {
     message: string;
     data: RequestType[];
   }> {
-    return this.fetch("/api/vicedean/requests");
+    return this.fetch("/api/vice-dean/requests");
   }
 
   async reviewViceDeanRequest(
@@ -304,7 +304,7 @@ class ApiClient {
     formData: FormData,
   ): Promise<{ message: string; data: any }> {
     const response = await fetch(
-      `${this.baseURL}/api/vicedean/requests/${id}/review`,
+      `${this.baseURL}/api/vice-dean/requests/${id}/review`,
       {
         method: "PATCH",
         body: formData,

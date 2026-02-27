@@ -139,7 +139,7 @@ function RequestDetailContent() {
 
       if (roleName === "DEPARTMENT_HEAD") {
         await api.reviewDeptHeadRequest(requestId as string, formData);
-      } else if (roleName === "VICEDEAN") {
+      } else if (roleName === "VICE_DEAN") {
         await api.reviewViceDeanRequest(requestId as string, formData);
       } else if (roleName === "DEAN") {
         await api.reviewDeanRequest(requestId as string, formData);
@@ -189,7 +189,7 @@ function RequestDetailContent() {
 
       if (pendingRejectRole === "DEPARTMENT_HEAD") {
         await api.reviewDeptHeadRequest(requestId as string, formData);
-      } else if (pendingRejectRole === "VICEDEAN") {
+      } else if (pendingRejectRole === "VICE_DEAN") {
         await api.reviewViceDeanRequest(requestId as string, formData);
       } else if (pendingRejectRole === "DEAN") {
         await api.reviewDeanRequest(requestId as string, formData);
@@ -434,7 +434,7 @@ function RequestDetailContent() {
           )}
 
           {/* Actions (If Vice Dean and PENDING_VICEDEAN) */}
-          {role === "VICEDEAN" && request.status === "PENDING_VICEDEAN" && (
+          {role === "VICE_DEAN" && request.status === "PENDING_VICEDEAN" && (
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
               <h3 className="font-bold text-gray-800 mb-4">
                 ส่วนสำหรับรองคณบดี
@@ -442,13 +442,13 @@ function RequestDetailContent() {
 
               <div className="flex gap-4">
                 <button
-                  onClick={() => handleReviewClick("VICEDEAN", "approve")}
+                  onClick={() => handleReviewClick("VICE_DEAN", "approve")}
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-bold shadow-md transition-all"
                 >
                   เห็นชอบ (Approve)
                 </button>
                 <button
-                  onClick={() => handleReviewClick("VICEDEAN", "reject")}
+                  onClick={() => handleReviewClick("VICE_DEAN", "reject")}
                   className="flex-1 bg-white border border-red-200 text-red-600 hover:bg-red-50 py-3 rounded-lg font-bold shadow-sm transition-all"
                 >
                   ไม่เห็นชอบ (Reject)

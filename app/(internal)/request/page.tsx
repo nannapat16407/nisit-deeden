@@ -38,12 +38,12 @@ export default function RequestPage() {
       } else if (role === "SD_STAFF") {
         const res = await api.getSDRequests();
         data = res.data;
-      } else if (role === "VICEDEAN") {
+      } else if (role === "VICE_DEAN") {
         const res = await api.getViceDeanRequests();
         data = res.data;
       } else if (role === "DEAN") {
         const res = await api.getDeanRequests();
-        // SD Fetch Here
+        data = res.data;
       } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
         const res = await api.getCommitteeRequest();
         data = res.data;
