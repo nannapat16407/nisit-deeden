@@ -181,17 +181,14 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
         {requirements.map((requirement, index) => {
           const selectedFile = selectedFiles[requirement.label];
           const acceptAttr = getAcceptAttribute(requirement);
+          const extensionText = formatExtensions(requirement);
 
           return (
             <div key={index} className="mb-6">
               <p className="text-gray-700 font-medium mb-2">
                 {requirement.label}
+                {extensionText && <span className="text-gray-500"> ({extensionText})</span>}
                 {requirement.required && <span className="text-red-500"> *</span>}
-              </p>
-
-              <p className="text-sm text-gray-500 mb-2">
-                ประเภท: {requirement.type}
-                {formatExtensions(requirement) && ` (${formatExtensions(requirement)})`}
               </p>
 
               <input
