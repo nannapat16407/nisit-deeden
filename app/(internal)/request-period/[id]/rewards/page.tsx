@@ -31,14 +31,20 @@ export default function RequestPeriodRewardsPage({
     try {
       setLoading(true);
       const response: any = await api.getAvailableAwards();
-      console.log(response);
+      console.log("Awards Response:", response);
 
       const periodGroup = response.data?.filter(
         (p: any) => p.period_id === periodId,
       );
 
-      setAwards(periodGroup || []);
+      console.log("Filtered Awards:", periodGroup);
 
+      // Ensure we have valid data
+      const validAwards = (periodGroup || []).filter(
+        (award: any) => award && award.award_id,
+      );
+
+      setAwards(validAwards);
       setError(null);
     } catch (err: any) {
       console.error("Failed to fetch awards:", err);
@@ -224,16 +230,17 @@ export default function RequestPeriodRewardsPage({
         <div className="text-center py-20 text-red-500">{error}</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {awards?.map((award) => (
-            <AwardCard
-              key={award.award_id}
-              award={award}
-              onEdit={handleEdit}
-              onToggleStatus={handleToggleStatus}
-              onDelete={handleDelete}
-            />
-          ))}
-          {(!awards || awards.length === 0) && (
+          {Array.isArray(awards) && awards.length > 0 ? (
+            awards.map((award, index) => (
+              <AwardCard
+                key={award.award_id || `award-${index}`}
+                award={award}
+                onEdit={handleEdit}
+                onToggleStatus={handleToggleStatus}
+                onDelete={handleDelete}
+              />
+            ))
+          ) : (
             <div className="flex flex-col items-center justify-center py-20 text-gray-400 col-span-full border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
