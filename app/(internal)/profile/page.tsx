@@ -53,8 +53,7 @@ function ProfilePage() {
 
             <div className="flex-1">
               <h2 className="text-2xl font-bold text-gray-800 mb-1">
-                {user.prefix} {user.fname || user.first_name}{" "}
-                {user.lname || user.last_name}
+                {user.prefix} {user.fname} {user.lname}
               </h2>
               <p className="text-gray-500 mb-4">{user.email}</p>
 

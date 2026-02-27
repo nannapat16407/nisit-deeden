@@ -59,6 +59,8 @@ export const DEFAULT_ROUTES = {
   DEPARTMENT_HEAD: "/request",
   VICE_DEAN: "/request",
   DEAN: "/request",
+  COMMITTEE: "/request",
+  COMMITTEE_HEAD: "/request",
 };
 
 export const getName = (key: string) => {
