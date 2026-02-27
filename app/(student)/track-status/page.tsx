@@ -119,6 +119,11 @@ const STATUS_COLORS = {
     text: "text-green-800",
     border: "border-green-300",
   },
+  COMPLETED: {
+    bg: "bg-green-100",
+    text: "text-green-800",
+    border: "border-green-300",
+  },
 };
 
 const STATUS_TO_STEP = {

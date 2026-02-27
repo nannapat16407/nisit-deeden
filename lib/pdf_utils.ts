@@ -55,7 +55,7 @@ export async function genCommitteePDF(
   }
 
   const signatureLabel = "ลงชื่อ";
-  const signatureName = `${issue_account.prefix || ""} ${issue_account.first_name} ${issue_account.last_name}`.trim();
+  const signatureName = `${issue_account.prefix || ""} ${issue_account.fname} ${issue_account.lname}`.trim();
   const thaiMonths = [
     "มกราคม",
     "กุมภาพันธ์",
