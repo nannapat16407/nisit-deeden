@@ -546,6 +546,14 @@ function TrackStatusPage() {
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
 
+    // 🟢 สำหรับ PENDING_SD: เก็บเฉพาะ log ที่เก่าที่สุด (oldest) เพื่อแสดง "อนุมัติแล้ว"
+    const pendingSdLogs = sortedLogs.filter(log => log.action === "PENDING_SD");
+    const oldestPendingSdLog = pendingSdLogs.length > 0
+      ? pendingSdLogs.reduce((oldest, current) =>
+          new Date(current.timestamp).getTime() < new Date(oldest.timestamp).getTime() ? current : oldest
+        )
+      : null;
+
     // ประมวลผล logs ทั้งหมด
     for (let i = 0; i < sortedLogs.length; i++) {
       const log = sortedLogs[i];
@@ -556,6 +564,36 @@ function TrackStatusPage() {
       // ถ้ามีหลาย logs และเจอ PENDING_HEAD ให้ข้าม (ห้ามแสดง)
       if (action === "PENDING_HEAD") {
         continue;
+      }
+
+      // 🟢 กรณีที่ 1: PENDING_SD ที่ไม่ใช่ล่าสุด
+      // - แสดงเฉพาะ log ที่เก่าที่สุด (เพื่อแสดง "อนุมัติแล้วของคณบดี")
+      // - ห้ามแสดง PENDING_SD ซ้ำหลายอัน
+      if (action === "PENDING_SD" && !isLatest) {
+        // แสดงเฉพาะ log ที่เก่าที่สุด
+        if (log !== oldestPendingSdLog) {
+          continue; // ข้าม PENDING_SD ที่ไม่ใช่อันเก่าที่สุด
+        }
+      }
+
+      // 🟢 กรณีที่ 2: PENDING_SD เป็น timestamp ล่าสุด
+      // - แสดงเพียง 1 กล่อง: "กองพัฒนานิสิต อยู่ระหว่างการพิจารณา"
+      // - ห้ามแสดงกล่อง "อนุมัติแล้วของขั้นตอนก่อนหน้า" เพิ่ม
+      if (isLatest && action === "PENDING_SD") {
+        // แสดงเฉพาะกล่อง current (รอพิจารณา) ไม่สร้าง accept box
+        const displayInfo = getDisplayInfoForAction(action, "current", currentStatus);
+        result.push({
+          icon: displayInfo.icon,
+          color: displayInfo.color,
+          label: displayInfo.label,
+          timestamp: formatThaiDate(log.timestamp),
+          statusText: displayInfo.statusText,
+          approverName: undefined,
+          isFromData: false,
+          comment: log.comment,
+          isReject: false,
+        });
+        continue; // ข้ามการสร้าง accept box
       }
 
       // กำหนด mode สำหรับ getDisplayInfoForAction
@@ -574,7 +612,6 @@ function TrackStatusPage() {
         showApprover = true;
       } else {
         // log ล่าสุด: แสดงผู้พิจารณาเฉพาะกรณีที่กำหนด
-        // ✅ เพิ่ม COMPLETED เพื่อรองรับ action ที่ส่งมาจาก API
         const isComplete = action === "COMPLETE" || action === "COMPLETED";
         showApprover = isRejected || isComplete;
       }
@@ -593,16 +630,16 @@ function TrackStatusPage() {
         isReject: isRejected,
       });
 
-      // กรณี log ล่าสุด = PENDING_{VICEDEAN/DEAN/SD/COMMITTEE/PRESIDENT}
+      // กรณี log ล่าสุด = PENDING_{VICEDEAN/DEAN/COMMITTEE/PRESIDENT}
       // ต้องสร้าง 2 กล่อง: current (รอ) + accept (ของก่อนหน้า)
-      if (isLatest && ["PENDING_VICEDEAN", "PENDING_DEAN", "PENDING_SD", "PENDING_COMMITTEE", "PENDING_PRESIDENT"].includes(action)) {
-        // เพิ่มกล่อง accept ของขั้นก่อนหน้า (ใช้ log เดียวกัน แต่ mode = accept)
+      // 🟢 PENDING_SD ถูกแยกไปจัดการด้านบนแล้ว (แสดงเฉพาะ 1 กล่อง)
+      if (isLatest && ["PENDING_VICEDEAN", "PENDING_DEAN", "PENDING_COMMITTEE", "PENDING_PRESIDENT"].includes(action)) {
         const acceptDisplayInfo = getDisplayInfoForAction(action, "accept", currentStatus);
         result.push({
           icon: acceptDisplayInfo.icon,
           color: acceptDisplayInfo.color,
           label: acceptDisplayInfo.label,
-          timestamp: formatThaiDate(log.timestamp), // ใช้ timestamp เดียวกัน
+          timestamp: formatThaiDate(log.timestamp),
           statusText: acceptDisplayInfo.statusText,
           approverName: log.approver_name || "-",
           isFromData: false,
@@ -613,7 +650,6 @@ function TrackStatusPage() {
     }
 
     // เรียง logs ตาม timestamp จากใหม่ → เก่า (บน-ล่าง)
-    // result อยู่ในลำดับที่ถูกต้องแล้ว (latest first)
     return result;
   };
 
