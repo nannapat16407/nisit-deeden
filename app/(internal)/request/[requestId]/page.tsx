@@ -488,12 +488,12 @@ function RequestDetailContent() {
                       <polyline points="7 10 12 15 17 10"></polyline>
                       <line x1="12" y1="15" x2="12" y2="3"></line>
                     </svg>
-                    ดาวน์โหลดไฟล์ล่าสุดเพื่อนำไปเซ็น
+                    ดาวน์โหลดไฟล์ใบสมัคร
                   </a>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    อัปโหลดเอกสารที่เซ็นแล้ว (บังคับสำหรับการ Approve)
+                    อัปโหลดเอกสารที่เซ็นแล้ว
                   </label>
                   <input
                     type="file"
