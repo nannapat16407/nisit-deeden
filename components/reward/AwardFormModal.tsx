@@ -107,6 +107,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
 
     if (selectedFile) {
       formData.append("template_file", selectedFile);
+      formData.append("label", "แม่แบบเอกสาร");
     }
 
     onSave(formData, initialData?.award_id);

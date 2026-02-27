@@ -13,7 +13,8 @@ function CustomAwardPage() {
   const router = useRouter();
 
   const [award, setAward] = useState<Award | null>(null);
-  const [studentInfo, setStudentInfo] = useState<StudentProfileFullResponse | null>(null);
+  const [studentInfo, setStudentInfo] =
+    useState<StudentProfileFullResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +51,9 @@ function CustomAwardPage() {
       }
     } catch (err) {
       console.error("Failed to fetch award:", err);
-      setError(err instanceof Error ? err.message : "ไม่สามารถดึงข้อมูลรางวัลได้");
+      setError(
+        err instanceof Error ? err.message : "ไม่สามารถดึงข้อมูลรางวัลได้",
+      );
     } finally {
       setLoading(false);
     }
@@ -69,6 +72,7 @@ function CustomAwardPage() {
     formData.append("campus_id", String(studentInfo.campus_id));
     formData.append("award_id", award.award_id);
     formData.append("file", file);
+    formData.append("label", "ใบสมัครทุน");
 
     try {
       console.log("🚀 Calling API...");
@@ -78,12 +82,10 @@ function CustomAwardPage() {
       console.log("✅ Application submitted successfully");
 
       router.push("/document");
-
     } catch (error) {
       console.error("❌ Submit failed:", error);
     }
   };
-
 
   if (loading) {
     return (

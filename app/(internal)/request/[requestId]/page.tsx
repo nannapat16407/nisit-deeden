@@ -135,7 +135,10 @@ function RequestDetailContent() {
       const formData = new FormData();
       formData.append("action", action);
       if (reviewComment) formData.append("comment", reviewComment);
-      if (reviewFile) formData.append("signed_file", reviewFile);
+      if (reviewFile) {
+        formData.append("signed_file", reviewFile);
+        formData.append("label", "เอกสารลงนามโดยคณบดี");
+      }
 
       if (roleName === "DEPARTMENT_HEAD") {
         await api.reviewDeptHeadRequest(requestId as string, formData);

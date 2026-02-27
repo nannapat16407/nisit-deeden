@@ -18,7 +18,7 @@ export default function RequestPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const roleBadgeMap: Record<string, string> = {
-    SD_STAFF: "รอกองกิจฯ เท่านั้น",
+    SD_STAFF: "รอกองพัฒฯ เท่านั้น",
     COMMITTEE: "รอคณะกรรมการ เท่านั้น",
     COMMITTEE_HEAD: "รอคณะกรรมการ เท่านั้น",
   };
