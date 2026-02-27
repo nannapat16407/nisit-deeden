@@ -33,6 +33,7 @@ export interface Request {
   // Student info (from Backend API)
   student_id?: string;
   student_name?: string;
+  student_email?: string;
   
   // Legacy fields (for backward compatibility)
   owner_prefix?: string;

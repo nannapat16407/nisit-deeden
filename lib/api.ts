@@ -252,6 +252,14 @@ class ApiClient {
   }
 
   // ============================================
+  // Common Request APIs (All Roles)
+  // ============================================
+
+  async getRequestDetail(id: string): Promise<{ data: RequestType }> {
+    return this.fetch(`/api/request/${id}/detail`);
+  }
+
+  // ============================================
   // Department Head APIs
   // ============================================
 

@@ -39,30 +39,17 @@ function RequestDetailContent() {
 
     try {
       setLoading(true);
-      let data: Request[] = [];
-      // Reuse list fetchers for now since single GET is missing
-      if (role === "STUDENT") {
-        const res = await api.getMyRequests();
-        data = res.data;
-      } else if (role === "DEPARTMENT_HEAD") {
-        const res = await api.getDeptRequests();
-        data = res.data;
-      } else if (role === "SD_STAFF") {
-        const res = await api.getSDRequests();
-        data = res.data;
-      } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
-        const res = await api.getCommitteeRequest();
-        data = res.data;
+
+      // Use common API endpoint for all roles
+      const res = await api.getRequestDetail(requestId as string);
+      const requestData = res.data;
+
+      setRequest(requestData || null);
+      if (requestData) {
+        setSelectedAwardId(requestData.award_id || requestData.AwardID || "");
       }
 
-      const found = data.find(
-        (r) => (r.request_id || r.RequestID) === requestId,
-      );
-      setRequest(found || null);
-      if (found) {
-        setSelectedAwardId(found.award_id || found.AwardID || "");
-      }
-
+      // Fetch available awards for SD_STAFF
       if (role === "SD_STAFF") {
         const awardsRes: any = await api.getAvailableAwards();
         // awardsRes is grouped by period
@@ -305,7 +292,10 @@ function RequestDetailContent() {
               <div>
                 <span className="text-gray-500 block">Email</span>
                 <span className="font-medium text-gray-800">
-                  {request.owner_email || request.Owner?.email || "-"}
+                  {request.student_email ||
+                    request.owner_email ||
+                    request.Owner?.email ||
+                    "-"}
                 </span>
               </div>
             </div>
