@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Upload } from "lucide-react";
 import ConfirmSubmitModal from "./ConfirmSubmitModal";
 import { Requirement } from "@/types/award.type";
 
@@ -164,6 +165,18 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
           แบบฟอร์มสมัครนิสิตดีเด่น {awardName}
         </h2>
 
+        {/* Download Template Button */}
+        {templateFileUrl && (
+          <div className="mb-6">
+            <button
+              onClick={handleDownloadForm}
+              className="px-4 py-2 rounded-lg text-sm transition-colors bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              ดาวน์โหลดไฟล์แบบฟอร์ม
+            </button>
+          </div>
+        )}
+
         {/* ✅ Render upload inputs แบบ dynamic */}
         {requirements.map((requirement, index) => {
           const selectedFile = selectedFiles[requirement.label];
@@ -198,21 +211,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
                 onClick={() => handleBrowseClick(requirement)}
                 className="px-4 py-2 bg-yellow-400 border border-yellow-500 rounded-lg text-gray-700 text-sm hover:bg-yellow-500 transition-colors flex items-center gap-2"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
+                <Upload size={18} />
                 อัปโหลด
               </button>
 
@@ -228,18 +227,6 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
             </div>
           );
         })}
-
-        {/* Download Template Button */}
-        {templateFileUrl && (
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <button
-              onClick={handleDownloadForm}
-              className="px-4 py-2 rounded-lg text-sm transition-colors bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-            >
-              ดาวน์โหลดไฟล์แบบฟอร์ม
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Submit Button */}
