@@ -83,6 +83,14 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
     return requirement.extensions.map((ext) => `.${ext}`).join(",");
   };
 
+  // ✅ Format extensions สำหรับแสดงผล
+  const formatExtensions = (requirement: Requirement): string => {
+    if (!requirement.extensions || requirement.extensions.length === 0) {
+      return "";
+    }
+    return requirement.extensions.map((ext) => `.${ext}`).join(", ");
+  };
+
   // Handle download form template
   const handleDownloadForm = () => {
     if (!templateFileUrl) {
@@ -170,7 +178,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
 
               <p className="text-sm text-gray-500 mb-2">
                 ประเภท: {requirement.type}
-                {acceptAttr && ` (${acceptAttr})`}
+                {formatExtensions(requirement) && ` (${formatExtensions(requirement)})`}
               </p>
 
               <input
