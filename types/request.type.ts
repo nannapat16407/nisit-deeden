@@ -30,12 +30,19 @@ export interface Request {
   academic_year?: number;
   semester?: number;
 
-  // Student info (from Backend API)
+  // Student info (from Backend API - New Format)
+  prefix?: string;
+  fname?: string;
+  lname?: string;
+  email?: string;
+  campus_name?: string;
+  faculty_name?: string;
+  department_name?: string;
+  
+  // Legacy fields (for backward compatibility)
   student_id?: string;
   student_name?: string;
   student_email?: string;
-  
-  // Legacy fields (for backward compatibility)
   owner_prefix?: string;
   owner_fname?: string;
   owner_lname?: string;

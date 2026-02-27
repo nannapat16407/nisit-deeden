@@ -7,6 +7,7 @@ import useAuth from "@/hooks/useAuth";
 import { Request } from "@/types/request.type";
 import { DocType } from "@/types/document..type";
 import PdfViewerFromS3 from "@/components/document/PdfViewerFromS3";
+import Modal from "@/components/common/Modal";
 
 import {
   useConfirmPopUp,
@@ -33,6 +34,13 @@ function RequestDetailContent() {
   const [selectedAwardId, setSelectedAwardId] = useState("");
   const [reviewFile, setReviewFile] = useState<File | null>(null);
   const [reviewComment, setReviewComment] = useState("");
+
+  // Reject modal state
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectComment, setRejectComment] = useState("");
+  const [pendingRejectRole, setPendingRejectRole] = useState<string | null>(
+    null,
+  );
 
   const fetchRequest = async () => {
     if (!requestId || !role) return;
@@ -149,15 +157,50 @@ function RequestDetailContent() {
     action: "approve" | "reject",
   ) => {
     const isApprove = action === "approve";
+
+    if (!isApprove) {
+      // Open reject modal for comment
+      setPendingRejectRole(roleName);
+      setRejectComment("");
+      setRejectModalOpen(true);
+      return;
+    }
+
     triggerConfirmPopUp({
-      title: isApprove ? "ยืนยันการเห็นชอบ" : "ยืนยันการไม่อนุมัติ",
-      message: isApprove
-        ? "คุณแน่ใจหรือว่าต้องการให้เห็นชอบคำร้องนี้?"
-        : "คุณแน่ใจหรือว่าต้องการไม่อนุมัติคำร้องนี้?",
-      confirmText: isApprove ? "เห็นชอบ" : "ปฏิเสธ",
+      title: "ยืนยันการเห็นชอบ",
+      message: "คุณแน่ใจหรือว่าต้องการให้เห็นชอบคำร้องนี้?",
+      confirmText: "เห็นชอบ",
       cancelText: "ยกเลิก",
       onConfirm: () => handleRoleReview(roleName, action),
     });
+  };
+
+  const handleRejectSubmit = async () => {
+    if (!rejectComment.trim()) {
+      alert("กรุณาระบุเหตุผลในการไม่เห็นชอบ");
+      return;
+    }
+    if (!pendingRejectRole) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("action", "reject");
+      formData.append("comment", rejectComment);
+
+      if (pendingRejectRole === "DEPARTMENT_HEAD") {
+        await api.reviewDeptHeadRequest(requestId as string, formData);
+      } else if (pendingRejectRole === "VICEDEAN") {
+        await api.reviewViceDeanRequest(requestId as string, formData);
+      } else if (pendingRejectRole === "DEAN") {
+        await api.reviewDeanRequest(requestId as string, formData);
+      }
+
+      setRejectModalOpen(false);
+      router.push("/request");
+    } catch (error) {
+      console.error("Failed to reject request:", error);
+      alert(error instanceof Error ? error.message : "Failed to reject");
+    }
   };
 
   const handleSaveAwardType = async () => {
@@ -271,31 +314,47 @@ function RequestDetailContent() {
               <div>
                 <span className="text-gray-500 block">ชื่อ-นามสกุล</span>
                 <span className="font-medium text-gray-800 text-lg">
-                  {request.student_name
-                    ? request.student_name
-                    : request.owner_fname
-                      ? `${request.owner_prefix || ""} ${request.owner_fname} ${request.owner_lname}`
-                      : request.Owner
-                        ? `${request.Owner.prefix} ${request.Owner.fname} ${request.Owner.lname}`
-                        : "-"}
+                  {request.prefix && request.fname
+                    ? `${request.prefix} ${request.fname} ${request.lname}`
+                    : request.student_name
+                      ? request.student_name
+                      : request.owner_fname
+                        ? `${request.owner_prefix || ""} ${request.owner_fname} ${request.owner_lname}`
+                        : request.Owner
+                          ? `${request.Owner.prefix} ${request.Owner.fname} ${request.Owner.lname}`
+                          : "-"}
                 </span>
               </div>
               <div>
                 <span className="text-gray-500 block">รหัสนิสิต</span>
-                <span className="font-medium text-gray-800 text-lg">
-                  {request.student_id ||
-                    request.owner_student_id ||
-                    request.Owner?.username ||
-                    "-"}
-                </span>
+                <span className="font-medium text-gray-800 text-lg">-</span>
               </div>
               <div>
                 <span className="text-gray-500 block">Email</span>
                 <span className="font-medium text-gray-800">
-                  {request.student_email ||
+                  {request.email ||
+                    request.student_email ||
                     request.owner_email ||
                     request.Owner?.email ||
                     "-"}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-500 block">ภาควิชา</span>
+                <span className="font-medium text-gray-800">
+                  {request.department_name || "-"}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-500 block">คณะ</span>
+                <span className="font-medium text-gray-800">
+                  {request.faculty_name || "-"}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-500 block">วิทยาเขต</span>
+                <span className="font-medium text-gray-800">
+                  {request.campus_name || "-"}
                 </span>
               </div>
             </div>
@@ -355,60 +414,6 @@ function RequestDetailContent() {
                 ส่วนสำหรับหัวหน้าภาควิชา
               </h3>
 
-              <div className="mb-6 space-y-4">
-                <div>
-                  <a
-                    href={
-                      request.attachments?.[request.attachments.length - 1]
-                        ?.file_url || "#"
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors text-sm font-medium"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    ดาวน์โหลดไฟล์ล่าสุดเพื่อนำไปเซ็น
-                  </a>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    อัปโหลดเอกสารที่เซ็นแล้ว (บังคับสำหรับการ Approve)
-                  </label>
-                  <input
-                    type="file"
-                    onChange={(e) => setReviewFile(e.target.files?.[0] || null)}
-                    className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
-                    accept=".pdf"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    เหตุผล / ความคิดเห็น (บังคับสำหรับการ Reject)
-                  </label>
-                  <textarea
-                    value={reviewComment}
-                    onChange={(e) => setReviewComment(e.target.value)}
-                    placeholder="ระบุเหตุผล..."
-                    className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
-                    rows={3}
-                  />
-                </div>
-              </div>
-
               <div className="flex gap-4">
                 <button
                   onClick={() =>
@@ -434,60 +439,6 @@ function RequestDetailContent() {
               <h3 className="font-bold text-gray-800 mb-4">
                 ส่วนสำหรับรองคณบดี
               </h3>
-
-              <div className="mb-6 space-y-4">
-                <div>
-                  <a
-                    href={
-                      request.attachments?.[request.attachments.length - 1]
-                        ?.file_url || "#"
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors text-sm font-medium"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    ดาวน์โหลดไฟล์ล่าสุดเพื่อนำไปเซ็น
-                  </a>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    อัปโหลดเอกสารที่เซ็นแล้ว (บังคับสำหรับการ Approve)
-                  </label>
-                  <input
-                    type="file"
-                    onChange={(e) => setReviewFile(e.target.files?.[0] || null)}
-                    className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
-                    accept=".pdf"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    เหตุผล / ความคิดเห็น (บังคับสำหรับการ Reject)
-                  </label>
-                  <textarea
-                    value={reviewComment}
-                    onChange={(e) => setReviewComment(e.target.value)}
-                    placeholder="ระบุเหตุผล..."
-                    className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
-                    rows={3}
-                  />
-                </div>
-              </div>
 
               <div className="flex gap-4">
                 <button
@@ -551,18 +502,6 @@ function RequestDetailContent() {
                     accept=".pdf"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    เหตุผล / ความคิดเห็น (บังคับสำหรับการ Reject)
-                  </label>
-                  <textarea
-                    value={reviewComment}
-                    onChange={(e) => setReviewComment(e.target.value)}
-                    placeholder="ระบุเหตุผล..."
-                    className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
-                    rows={3}
-                  />
-                </div>
               </div>
 
               <div className="flex gap-4">
@@ -606,6 +545,42 @@ function RequestDetailContent() {
           )}
         </div>
       </div>
+
+      {/* Reject Comment Modal */}
+      <Modal
+        isOpen={rejectModalOpen}
+        onClose={() => setRejectModalOpen(false)}
+        title="ระบุเหตุผลในการไม่เห็นชอบ"
+        width="md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            กรุณาระบุเหตุผลหรือความคิดเห็นประกอบการไม่เห็นชอบคำขอนี้
+          </p>
+          <textarea
+            value={rejectComment}
+            onChange={(e) => setRejectComment(e.target.value)}
+            placeholder="ระบุเหตุผล..."
+            className="w-full text-sm border-gray-300 rounded border p-3 bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500"
+            rows={5}
+            autoFocus
+          />
+          <div className="flex gap-3 justify-end pt-2">
+            <button
+              onClick={() => setRejectModalOpen(false)}
+              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+            >
+              ยกเลิก
+            </button>
+            <button
+              onClick={handleRejectSubmit}
+              className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-colors"
+            >
+              ยืนยันไม่เห็นชอบ
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
