@@ -1,0 +1,28 @@
+name: Deploy Frontend to Local UAT
+
+on:
+  push:
+    branches:
+      - develop # หรือ main (ให้ตรงกับ branch ที่คุณจะใช้รวมโค้ดคืนนี้)
+
+jobs:
+  deploy-to-local:
+    runs-on: self-hosted # 👈 จุดสำคัญ: สั่งให้ GitHub โยนงานมาทำที่เครื่องคุณ!
+
+    steps:
+      - name: 1. Checkout code
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Env for UAT
+        shell: bash
+        run: |
+          echo "NEXT_PUBLIC_API_URL=http://api.kuis-award.local" > .env
+          echo "NEXT_PUBLIC_BACKEND_URL=http://api.kuis-award.local" >> .env
+
+      - name: 3. Build Docker Image
+        run: docker build -t kuis-frontend:latest .
+
+      - name: 4. Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s-frontend.yaml
+          kubectl rollout restart deployment frontend-deployment
