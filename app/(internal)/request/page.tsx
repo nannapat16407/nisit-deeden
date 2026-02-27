@@ -94,11 +94,13 @@ export default function RequestPage() {
 
     const searchLower = search.toLowerCase();
     const getName = (req: Request) =>
-      req.owner_fname
-        ? `${req.owner_fname} ${req.owner_lname}`
-        : req.Owner
-          ? `${req.Owner.fname} ${req.Owner.lname}`
-          : "";
+      req.student_name
+        ? req.student_name
+        : req.owner_fname
+          ? `${req.owner_fname} ${req.owner_lname}`
+          : req.Owner
+            ? `${req.Owner.fname} ${req.Owner.lname}`
+            : "";
     const getAwardName = (req: Request) =>
       req.award_name || req.Award?.award_name || "";
 
@@ -210,11 +212,13 @@ export default function RequestPage() {
                       {req.award_name || req.Award?.award_name || "-"}
                     </td>
                     <td className="px-6 py-4">
-                      {req.owner_fname
-                        ? `${req.owner_fname} ${req.owner_lname}`
-                        : req.Owner
-                          ? `${req.Owner.fname} ${req.Owner.lname}`
-                          : "-"}
+                      {req.student_name
+                        ? req.student_name
+                        : req.owner_fname
+                          ? `${req.owner_fname} ${req.owner_lname}`
+                          : req.Owner
+                            ? `${req.Owner.fname} ${req.Owner.lname}`
+                            : "-"}
                     </td>
                     <td className="px-6 py-4">{getStatusBadge(req.status)}</td>
                     <td className="px-6 py-4 text-right">

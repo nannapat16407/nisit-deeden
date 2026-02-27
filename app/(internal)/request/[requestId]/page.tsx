@@ -50,7 +50,7 @@ function RequestDetailContent() {
       } else if (role === "SD_STAFF") {
         const res = await api.getSDRequests();
         data = res.data;
-      } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD"){
+      } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
         const res = await api.getCommitteeRequest();
         data = res.data;
       }
@@ -284,17 +284,22 @@ function RequestDetailContent() {
               <div>
                 <span className="text-gray-500 block">ชื่อ-นามสกุล</span>
                 <span className="font-medium text-gray-800 text-lg">
-                  {request.owner_fname
-                    ? `${request.owner_prefix || ""} ${request.owner_fname} ${request.owner_lname}`
-                    : request.Owner
-                      ? `${request.Owner.prefix} ${request.Owner.fname} ${request.Owner.lname}`
-                      : "-"}
+                  {request.student_name
+                    ? request.student_name
+                    : request.owner_fname
+                      ? `${request.owner_prefix || ""} ${request.owner_fname} ${request.owner_lname}`
+                      : request.Owner
+                        ? `${request.Owner.prefix} ${request.Owner.fname} ${request.Owner.lname}`
+                        : "-"}
                 </span>
               </div>
               <div>
                 <span className="text-gray-500 block">รหัสนิสิต</span>
                 <span className="font-medium text-gray-800 text-lg">
-                  {request.owner_student_id || request.Owner?.username || "-"}
+                  {request.student_id ||
+                    request.owner_student_id ||
+                    request.Owner?.username ||
+                    "-"}
                 </span>
               </div>
               <div>
