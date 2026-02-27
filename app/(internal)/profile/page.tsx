@@ -97,7 +97,7 @@ function ProfilePage() {
               </label>
               <input
                 type="text"
-                value={user.fname || user.first_name || ""}
+                value={user.fname || ""}
                 readOnly
                 className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 cursor-not-allowed"
               />
@@ -109,7 +109,7 @@ function ProfilePage() {
               </label>
               <input
                 type="text"
-                value={user.lname || user.last_name || ""}
+                value={user.lname || ""}
                 readOnly
                 className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 cursor-not-allowed"
               />
