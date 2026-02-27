@@ -168,13 +168,13 @@ export default function UserManagementPage() {
           <input
             type="text"
             placeholder="ค้นหาชื่อ หรือ อีเมล..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full pl-10 pr-4 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <select
-          className="px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="px-4 py-2 border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value as "ALL" | UserRole)}
         >
@@ -293,7 +293,7 @@ export default function UserManagementPage() {
           <div className="mb-4">
             <label className="text-primary font-medium block mb-1">บทบาท</label>
             <select
-              className="border border-primary p-2 rounded border-2 text-txt-primary w-full focus:outline-none focus:ring-2 focus:ring-primary"
+              className="border border-primary p-2 rounded border-2 bg-white text-gray-900 w-full focus:outline-none focus:ring-2 focus:ring-primary"
               value={formData.role}
               onChange={(e) =>
                 setFormData({ ...formData, role: e.target.value as UserRole })

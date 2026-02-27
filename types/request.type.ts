@@ -13,7 +13,8 @@ export type RequestStatus =
     | "REJECTED_BY_VICEDEAN"
     | "REJECTED_BY_DEAN"
     | "REJECTED_BY_COMMITTEE"
-    | "COMPLETE";  // รองรับ bg อนาคต
+    | "COMPLETE"
+    | "COMPLETED";
 
 
 export interface Request {
@@ -30,6 +31,19 @@ export interface Request {
   academic_year?: number;
   semester?: number;
 
+  // Student info (from Backend API - New Format)
+  prefix?: string;
+  fname?: string;
+  lname?: string;
+  email?: string;
+  campus_name?: string;
+  faculty_name?: string;
+  department_name?: string;
+  
+  // Legacy fields (for backward compatibility)
+  student_id?: string;
+  student_name?: string;
+  student_email?: string;
   owner_prefix?: string;
   owner_fname?: string;
   owner_lname?: string;

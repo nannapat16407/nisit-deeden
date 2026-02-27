@@ -9,7 +9,8 @@ import { getStatusBadge } from "@/components/StatusBadge";
 
 export default function RequestPage() {
   const { user, logout } = useAuth();
-  const role = user?.role;
+  const role =
+    typeof user?.role === "string" ? user.role : user?.role?.RoleName;
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +19,7 @@ export default function RequestPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const roleBadgeMap: Record<string, string> = {
-    SD_STAFF: "รอกองกิจฯ เท่านั้น",
+    SD_STAFF: "รอกองพัฒฯ เท่านั้น",
     COMMITTEE: "รอคณะกรรมการ เท่านั้น",
     COMMITTEE_HEAD: "รอคณะกรรมการ เท่านั้น",
   };
@@ -38,13 +39,13 @@ export default function RequestPage() {
       } else if (role === "SD_STAFF") {
         const res = await api.getSDRequests();
         data = res.data;
-      } else if (role === "VICEDEAN") {
+      } else if (role === "VICE_DEAN") {
         const res = await api.getViceDeanRequests();
         data = res.data;
       } else if (role === "DEAN") {
         const res = await api.getDeanRequests();
-        // SD Fetch Here
-      } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD"){
+        data = res.data;
+      } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
         const res = await api.getCommitteeRequest();
         data = res.data;
       } else {
@@ -84,7 +85,6 @@ export default function RequestPage() {
       if (req.status !== "PENDING_COMMITTEE") {
         return false;
       }
-    
     } else {
       const matchesStatus =
         statusFilter === "ALL" || req.status === statusFilter;
@@ -95,11 +95,13 @@ export default function RequestPage() {
 
     const searchLower = search.toLowerCase();
     const getName = (req: Request) =>
-      req.owner_fname
-        ? `${req.owner_fname} ${req.owner_lname}`
-        : req.Owner
-          ? `${req.Owner.fname} ${req.Owner.lname}`
-          : "";
+      req.student_name
+        ? req.student_name
+        : req.owner_fname
+          ? `${req.owner_fname} ${req.owner_lname}`
+          : req.Owner
+            ? `${req.Owner.fname} ${req.Owner.lname}`
+            : "";
     const getAwardName = (req: Request) =>
       req.award_name || req.Award?.award_name || "";
 
@@ -127,7 +129,7 @@ export default function RequestPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-black border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               <option value="ALL">สถานะคำร้อง (ทั้งหมด)</option>
               <option value="PENDING_HEAD">รอหัวหน้าภาคฯ</option>
@@ -143,7 +145,7 @@ export default function RequestPage() {
               placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="text-black w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="bg-white text-gray-900 w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             <svg
               className="absolute left-3 top-2.5 h-4 w-4 text-gray-400"
@@ -211,11 +213,13 @@ export default function RequestPage() {
                       {req.award_name || req.Award?.award_name || "-"}
                     </td>
                     <td className="px-6 py-4">
-                      {req.owner_fname
-                        ? `${req.owner_fname} ${req.owner_lname}`
-                        : req.Owner
-                          ? `${req.Owner.fname} ${req.Owner.lname}`
-                          : "-"}
+                      {req.student_name
+                        ? req.student_name
+                        : req.owner_fname
+                          ? `${req.owner_fname} ${req.owner_lname}`
+                          : req.Owner
+                            ? `${req.Owner.fname} ${req.Owner.lname}`
+                            : "-"}
                     </td>
                     <td className="px-6 py-4">{getStatusBadge(req.status)}</td>
                     <td className="px-6 py-4 text-right">

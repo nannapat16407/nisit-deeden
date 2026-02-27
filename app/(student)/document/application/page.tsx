@@ -12,7 +12,8 @@ function ApplicationPage() {
   const params = useParams();
 
   const [award, setAward] = useState<Award | null>(null);
-  const [studentInfo, setStudentInfo] = useState<StudentProfileFullResponse | null>(null);
+  const [studentInfo, setStudentInfo] =
+    useState<StudentProfileFullResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,6 +73,7 @@ function ApplicationPage() {
       formData.append("campus_id", String(studentInfo.campus_id));
       formData.append("award_id", award.award_id);
       formData.append("file", file);
+      formData.append("label", "ใบสมัครทุน");
 
       console.log("Sending to backend...");
 

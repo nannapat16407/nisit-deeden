@@ -34,6 +34,14 @@ export const ROUTES_BY_ROLE = {
     home: "/home",
     request: "/request",
   },
+  VICE_DEAN: {
+    home: "/home",
+    request: "/request",
+  },
+  DEAN: {
+    home: "/home",
+    request: "/request",
+  },
   COMMITTEE: {
     home: "/request",
     request_period: "/request-period",
@@ -49,6 +57,10 @@ export const DEFAULT_ROUTES = {
   STUDENT: "/document",
   SD_STAFF: "/request-period",
   DEPARTMENT_HEAD: "/request",
+  VICE_DEAN: "/request",
+  DEAN: "/request",
+  COMMITTEE: "/request",
+  COMMITTEE_HEAD: "/request",
 };
 
 export const getName = (key: string) => {

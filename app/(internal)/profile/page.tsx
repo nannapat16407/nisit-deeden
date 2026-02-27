@@ -53,7 +53,7 @@ function ProfilePage() {
 
             <div className="flex-1">
               <h2 className="text-2xl font-bold text-gray-800 mb-1">
-                {user.prefix} {user.fname || user.first_name} {user.lname || user.last_name}
+                {user.prefix} {user.fname} {user.lname}
               </h2>
               <p className="text-gray-500 mb-4">{user.email}</p>
 
@@ -75,7 +75,7 @@ function ProfilePage() {
                 type="text"
                 value={user.prefix || ""}
                 readOnly
-                className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 cursor-not-allowed"
+                className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 cursor-not-allowed"
               />
             </div>
 
@@ -87,7 +87,7 @@ function ProfilePage() {
                 type="text"
                 value={user.username || ""}
                 readOnly
-                className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 cursor-not-allowed"
+                className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 cursor-not-allowed"
               />
             </div>
 
@@ -97,9 +97,9 @@ function ProfilePage() {
               </label>
               <input
                 type="text"
-                value={user.fname || user.first_name || ""}
+                value={user.fname || ""}
                 readOnly
-                className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 cursor-not-allowed"
+                className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 cursor-not-allowed"
               />
             </div>
 
@@ -109,9 +109,9 @@ function ProfilePage() {
               </label>
               <input
                 type="text"
-                value={user.lname || user.last_name || ""}
+                value={user.lname || ""}
                 readOnly
-                className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 cursor-not-allowed"
+                className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 cursor-not-allowed"
               />
             </div>
 
@@ -121,7 +121,7 @@ function ProfilePage() {
                 type="text"
                 value={user.email || ""}
                 readOnly
-                className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 cursor-not-allowed"
+                className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 cursor-not-allowed"
               />
             </div>
 
@@ -133,7 +133,7 @@ function ProfilePage() {
                 type="text"
                 value={user.phone_number || "-"}
                 readOnly
-                className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 cursor-not-allowed"
+                className="bg-white border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full p-2.5 cursor-not-allowed"
               />
             </div>
           </div>
@@ -150,4 +150,3 @@ function ProfilePage() {
 }
 
 export default ProfilePage;
-

@@ -36,7 +36,13 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
         const parsedReqs = initialData.requirement_json
           ? JSON.parse(initialData.requirement_json)
           : [];
-        setRequirements(parsedReqs);
+        // Ensure all requirements have extensions array
+        const normalizedReqs = parsedReqs.map((req: any) => ({
+          ...req,
+          extensions: req.extensions || [],
+          required: req.required !== undefined ? req.required : true,
+        }));
+        setRequirements(normalizedReqs);
       } catch (e) {
         setRequirements([]);
       }
@@ -55,7 +61,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
   const addRequirement = () => {
     setRequirements([
       ...requirements,
-      { label: "", type: "text", required: true },
+      { label: "", type: "text", required: true, extensions: [] },
     ]);
   };
 
@@ -77,7 +83,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
 
   const toggleExtension = (index: number, ext: string) => {
     const req = requirements[index];
-    const currentExts = req.extensions || [];
+    const currentExts = req.extensions;
     let newExts;
     if (currentExts.includes(ext)) {
       newExts = currentExts.filter((e) => e !== ext);
@@ -101,6 +107,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
 
     if (selectedFile) {
       formData.append("template_file", selectedFile);
+      formData.append("label", "แม่แบบเอกสาร");
     }
 
     onSave(formData, initialData?.award_id);
@@ -152,7 +159,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-gray-700"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                   placeholder="ชื่อรางวัล..."
                 />
               </div>
@@ -166,7 +173,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                   rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-gray-700"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                   placeholder="รายละเอียดเพิ่มเติม..."
                 />
               </div>
@@ -286,7 +293,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                         onChange={(e) =>
                           updateRequirement(idx, "label", e.target.value)
                         }
-                        className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 border px-3 py-1.5"
+                        className="w-full text-sm bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 border px-3 py-1.5"
                         placeholder="ระบุชื่อ..."
                       />
                     </div>
@@ -301,7 +308,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                         onChange={(e) =>
                           updateRequirement(idx, "type", e.target.value)
                         }
-                        className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 border px-3 py-1.5"
+                        className="w-full text-sm bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 border px-3 py-1.5"
                       >
                         <option value="text">ข้อความ (Text)</option>
                         <option value="file">เอกสาร (File)</option>
@@ -321,7 +328,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                               <label className="inline-flex items-center gap-1 cursor-pointer">
                                 <input
                                   type="checkbox"
-                                  checked={req.extensions?.includes("pdf")}
+                                  checked={req.extensions.includes("pdf")}
                                   onChange={() => toggleExtension(idx, "pdf")}
                                   className="rounded text-emerald-600 focus:ring-emerald-500"
                                 />
@@ -330,7 +337,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                               <label className="inline-flex items-center gap-1 cursor-pointer">
                                 <input
                                   type="checkbox"
-                                  checked={req.extensions?.includes("docx")}
+                                  checked={req.extensions.includes("docx")}
                                   onChange={() => toggleExtension(idx, "docx")}
                                   className="rounded text-emerald-600 focus:ring-emerald-500"
                                 />
@@ -343,7 +350,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                               <label className="inline-flex items-center gap-1 cursor-pointer">
                                 <input
                                   type="checkbox"
-                                  checked={req.extensions?.includes("png")}
+                                  checked={req.extensions.includes("png")}
                                   onChange={() => toggleExtension(idx, "png")}
                                   className="rounded text-emerald-600 focus:ring-emerald-500"
                                 />
@@ -352,7 +359,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                               <label className="inline-flex items-center gap-1 cursor-pointer">
                                 <input
                                   type="checkbox"
-                                  checked={req.extensions?.includes("jpg")}
+                                  checked={req.extensions.includes("jpg")}
                                   onChange={() => toggleExtension(idx, "jpg")}
                                   className="rounded text-emerald-600 focus:ring-emerald-500"
                                 />

@@ -24,14 +24,15 @@ function RequestPeriod() {
   >({});
 
   // Check if user is COMMITTEE or COMMITTEE_HEAD
-  const isCommitteeRole = user?.role === "COMMITTEE" || user?.role === "COMMITTEE_HEAD";
+  const isCommitteeRole =
+    user?.role === "COMMITTEE" || user?.role === "COMMITTEE_HEAD";
 
   const fetchPeriods = async () => {
     try {
-      console.log(user)
+      console.log(user);
       setLoading(true);
       const response = await api.getPeriods();
-      console.log("ASDSD",response)
+      console.log("ASDSD", response);
       setPeriods(response?.data);
       setError(null);
     } catch (err: any) {
@@ -121,7 +122,17 @@ function RequestPeriod() {
 
       // --- Business Logic Validation ---
 
-      // 1. Uniqueness Check (Year + Semester)
+      // 1. Date Range Validation (Start must be before End)
+      if (startDate >= endDate) {
+        setAlert({
+          open: true,
+          msg: "วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด",
+          severity: "error",
+        });
+        return;
+      }
+
+      // 2. Uniqueness Check (Year + Semester)
       const duplicate = periods.find(
         (p) =>
           p.academic_year == academicYearNum &&
@@ -138,7 +149,35 @@ function RequestPeriod() {
         return; // Stop execution
       }
 
-      // 2. Date Range Validation (Start must be before End)
+      // 3. Overlapping Period Check (Date Range Conflict)
+      const overlapping = periods.find((p) => {
+        // Skip self when editing
+        if (p.period_id === periodData.period_id) return false;
+
+        const existingStart = new Date(p.start_date);
+        const existingEnd = new Date(p.end_date);
+
+        // Check if date ranges overlap
+        // Overlap occurs when: (StartA <= EndB) AND (EndA >= StartB)
+        return startDate <= existingEnd && endDate >= existingStart;
+      });
+
+      if (overlapping) {
+        const overlappingStartDate = new Date(
+          overlapping.start_date,
+        ).toLocaleDateString("th-TH");
+        const overlappingEndDate = new Date(
+          overlapping.end_date,
+        ).toLocaleDateString("th-TH");
+        setAlert({
+          open: true,
+          msg: `ช่วงเวลาที่เลือกทับซ้อนกับช่วงเวลารับสมัครที่มีอยู่แล้ว (${overlappingStartDate} - ${overlappingEndDate}) กรุณาเลือกช่วงเวลาใหม่`,
+          severity: "error",
+        });
+        return;
+      }
+
+      // 4. Year Consistency Check (Strict-ish Validation)
       if (startDate >= endDate) {
         setAlert({
           open: true,
@@ -148,7 +187,7 @@ function RequestPeriod() {
         return;
       }
 
-      // 3. Year Consistency Check (Strict-ish Validation)
+      // 4. Year Consistency Check (Strict-ish Validation)
       // BE Year to AD Year approx: BE - 543.
       // User requested "strict" logic.
       // We will BLOCK if the year is totally off (more than 1 year difference).
@@ -217,9 +256,35 @@ function RequestPeriod() {
       }
       setIsModalOpen(false);
     } catch (err: any) {
+      console.error("Error saving period:", err);
+
+      // Parse error message from backend
+      let errorMessage = "เกิดข้อผิดพลาด: ";
+
+      if (err.message) {
+        // Check for specific error types
+        if (
+          err.message.includes("overlap") ||
+          err.message.includes("ทับซ้อน")
+        ) {
+          errorMessage =
+            "ช่วงเวลาที่เลือกทับซ้อนกับช่วงเวลาที่มีอยู่แล้ว กรุณาเลือกช่วงเวลาใหม่";
+        } else if (
+          err.message.includes("duplicate") ||
+          err.message.includes("ซ้ำ")
+        ) {
+          errorMessage =
+            "ช่วงเวลารับสมัครสำหรับปีการศึกษาและภาคเรียนนี้มีอยู่แล้ว";
+        } else {
+          errorMessage += err.message;
+        }
+      } else {
+        errorMessage += err.toString();
+      }
+
       setAlert({
         open: true,
-        msg: "เกิดข้อผิดพลาด: " + (err.message || err.toString()),
+        msg: errorMessage,
         severity: "error",
       });
     }
