@@ -44,7 +44,7 @@ export default function RequestPage() {
       } else if (role === "DEAN") {
         const res = await api.getDeanRequests();
         // SD Fetch Here
-      } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD"){
+      } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
         const res = await api.getCommitteeRequest();
         data = res.data;
       } else {
@@ -84,7 +84,6 @@ export default function RequestPage() {
       if (req.status !== "PENDING_COMMITTEE") {
         return false;
       }
-    
     } else {
       const matchesStatus =
         statusFilter === "ALL" || req.status === statusFilter;
@@ -127,7 +126,7 @@ export default function RequestPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-black border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
               <option value="ALL">สถานะคำร้อง (ทั้งหมด)</option>
               <option value="PENDING_HEAD">รอหัวหน้าภาคฯ</option>
@@ -143,7 +142,7 @@ export default function RequestPage() {
               placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="text-black w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="bg-white text-gray-900 w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             <svg
               className="absolute left-3 top-2.5 h-4 w-4 text-gray-400"

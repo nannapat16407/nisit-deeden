@@ -152,7 +152,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-gray-700"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                   placeholder="ชื่อรางวัล..."
                 />
               </div>
@@ -166,7 +166,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                   rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-gray-700"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
                   placeholder="รายละเอียดเพิ่มเติม..."
                 />
               </div>
@@ -286,7 +286,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                         onChange={(e) =>
                           updateRequirement(idx, "label", e.target.value)
                         }
-                        className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 border px-3 py-1.5"
+                        className="w-full text-sm bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 border px-3 py-1.5"
                         placeholder="ระบุชื่อ..."
                       />
                     </div>
@@ -301,7 +301,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                         onChange={(e) =>
                           updateRequirement(idx, "type", e.target.value)
                         }
-                        className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 border px-3 py-1.5"
+                        className="w-full text-sm bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 border px-3 py-1.5"
                       >
                         <option value="text">ข้อความ (Text)</option>
                         <option value="file">เอกสาร (File)</option>
