@@ -36,7 +36,13 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
         const parsedReqs = initialData.requirement_json
           ? JSON.parse(initialData.requirement_json)
           : [];
-        setRequirements(parsedReqs);
+        // Ensure all requirements have extensions array
+        const normalizedReqs = parsedReqs.map((req: any) => ({
+          ...req,
+          extensions: req.extensions || [],
+          required: req.required !== undefined ? req.required : true,
+        }));
+        setRequirements(normalizedReqs);
       } catch (e) {
         setRequirements([]);
       }
@@ -55,7 +61,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
   const addRequirement = () => {
     setRequirements([
       ...requirements,
-      { label: "", type: "text", required: true },
+      { label: "", type: "text", required: true, extensions: [] },
     ]);
   };
 
@@ -77,7 +83,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
 
   const toggleExtension = (index: number, ext: string) => {
     const req = requirements[index];
-    const currentExts = req.extensions || [];
+    const currentExts = req.extensions;
     let newExts;
     if (currentExts.includes(ext)) {
       newExts = currentExts.filter((e) => e !== ext);
@@ -321,7 +327,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                               <label className="inline-flex items-center gap-1 cursor-pointer">
                                 <input
                                   type="checkbox"
-                                  checked={req.extensions?.includes("pdf")}
+                                  checked={req.extensions.includes("pdf")}
                                   onChange={() => toggleExtension(idx, "pdf")}
                                   className="rounded text-emerald-600 focus:ring-emerald-500"
                                 />
@@ -330,7 +336,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                               <label className="inline-flex items-center gap-1 cursor-pointer">
                                 <input
                                   type="checkbox"
-                                  checked={req.extensions?.includes("docx")}
+                                  checked={req.extensions.includes("docx")}
                                   onChange={() => toggleExtension(idx, "docx")}
                                   className="rounded text-emerald-600 focus:ring-emerald-500"
                                 />
@@ -343,7 +349,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                               <label className="inline-flex items-center gap-1 cursor-pointer">
                                 <input
                                   type="checkbox"
-                                  checked={req.extensions?.includes("png")}
+                                  checked={req.extensions.includes("png")}
                                   onChange={() => toggleExtension(idx, "png")}
                                   className="rounded text-emerald-600 focus:ring-emerald-500"
                                 />
@@ -352,7 +358,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                               <label className="inline-flex items-center gap-1 cursor-pointer">
                                 <input
                                   type="checkbox"
-                                  checked={req.extensions?.includes("jpg")}
+                                  checked={req.extensions.includes("jpg")}
                                   onChange={() => toggleExtension(idx, "jpg")}
                                   className="rounded text-emerald-600 focus:ring-emerald-500"
                                 />

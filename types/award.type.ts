@@ -1,7 +1,7 @@
 export interface Requirement {
   label: string;
   type: "file" | "image" | "grade" | "text";
-  extensions?: string[]; // e.g. ["pdf", "docx"] or ["png", "jpg"]
+  extensions: string[]; // e.g. ["pdf", "docx"] or ["png", "jpg"]
   required: boolean;
 }
 
