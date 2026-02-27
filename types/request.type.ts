@@ -13,7 +13,8 @@ export type RequestStatus =
     | "REJECTED_BY_VICEDEAN"
     | "REJECTED_BY_DEAN"
     | "REJECTED_BY_COMMITTEE"
-    | "COMPLETE";  // รองรับ bg อนาคต
+    | "COMPLETE"
+    | "COMPLETED";
 
 
 export interface Request {

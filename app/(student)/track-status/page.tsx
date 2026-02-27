@@ -59,18 +59,66 @@ const TIMELINE_STEPS = [
 ];
 
 const STATUS_COLORS = {
-  PENDING_HEAD: { bg: "bg-yellow-100", text: "text-yellow-800", border: "border-yellow-300" },
-  PENDING_VICEDEAN: { bg: "bg-orange-100", text: "text-orange-800", border: "border-orange-300" },
-  PENDING_DEAN: { bg: "bg-purple-100", text: "text-purple-800", border: "border-purple-300" },
-  PENDING_SD: { bg: "bg-blue-100", text: "text-blue-800", border: "border-blue-300" },
-  PENDING_COMMITTEE: { bg: "bg-indigo-100", text: "text-indigo-800", border: "border-indigo-300" },
-  PENDING_PRESIDENT: { bg: "bg-pink-100", text: "text-pink-800", border: "border-pink-300" },
-  NEEDS_DOCS: { bg: "bg-yellow-100", text: "text-yellow-800", border: "border-yellow-300" },
-  REJECTED_BY_HEAD: { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" },
-  REJECTED_BY_VICEDEAN: { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" },
-  REJECTED_BY_DEAN: { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" },
-  REJECTED_BY_COMMITTEE: { bg: "bg-red-100", text: "text-red-800", border: "border-red-300" },
-  COMPLETE: { bg: "bg-green-100", text: "text-green-800", border: "border-green-300" },
+  PENDING_HEAD: {
+    bg: "bg-yellow-100",
+    text: "text-yellow-800",
+    border: "border-yellow-300",
+  },
+  PENDING_VICEDEAN: {
+    bg: "bg-orange-100",
+    text: "text-orange-800",
+    border: "border-orange-300",
+  },
+  PENDING_DEAN: {
+    bg: "bg-purple-100",
+    text: "text-purple-800",
+    border: "border-purple-300",
+  },
+  PENDING_SD: {
+    bg: "bg-blue-100",
+    text: "text-blue-800",
+    border: "border-blue-300",
+  },
+  PENDING_COMMITTEE: {
+    bg: "bg-indigo-100",
+    text: "text-indigo-800",
+    border: "border-indigo-300",
+  },
+  PENDING_PRESIDENT: {
+    bg: "bg-pink-100",
+    text: "text-pink-800",
+    border: "border-pink-300",
+  },
+  NEEDS_DOCS: {
+    bg: "bg-yellow-100",
+    text: "text-yellow-800",
+    border: "border-yellow-300",
+  },
+  REJECTED_BY_HEAD: {
+    bg: "bg-red-100",
+    text: "text-red-800",
+    border: "border-red-300",
+  },
+  REJECTED_BY_VICEDEAN: {
+    bg: "bg-red-100",
+    text: "text-red-800",
+    border: "border-red-300",
+  },
+  REJECTED_BY_DEAN: {
+    bg: "bg-red-100",
+    text: "text-red-800",
+    border: "border-red-300",
+  },
+  REJECTED_BY_COMMITTEE: {
+    bg: "bg-red-100",
+    text: "text-red-800",
+    border: "border-red-300",
+  },
+  COMPLETE: {
+    bg: "bg-green-100",
+    text: "text-green-800",
+    border: "border-green-300",
+  },
 };
 
 const STATUS_TO_STEP = {
@@ -80,12 +128,13 @@ const STATUS_TO_STEP = {
   PENDING_SD: 4,
   PENDING_COMMITTEE: 5,
   PENDING_PRESIDENT: 6,
-  NEEDS_DOCS: 4,  // กองพัฒนานิสิต
+  NEEDS_DOCS: 4, // กองพัฒนานิสิต
   REJECTED_BY_HEAD: 1,
   REJECTED_BY_VICEDEAN: 2,
   REJECTED_BY_DEAN: 3,
   REJECTED_BY_COMMITTEE: 5,
   COMPLETE: 6,
+  COMPLETED: 6,
 };
 
 function TrackStatusPage() {
@@ -446,7 +495,9 @@ function TrackStatusPage() {
 
     // Pending state - use RefreshCw icon with slow spin animation
     if (currentStep === stepNumber) {
-      return <RefreshCw className="w-7 h-7 text-white animate-spin [animation-duration:3s]" />;
+      return (
+        <RefreshCw className="w-7 h-7 text-white animate-spin [animation-duration:3s]" />
+      );
     }
 
     // Completed step
@@ -526,7 +577,11 @@ function TrackStatusPage() {
     // เงื่อนไขพิเศษ: มีเพียง 1 log และเป็น PENDING_HEAD
     // แสดงแค่ 1 กล่อง pending head เท่านั้น
     if (logs.length === 1 && logs[0].action === "PENDING_HEAD") {
-      const displayInfo = getDisplayInfoForAction("PENDING_HEAD", "current", currentStatus);
+      const displayInfo = getDisplayInfoForAction(
+        "PENDING_HEAD",
+        "current",
+        currentStatus,
+      );
       result.push({
         icon: displayInfo.icon,
         color: displayInfo.color,
@@ -542,8 +597,9 @@ function TrackStatusPage() {
     }
 
     // Sort logs by timestamp descending (latest first = บนสุด)
-    const sortedLogs = [...logs].sort((a, b) =>
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    const sortedLogs = [...logs].sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
 
     // ประมวลผล logs ทั้งหมด
@@ -587,7 +643,7 @@ function TrackStatusPage() {
         label: displayInfo.label,
         timestamp: formatThaiDate(log.timestamp),
         statusText: displayInfo.statusText,
-        approverName: showApprover ? (log.approver_name || "-") : undefined,
+        approverName: showApprover ? log.approver_name || "-" : undefined,
         isFromData: false,
         comment: log.comment,
         isReject: isRejected,
@@ -595,9 +651,22 @@ function TrackStatusPage() {
 
       // กรณี log ล่าสุด = PENDING_{VICEDEAN/DEAN/SD/COMMITTEE/PRESIDENT}
       // ต้องสร้าง 2 กล่อง: current (รอ) + accept (ของก่อนหน้า)
-      if (isLatest && ["PENDING_VICEDEAN", "PENDING_DEAN", "PENDING_SD", "PENDING_COMMITTEE", "PENDING_PRESIDENT"].includes(action)) {
+      if (
+        isLatest &&
+        [
+          "PENDING_VICEDEAN",
+          "PENDING_DEAN",
+          "PENDING_SD",
+          "PENDING_COMMITTEE",
+          "PENDING_PRESIDENT",
+        ].includes(action)
+      ) {
         // เพิ่มกล่อง accept ของขั้นก่อนหน้า (ใช้ log เดียวกัน แต่ mode = accept)
-        const acceptDisplayInfo = getDisplayInfoForAction(action, "accept", currentStatus);
+        const acceptDisplayInfo = getDisplayInfoForAction(
+          action,
+          "accept",
+          currentStatus,
+        );
         result.push({
           icon: acceptDisplayInfo.icon,
           color: acceptDisplayInfo.color,
@@ -622,7 +691,7 @@ function TrackStatusPage() {
   const getDisplayInfoForAction = (
     action: string,
     mode: "current" | "accept",
-    currentStatus: string
+    currentStatus: string,
   ): {
     icon: React.ReactNode;
     color: string;
@@ -661,80 +730,83 @@ function TrackStatusPage() {
     }
 
     // PENDING states mapping
-    const pendingMapping: Record<string, {
-      currentStep: { statusText: string; label: string; color: string };
-      acceptStep: { statusText: string; label: string; color: string };
-    }> = {
+    const pendingMapping: Record<
+      string,
+      {
+        currentStep: { statusText: string; label: string; color: string };
+        acceptStep: { statusText: string; label: string; color: string };
+      }
+    > = {
       PENDING_VICEDEAN: {
         currentStep: {
           statusText: "รองคณบดี อยู่ระหว่างการพิจารณา",
           label: "รอพิจารณา",
-          color: "text-yellow-500"
+          color: "text-yellow-500",
         },
         acceptStep: {
           statusText: "หัวหน้าภาค อนุมัติแล้ว",
           label: "อนุมัติแล้ว",
-          color: "text-[#599fa0]"
+          color: "text-[#599fa0]",
         },
       },
       PENDING_DEAN: {
         currentStep: {
           statusText: "คณบดี อยู่ระหว่างการพิจารณา",
           label: "รอพิจารณา",
-          color: "text-yellow-500"
+          color: "text-yellow-500",
         },
         acceptStep: {
           statusText: "รองคณบดี อนุมัติแล้ว",
           label: "อนุมัติแล้ว",
-          color: "text-[#599fa0]"
+          color: "text-[#599fa0]",
         },
       },
       PENDING_SD: {
         currentStep: {
           statusText: "กองพัฒนานิสิต อยู่ระหว่างการพิจารณา",
           label: "รอพิจารณา",
-          color: "text-yellow-500"
+          color: "text-yellow-500",
         },
         acceptStep: {
           statusText: "คณบดี อนุมัติแล้ว",
           label: "อนุมัติแล้ว",
-          color: "text-[#599fa0]"
+          color: "text-[#599fa0]",
         },
       },
       PENDING_COMMITTEE: {
         currentStep: {
           statusText: "คณะกรรมการ อยู่ระหว่างการพิจารณา",
           label: "รอพิจารณา",
-          color: "text-yellow-500"
+          color: "text-yellow-500",
         },
         acceptStep: {
           statusText: "กองพัฒนานิสิต อนุมัติแล้ว",
           label: "อนุมัติแล้ว",
-          color: "text-[#599fa0]"
+          color: "text-[#599fa0]",
         },
       },
       PENDING_PRESIDENT: {
         currentStep: {
           statusText: "อธิการบดี อยู่ระหว่างการพิจารณา",
           label: "รอพิจารณา",
-          color: "text-yellow-500"
+          color: "text-yellow-500",
         },
         acceptStep: {
           statusText: "คณะกรรมการ อนุมัติแล้ว",
           label: "อนุมัติแล้ว",
-          color: "text-[#599fa0]"
+          color: "text-[#599fa0]",
         },
       },
       PENDING_HEAD: {
         currentStep: {
           statusText: "หัวหน้าภาค อยู่ระหว่างการพิจารณา",
           label: "รอพิจารณา",
-          color: "text-yellow-500"
+          color: "text-yellow-500",
         },
         acceptStep: {
           statusText: "หัวหน้าภาค อยู่ระหว่างการพิจารณา",
           label: "รอพิจารณา",
-          color: "text-yellow-500"
+          color: "text-yellow-500",
         },
       },
     };
@@ -854,106 +926,107 @@ function TrackStatusPage() {
                             className={`w-14 h-14 rounded-full border-4
       flex items-center justify-center
       ${getStepCircleColor(stepNumber)}`}
-                              >
-                                {getStepIcon(stepNumber)}
-                              </div>
-                              <p className="mt-3 text-sm text-gray-700 font-medium text-center whitespace-nowrap">
-                                {step.label}
-                              </p>
-                            </div>
+                          >
+                            {getStepIcon(stepNumber)}
+                          </div>
+                          <p className="mt-3 text-sm text-gray-700 font-medium text-center whitespace-nowrap">
+                            {step.label}
+                          </p>
+                        </div>
 
-                            {!isLast && (
-                                <div className="flex-1 mx-4 mt-7">
-                                  <div
-                                      className="h-[4px] w-full"
-                                      style={getLineStyle(stepNumber)}
-                                  />
-                                </div>
-                            )}
-
-                          </React.Fragment>
-                      );
-                    })}
-
-                  </div>
+                        {!isLast && (
+                          <div className="flex-1 mx-4 mt-7">
+                            <div
+                              className="h-[4px] w-full"
+                              style={getLineStyle(stepNumber)}
+                            />
+                          </div>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </div>
               </div>
+            </div>
 
-
-              {/* Section 3: สถานะล่าสุด */}
-              <div>
-                <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-4">สถานะล่าสุด</h2>
-                <div className="w-full h-px bg-gray-200 my-4" />
-                {detailLoading ? (
-                  <div className="bg-white rounded-lg shadow-sm p-6">
-                    <div className="flex items-center justify-center py-12">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005F52]"></div>
-                    </div>
+            {/* Section 3: สถานะล่าสุด */}
+            <div>
+              <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-4">
+                สถานะล่าสุด
+              </h2>
+              <div className="w-full h-px bg-gray-200 my-4" />
+              {detailLoading ? (
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005F52]"></div>
                   </div>
-                ) : requestDetail ? (
-                  <div className="space-y-3">
-                    {buildDisplayLogs(requestDetail).map((log, index) => (
-                      <div key={index} className="bg-white rounded-lg shadow-sm p-6">
-                        <div className="flex gap-6">
-                          {/* LEFT COLUMN: Icon */}
-                          <div className="flex-shrink-0 flex flex-col items-center">
-                            <div className={log.color}>
-                              {log.icon}
-                            </div>
-                            <p className="mt-2 text-sm text-black">
-                              {log.label}
-                            </p>
-                          </div>
+                </div>
+              ) : requestDetail ? (
+                <div className="space-y-3">
+                  {buildDisplayLogs(requestDetail).map((log, index) => (
+                    <div
+                      key={index}
+                      className="bg-white rounded-lg shadow-sm p-6"
+                    >
+                      <div className="flex gap-6">
+                        {/* LEFT COLUMN: Icon */}
+                        <div className="flex-shrink-0 flex flex-col items-center">
+                          <div className={log.color}>{log.icon}</div>
+                          <p className="mt-2 text-sm text-black">{log.label}</p>
+                        </div>
 
-                          {/* RIGHT COLUMN: Details */}
-                          <div className="flex-1 space-y-3">
-                            {/* วันที่เวลา */}
-                            <p className="text-base text-gray-500">
-                              {log.timestamp}
-                            </p>
+                        {/* RIGHT COLUMN: Details */}
+                        <div className="flex-1 space-y-3">
+                          {/* วันที่เวลา */}
+                          <p className="text-base text-gray-500">
+                            {log.timestamp}
+                          </p>
 
-                            {/* สถานะ */}
+                          {/* สถานะ */}
+                          <p className="text-base text-gray-900">
+                            <span className="font-bold">สถานะ</span>{" "}
+                            <span className="font-normal">
+                              {log.statusText}
+                            </span>
+                          </p>
+
+                          {/* ผู้พิจารณา - แสดงเฉพาะ log boxes (ไม่ใช่กล่องบนสุดจาก data) */}
+                          {!log.isFromData && log.approverName && (
                             <p className="text-base text-gray-900">
-                              <span className="font-bold">สถานะ</span>{" "}
-                              <span className="font-normal">{log.statusText}</span>
+                              <span className="font-bold">ผู้พิจารณา</span>{" "}
+                              <span className="font-normal">
+                                {log.approverName}
+                              </span>
                             </p>
-
-                            {/* ผู้พิจารณา - แสดงเฉพาะ log boxes (ไม่ใช่กล่องบนสุดจาก data) */}
-                            {!log.isFromData && log.approverName && (
-                              <p className="text-base text-gray-900">
-                                <span className="font-bold">ผู้พิจารณา</span>{" "}
-                                <span className="font-normal">{log.approverName}</span>
-                              </p>
-                            )}
-                          </div>
-
-                          {/* ปุ่มเหตุผลการปฏิเสธ - เฉพาะกรณี reject */}
-                          {log.isReject && (
-                            <div className="flex-shrink-0 flex items-start">
-                              <button
-                                className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors text-sm font-medium"
-                                onClick={() => {
-                                  setRejectComment(log.comment || "-");
-                                  setOpenRejectModal(true);
-                                }}
-                              >
-                                เหตุผลการปฏิเสธ &gt;
-                              </button>
-                            </div>
                           )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="bg-white rounded-lg shadow-sm p-6">
-                    <div className="text-center py-8 text-gray-400">
-                      ไม่พบข้อมูลสถานะ
-                    </div>
-                  </div>
-                )}
-              </div>
 
+                        {/* ปุ่มเหตุผลการปฏิเสธ - เฉพาะกรณี reject */}
+                        {log.isReject && (
+                          <div className="flex-shrink-0 flex items-start">
+                            <button
+                              className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors text-sm font-medium"
+                              onClick={() => {
+                                setRejectComment(log.comment || "-");
+                                setOpenRejectModal(true);
+                              }}
+                            >
+                              เหตุผลการปฏิเสธ &gt;
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg shadow-sm p-6">
+                  <div className="text-center py-8 text-gray-400">
+                    ไม่พบข้อมูลสถานะ
+                  </div>
+                </div>
+              )}
+            </div>
           </>
         )}
 

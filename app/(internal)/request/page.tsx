@@ -9,7 +9,8 @@ import { getStatusBadge } from "@/components/StatusBadge";
 
 export default function RequestPage() {
   const { user, logout } = useAuth();
-  const role = user?.role;
+  const role =
+    typeof user?.role === "string" ? user.role : user?.role?.RoleName;
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

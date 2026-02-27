@@ -61,7 +61,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
           .map((award) => award.award_id),
       );
       const filteredByPeriod = data.filter((req) =>
-        periodAwardIds.has(req.award_id),
+        req.award_id ? periodAwardIds.has(req.award_id) : false,
       );
       console.log(filteredByPeriod);
       setRequests(filteredByPeriod);
@@ -403,7 +403,9 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
                       </td>
                     )}
                     <td className="px-6 py-4">
-                      {new Date(req.created_at).toLocaleDateString("th-TH")}
+                      {req.created_at
+                        ? new Date(req.created_at).toLocaleDateString("th-TH")
+                        : "-"}
                     </td>
                     <td className="px-6 py-4">{req.award_name || "-"}</td>
                     <td className="px-6 py-4">
