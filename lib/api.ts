@@ -485,6 +485,13 @@ class ApiClient {
       president_file_url: presidentFileUrl,
     };
   }
+  // ============================================
+  // PRESIDENT API 
+  // ============================================
+
+  async getPresidentRequest(): Promise<{ data: RequestType[] }> {
+    return this.fetch("/api/president/requests");
+  }
 }
 
 // Export singleton instance

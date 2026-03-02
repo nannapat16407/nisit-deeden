@@ -22,6 +22,7 @@ export default function RequestPage() {
     SD_STAFF: "รอกองพัฒฯ เท่านั้น",
     COMMITTEE: "รอคณะกรรมการ เท่านั้น",
     COMMITTEE_HEAD: "รอคณะกรรมการ เท่านั้น",
+    PRESIDENT: "รออธิการบดี เท่านั้น",
   };
   const roleBadge = role ? roleBadgeMap[role] : undefined;
 
@@ -47,6 +48,9 @@ export default function RequestPage() {
         data = res.data;
       } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
         const res = await api.getCommitteeRequest();
+        data = res.data;
+      } else if (role === "PRESIDENT"){
+        const res = await api.getPresidentRequest();
         data = res.data;
       } else {
         console.warn("No fetcher for role:", role);

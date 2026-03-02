@@ -1,5 +1,7 @@
 // route.ts
 
+import { profile } from "console";
+
 export const ROUTES = {
   HOME: "/",
   LOGIN: "/login",
@@ -47,6 +49,10 @@ export const ROUTES_BY_ROLE = {
     request_period: "/request-period",
   },
   COMMITTEE_HEAD: {
+    home: "/request",
+    request_period: "/request-period",
+  },
+  PRESIDENT: {
     home: "/request",
     request_period: "/request-period",
   }

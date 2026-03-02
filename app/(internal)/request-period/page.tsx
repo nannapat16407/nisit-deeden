@@ -26,13 +26,18 @@ function RequestPeriod() {
   // Check if user is COMMITTEE or COMMITTEE_HEAD
   const isCommitteeRole =
     user?.role === "COMMITTEE" || user?.role === "COMMITTEE_HEAD";
+  
+  const isPresidentRole = 
+    user?.role === "PRESIDENT";
 
   const fetchPeriods = async () => {
     try {
       console.log(user);
-      setLoading(true);
+      setLoading(true);      
+
       const response = await api.getPeriods();
-      console.log("ASDSD", response);
+      // console.log("ASDSD", response);
+
       setPeriods(response?.data);
       setError(null);
     } catch (err: any) {
@@ -315,15 +320,17 @@ function RequestPeriod() {
   // Filter periods based on role
   const filteredPeriods = isCommitteeRole
     ? periods.filter((p) => p.is_active)
-    : periods;
+    : (isPresidentRole ? periods.filter((p) => 
+      p.is_active && ( periodCommitteeState[p.period_id] ?? false)
+    ) : periods);
 
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold font-noto text-gray-800">
-          {isCommitteeRole ? "ช่วงเวลาที่ต้องอนุมัติ" : "ช่วงเวลารับสมัคร"}
+          {isCommitteeRole || isPresidentRole ? "ช่วงเวลาที่ต้องอนุมัติ" : "ช่วงเวลารับสมัคร"}
         </h1>
-        {!isCommitteeRole && (
+        {!(isCommitteeRole || isPresidentRole) && (
           <button
             onClick={handleCreate}
             className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-lg shadow-md transition-all font-medium"
@@ -361,8 +368,9 @@ function RequestPeriod() {
               period={period}
               onEdit={handleEdit}
               onDelete={handleDelete}
-              showButtons={!isCommitteeRole}
+              showButtons={!(isCommitteeRole || isPresidentRole)}
               isCommitteeRole={isCommitteeRole}
+              isPresidentRole={isPresidentRole}
               committeeDocumentAvailable={
                 periodCommitteeState[period.period_id] ?? false
               }
@@ -372,7 +380,7 @@ function RequestPeriod() {
 
           {filteredPeriods.length === 0 && (
             <div className="text-center py-20 text-gray-400">
-              {isCommitteeRole
+              {isCommitteeRole || isPresidentRole
                 ? "ไม่พบข้อมูลช่วงเวลาที่ต้องอนุมัติ"
                 : "ไม่พบข้อมูลช่วงเวลารับสมัคร"}
             </div>
@@ -380,7 +388,7 @@ function RequestPeriod() {
         </div>
       )}
 
-      {!isCommitteeRole && (
+      {!(isCommitteeRole || isPresidentRole ) && (
         <PeriodFormModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
