@@ -84,7 +84,7 @@ function ApplicationPage() {
       formData.append("campus_id", String(studentInfo.campus_id));
       formData.append("award_id", award.award_id);
 
-      // ✅ เพิ่มไฟล์ตาม label ใน requirement_json
+      // เพิ่มไฟล์ตาม label ใน requirement_json
       requirements.forEach((req) => {
         const file = files[req.label];
         if (file) {
@@ -92,7 +92,7 @@ function ApplicationPage() {
         }
       });
 
-      console.log("📤 FormData being sent:");
+      console.log("FormData being sent:");
       for (const [key, value] of formData.entries()) {
         if (value instanceof File) {
           console.log(`  ${key}: File(name="${value.name}", size=${value.size})`);

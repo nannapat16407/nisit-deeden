@@ -8,6 +8,7 @@ interface PeriodCardProps {
   onDelete: (id: string) => void;
   showButtons?: boolean;
   isCommitteeRole?: boolean;
+  isPresidentRole? : boolean;
   committeeDocumentAvailable?: boolean;
   onCommitteePDFView?: (periodId: string) => void;
 }
@@ -18,6 +19,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
   onDelete,
   showButtons = true,
   isCommitteeRole = false,
+  isPresidentRole = false,
   committeeDocumentAvailable = false,
   onCommitteePDFView,
 }) => {
@@ -62,32 +64,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
       </div>
 
       <div className="flex items-center gap-4">
-        {isCommitteeRole && committeeDocumentAvailable && (
-          <button
-            type="button"
-            onClick={() => onCommitteePDFView?.(period.period_id)}
-            className="px-2 py-2 rounded-lg border flex flex-row items-center justify-center gap-1 text-xs font-medium transition-colors border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-              <path d="M9 15h6" />
-              <path d="M9 19h6" />
-              <path d="M9 11h2" />
-            </svg>
-            <span>Approve Document</span>
-          </button>
-        )}
+
 
         <div
           className={`px-3 py-1 rounded-full text-xs font-bold ${isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}
@@ -143,6 +120,33 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
             </svg>
             ดูคำร้อง
           </Link>
+        )}
+        
+        {(isCommitteeRole || isPresidentRole) && committeeDocumentAvailable && (
+          <button
+            type="button"
+            onClick={() => onCommitteePDFView?.(period.period_id)}
+            className="px-2 py-2 rounded-lg border flex flex-row items-center justify-center gap-1 text-xs font-medium transition-colors border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <path d="M9 15h6" />
+              <path d="M9 19h6" />
+              <path d="M9 11h2" />
+            </svg>
+            <span>{isPresidentRole ? "Committee" : "Approve"} Document</span>
+          </button>
         )}
 
         {showButtons && (

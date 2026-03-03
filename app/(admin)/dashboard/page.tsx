@@ -112,7 +112,7 @@ export default function DashboardPage() {
         </div>
 
         <select
-          className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="px-4 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           value={filters.campus}
           onChange={(e) => setFilters({ ...filters, campus: e.target.value })}
         >
@@ -124,7 +124,7 @@ export default function DashboardPage() {
         </select>
 
         <select
-          className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="px-4 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           value={filters.year}
           onChange={(e) => setFilters({ ...filters, year: e.target.value })}
         >
@@ -133,7 +133,7 @@ export default function DashboardPage() {
         </select>
 
         <select
-          className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="px-4 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           value={filters.semester}
           onChange={(e) => setFilters({ ...filters, semester: e.target.value })}
         >
@@ -142,7 +142,7 @@ export default function DashboardPage() {
         </select>
 
         <select
-          className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="px-4 py-2 bg-white text-gray-900 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           value={filters.awardType}
           onChange={(e) =>
             setFilters({ ...filters, awardType: e.target.value })

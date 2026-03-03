@@ -15,11 +15,7 @@ import { Award } from "@/types/award.type";
 
 type Params = Promise<{ id: string }>;
 
-function RequestPeriodRequestContent({
-  params,
-}: {
-  params: Params;
-}) {
+function RequestPeriodRequestContent({ params }: { params: Params }) {
   const resolvedParams = use(params);
   const periodId = resolvedParams.id;
   const router = useRouter();
@@ -34,6 +30,7 @@ function RequestPeriodRequestContent({
   const [selectedRequestIds, setSelectedRequestIds] = useState<string[]>([]);
 
   const isCommitteeHead = role === "COMMITTEE_HEAD";
+  const isPresidentRole = role === "PRESIDENT";
 
   const fetchRequests = async () => {
     try {
@@ -44,7 +41,12 @@ function RequestPeriodRequestContent({
         const res = await api.getCommitteeRequest();
         data = res.data;
         // console.log(data)
-      } else if (role !== "STUDENT"){
+
+      } else if(role === "PRESIDENT"){
+
+        const res = await api.getPresidentRequest();
+        data = res.data;
+      } else if (role !== "STUDENT") {
         const res = await api.getDeptRequests();
         data = res.data;
       } else {
@@ -65,13 +67,16 @@ function RequestPeriodRequestContent({
           .map((award) => award.award_id),
       );
       const filteredByPeriod = data.filter((req) =>
-        periodAwardIds.has(req.award_id),
+        req.award_id ? periodAwardIds.has(req.award_id) : false,
       );
-      console.log(filteredByPeriod)
+      console.log(filteredByPeriod);
       setRequests(filteredByPeriod);
     } catch (err: any) {
       console.error("Failed to fetch requests:", err);
-      if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {
+      if (
+        err.message?.includes("401") ||
+        err.message?.includes("Unauthorized")
+      ) {
         logout();
         return;
       }
@@ -92,19 +97,31 @@ function RequestPeriodRequestContent({
   }, [role, periodId]);
 
   const filteredRequests = requests.filter((req) => {
-    if ((role === "COMMITTEE" || role === "COMMITTEE_HEAD") && req.status !== "PENDING_COMMITTEE") return false;
+    if (
+      (role === "COMMITTEE" || role === "COMMITTEE_HEAD") &&
+      req.status !== "PENDING_COMMITTEE"
+    )
+      return false;
+    else if (
+      (role === "PRESIDENT") && req.status !== "PENDING_PRESIDENT"
+    )
+      return false;
 
     const searchLower = search.toLowerCase();
     const matchesSearch =
       req.award_name?.toLowerCase().includes(searchLower) ||
-      (req.owner_fname + " " + req.owner_lname).toLowerCase().includes(searchLower);
+      (req.owner_fname + " " + req.owner_lname)
+        .toLowerCase()
+        .includes(searchLower);
 
     return matchesSearch;
   });
 
   const allSelected =
     filteredRequests.length > 0 &&
-    filteredRequests.every((req) => selectedRequestIds.includes(req.request_id as string));
+    filteredRequests.every((req) =>
+      selectedRequestIds.includes(req.request_id as string),
+    );
 
   const toggleSelectAll = () => {
     if (allSelected) {
@@ -142,7 +159,8 @@ function RequestPeriodRequestContent({
 
       const groupMap = new Map<string, Request[]>();
       selectedRequests.forEach((req) => {
-        const awardId = req.AwardID || req.award_id || req.Award?.award_id || "unknown-award";
+        const awardId =
+          req.AwardID || req.award_id || req.Award?.award_id || "unknown-award";
         const current = groupMap.get(awardId) || [];
         current.push({ ...req, status: "PENDING_PRESIDENT" });
         groupMap.set(awardId, current);
@@ -199,7 +217,9 @@ function RequestPeriodRequestContent({
         `Committee bulk review for period ${periodId}`,
       );
 
-      const generatedPdfPath = pdfResult?.data?.publicPath as string | undefined;
+      const generatedPdfPath = pdfResult?.data?.publicPath as
+        | string
+        | undefined;
       if (!generatedPdfPath) {
         throw new Error("Missing generated PDF path");
       }
@@ -244,6 +264,15 @@ function RequestPeriodRequestContent({
     });
   };
 
+  const handlePresidentApproveClick = () => {
+    triggerConfirmPopUp({
+      title: "ยืนยันการอนุมัติ",
+      message: "คุณแน่ใจหรือไม่ว่าต้องการอนุมัติรายการที่เลือก?",
+      confirmText: "อนุมัติ",
+      cancelText: "ยกเลิก",
+      onConfirm: () => {router.back()},
+    });
+  };
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "PENDING_SD":
@@ -283,14 +312,19 @@ function RequestPeriodRequestContent({
       </button>
       <div className="mb-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-
-          <h1 className="text-2xl font-bold text-gray-800">รายการคำร้องในรอบนี้</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            รายการคำร้องในรอบนี้
+          </h1>
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          {isCommitteeHead && (
+          {(isCommitteeHead || isPresidentRole) && (
             <button
-              onClick={handleApproveClick}
+              onClick={
+                isCommitteeHead ? handleApproveClick : (
+                  isPresidentRole ? handlePresidentApproveClick : () => {}
+                )
+              }
               disabled={selectedRequestIds.length === 0}
               className="bg-primary hover:bg-primary-hover disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium"
             >
@@ -304,7 +338,7 @@ function RequestPeriodRequestContent({
               placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="text-black w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="bg-white text-gray-900 w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
             <svg
               className="absolute left-3 top-2.5 h-4 w-4 text-gray-400"
@@ -329,7 +363,7 @@ function RequestPeriodRequestContent({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 text-sm">
-                {isCommitteeHead && (
+                {(isCommitteeHead || isPresidentRole) && (
                   <th className="px-4 py-4 font-semibold w-12">
                     <input
                       type="checkbox"
@@ -350,7 +384,7 @@ function RequestPeriodRequestContent({
               {loading ? (
                 <tr>
                   <td
-                    colSpan={isCommitteeHead ? 6 : 5}
+                    colSpan={(isCommitteeHead ||isPresidentRole )? 6 : 5}
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     Loading...
@@ -359,7 +393,7 @@ function RequestPeriodRequestContent({
               ) : filteredRequests.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={isCommitteeHead ? 6 : 5}
+                    colSpan={(isCommitteeHead || isPresidentRole) ? 6 : 5}
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     ไม่พบคำร้อง
@@ -371,26 +405,32 @@ function RequestPeriodRequestContent({
                     key={req.RequestID}
                     className="hover:bg-gray-50 transition-colors"
                   >
-                    {isCommitteeHead && (
+                    {(isCommitteeHead || isPresidentRole )&& (
                       <td
                         className="px-4 py-4 cursor-pointer"
-                        onClick={() => toggleSelectOne(req.request_id as string)}
+                        onClick={() =>
+                          toggleSelectOne(req.request_id as string)
+                        }
                       >
                         <input
                           type="checkbox"
                           className="h-5 w-5 cursor-pointer accent-emerald-600"
-                          checked={selectedRequestIds.includes(req.request_id as string)}
-                          onChange={() => toggleSelectOne(req.request_id as string)}
+                          checked={selectedRequestIds.includes(
+                            req.request_id as string,
+                          )}
+                          onChange={() =>
+                            toggleSelectOne(req.request_id as string)
+                          }
                           onClick={(e) => e.stopPropagation()}
                         />
                       </td>
                     )}
                     <td className="px-6 py-4">
-                      {new Date(req.created_at).toLocaleDateString("th-TH")}
+                      {req.created_at
+                        ? new Date(req.created_at).toLocaleDateString("th-TH")
+                        : "-"}
                     </td>
-                    <td className="px-6 py-4">
-                      {req.award_name || "-"}
-                    </td>
+                    <td className="px-6 py-4">{req.award_name || "-"}</td>
                     <td className="px-6 py-4">
                       {`${req.owner_fname} ${req.owner_lname}`}
                     </td>

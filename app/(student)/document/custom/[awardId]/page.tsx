@@ -67,7 +67,9 @@ function CustomAwardPage() {
       }
     } catch (err) {
       console.error("Failed to fetch award:", err);
-      setError(err instanceof Error ? err.message : "ไม่สามารถดึงข้อมูลรางวัลได้");
+      setError(
+        err instanceof Error ? err.message : "ไม่สามารถดึงข้อมูลรางวัลได้",
+      );
     } finally {
       setLoading(false);
     }
@@ -109,13 +111,11 @@ function CustomAwardPage() {
       console.log("✅ Application submitted successfully");
 
       router.push("/document");
-
     } catch (error) {
       console.error("❌ Submit failed:", error);
       alert(error instanceof Error ? error.message : "ไม่สามารถส่งฟอร์มได้ กรุณาลองใหม่");
     }
   };
-
 
   if (loading) {
     return (

@@ -1,0 +1,56 @@
+# 1. Deployment: สั่งรัน Container ของ Next.js
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: kuis-frontend:latest # ชื่อ Image ที่เราจะให้ GitHub Actions สร้าง
+        imagePullPolicy: Never # สำคัญมาก! บังคับให้ K8s ดึง Image จากเครื่องเราเอง ไม่ต้องไปหาบนเน็ต
+        ports:
+        - containerPort: 3000
+
+---
+# 2. Service: เปิดช่องทางให้ระบบอื่นๆ คุยกับ Front-end ได้
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3000
+
+---
+# 3. Ingress: รับ Traffic จาก Domain kuis-award.local วิ่งเข้าหา Service
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+  - host: kuis-award.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80

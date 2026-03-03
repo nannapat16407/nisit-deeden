@@ -252,6 +252,14 @@ class ApiClient {
   }
 
   // ============================================
+  // Common Request APIs (All Roles)
+  // ============================================
+
+  async getRequestDetail(id: string): Promise<{ data: RequestType }> {
+    return this.fetch(`/api/request/${id}/detail`);
+  }
+
+  // ============================================
   // Department Head APIs
   // ============================================
 
@@ -288,7 +296,7 @@ class ApiClient {
     message: string;
     data: RequestType[];
   }> {
-    return this.fetch("/api/vicedean/requests");
+    return this.fetch("/api/vice-dean/requests");
   }
 
   async reviewViceDeanRequest(
@@ -296,7 +304,7 @@ class ApiClient {
     formData: FormData,
   ): Promise<{ message: string; data: any }> {
     const response = await fetch(
-      `${this.baseURL}/api/vicedean/requests/${id}/review`,
+      `${this.baseURL}/api/vice-dean/requests/${id}/review`,
       {
         method: "PATCH",
         body: formData,
@@ -476,6 +484,13 @@ class ApiClient {
       committee_file_url: committeeFileUrl,
       president_file_url: presidentFileUrl,
     };
+  }
+  // ============================================
+  // PRESIDENT API 
+  // ============================================
+
+  async getPresidentRequest(): Promise<{ data: RequestType[] }> {
+    return this.fetch("/api/president/requests");
   }
 }
 
