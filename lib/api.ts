@@ -222,7 +222,7 @@ class ApiClient {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error("❌ Backend error response:", errorData);
+      console.error("Backend error response:", errorData);
       throw new Error(errorData.error || errorData.message || "Submit failed");
     }
 
