@@ -4,44 +4,14 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useAuth from "@/hooks/useAuth";
 import { api } from "@/lib/api";
-import { RequestStatus } from "@/types/request.type";
+import {
+  RequestStatus,
+  RequestDetailResponse,
+  RequestLog,
+  AwardTemplateResponse,
+  Request,
+} from "@/types/request.type";
 import { RefreshCw, X, Check, Download } from "lucide-react";
-
-// API Response type matching the backend response
-interface MyRequestResponse {
-  request_id: string;
-  campus_id: number;
-  award_id: string;
-  award_name: string;
-  academic_year: number;
-  semester: number;
-  status: RequestStatus;
-  created_at: string;
-  attachments: unknown[];
-}
-
-// Award template response
-interface AwardTemplateResponse {
-  award_id: string;
-  award_name: string;
-  template_file_url: string;
-}
-
-// Detailed request response with logs
-interface RequestDetailResponse {
-  request_id: string;
-  status: RequestStatus;
-  status_thai: string;
-  created_at: string;
-  logs: RequestLog[];
-}
-
-interface RequestLog {
-  action: string;
-  comment: string;
-  approver_name: string;
-  timestamp: string;
-}
 
 // Display log type for rendering in UI
 interface DisplayLog {
@@ -68,7 +38,14 @@ const TIMELINE_STEPS = [
   { key: "president", label: "อธิการบดี" },
 ];
 
-const STATUS_COLORS = {
+// Status color mapping type
+interface StatusColor {
+  bg: string;
+  text: string;
+  border: string;
+}
+
+const STATUS_COLORS: Record<RequestStatus, StatusColor> = {
   PENDING_HEAD: {
     bg: "bg-yellow-100",
     text: "text-yellow-800",
@@ -136,7 +113,7 @@ const STATUS_COLORS = {
   },
 };
 
-const STATUS_TO_STEP = {
+const STATUS_TO_STEP: Record<RequestStatus, number> = {
   PENDING_HEAD: 1,
   PENDING_VICEDEAN: 2,
   PENDING_DEAN: 3,
@@ -155,7 +132,7 @@ const STATUS_TO_STEP = {
 function TrackStatusPage() {
   const router = useRouter();
   const { user, loading: authLoading, isAuthenticated } = useAuth();
-  const [requests, setRequests] = useState<MyRequestResponse[]>([]);
+  const [requests, setRequests] = useState<Request[]>([]);
   const [requestDetail, setRequestDetail] =
     useState<RequestDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -169,7 +146,7 @@ function TrackStatusPage() {
   const [templateData, setTemplateData] = useState<AwardTemplateResponse | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Fetch list of requests
   useEffect(() => {
@@ -184,7 +161,7 @@ function TrackStatusPage() {
             new Date(b.created_at || b.CreatedAt || 0).getTime() -
             new Date(a.created_at || a.CreatedAt || 0).getTime(),
         );
-        setRequests(sortedData as any);
+        setRequests(sortedData);
       } catch (err) {
         setError("ไม่สามารถโหลดข้อมูลคำร้องได้");
       } finally {
@@ -205,20 +182,7 @@ function TrackStatusPage() {
       }
 
       try {
-        const API_URL =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8008";
-        const response = await fetch(
-          `${API_URL}/api/student/my-requests/${latestRequestId}`,
-          {
-            credentials: "include",
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch request detail");
-        }
-
-        const result = await response.json();
+        const result = await api.getRequestDetailByRequestId(latestRequestId);
         setRequestDetail(result.data);
       } catch (err) {
       } finally {
@@ -228,34 +192,12 @@ function TrackStatusPage() {
     fetchRequestDetail();
   }, [requests]);
 
-  // Fetch award template when opening resubmit modal
-  const fetchAwardTemplate = async (requestId: string): Promise<AwardTemplateResponse | null> => {
-    try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8008";
-      const response = await fetch(
-        `${API_URL}/api/student/requests/${requestId}/award-template`,
-        {
-          credentials: "include",
-        },
-      );
-
-      if (!response.ok) {
-        return null;
-      }
-
-      const result = await response.json();
-      return result.data || result;
-    } catch (err) {
-      return null;
-    }
-  };
-
   // Open resubmit modal and fetch template
   const handleOpenResubmitModal = async () => {
     if (!latestRequest?.request_id) return;
 
-    const template = await fetchAwardTemplate(latestRequest.request_id);
-    setTemplateData(template);
+    const result = await api.getAwardTemplate(latestRequest.request_id);
+    setTemplateData(result?.data ?? null);
     setSelectedFiles([]);
     setOpenResubmitModal(true);
   };
@@ -289,26 +231,7 @@ function TrackStatusPage() {
     try {
       setIsSubmitting(true);
 
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8008";
-      const formData = new FormData();
-
-      selectedFiles.forEach((file) => {
-        formData.append("files", file);
-      });
-
-      const response = await fetch(
-        `${API_URL}/api/student/requests/${latestRequest.request_id}/resubmit`,
-        {
-          method: "PATCH",
-          body: formData,
-          credentials: "include",
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || "ไม่สามารถส่งเอกสารได้");
-      }
+      await api.resubmitDocuments(latestRequest.request_id, selectedFiles);
 
       // Success - close modal and refresh data
       setOpenResubmitModal(false);
@@ -400,7 +323,7 @@ function TrackStatusPage() {
   const isRejectedStatus = (status: RequestStatus): boolean =>
     status.startsWith("REJECTED_BY_");
 
-  const statusThai: Record<RequestStatus | string, string> = {
+  const statusThai: Record<RequestStatus, string> = {
     PENDING_HEAD: "หัวหน้าภาค อยู่ระหว่างการพิจารณา",
     PENDING_VICEDEAN: "รองคณบดี อยู่ระหว่างการพิจารณา",
     PENDING_DEAN: "คณบดี อยู่ระหว่างการพิจารณา",
@@ -413,6 +336,7 @@ function TrackStatusPage() {
     REJECTED_BY_DEAN: "คณบดี ไม่อนุมัติ",
     REJECTED_BY_COMMITTEE: "คณะกรรมการ ไม่อนุมัติ",
     COMPLETE: "ดำเนินการครบถ้วนสมบูรณ์",
+    COMPLETED: "ดำเนินการครบถ้วนสมบูรณ์",
   };
 
   const getStatusLabel = (status: RequestStatus): string => {
@@ -1289,7 +1213,7 @@ interface ResubmitModalProps {
   onRemoveFile: (index: number) => void;
   onSubmit: () => void;
   isSubmitting: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 const ResubmitModal: React.FC<ResubmitModalProps> = ({

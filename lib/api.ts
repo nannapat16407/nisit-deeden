@@ -1,7 +1,12 @@
 import { AuthResponse, MeResponse } from "@/types/user.type";
 import { Period, CreatePeriodRequest, PeriodState } from "@/types/period.type";
 import { Award, CreateAwardRequest } from "@/types/award.type";
-import { Request as RequestType } from "@/types/request.type";
+import {
+  Request as RequestType,
+  RequestDetailResponse,
+  AwardTemplateResponse,
+  ResubmitResponse,
+} from "@/types/request.type";
 import { Announcement, AnnouncementResponse, AnnouncementsResponse } from "@/types/announcement.type";
 import {
   StudentProfileApiResponse,
@@ -249,6 +254,70 @@ class ApiClient {
 
   async checkApplication(periodId: string): Promise<{ is_applied: boolean }> {
     return this.fetch(`/api/student/check-application?period_id=${periodId}`);
+  }
+
+  // ============================================
+  // Track Status APIs
+  // ============================================
+
+  /**
+   * Get detailed request information with logs
+   * @param requestId - The request ID
+   * @returns Request detail with status and logs
+   */
+  async getRequestDetailByRequestId(
+    requestId: string,
+  ): Promise<{ data: RequestDetailResponse }> {
+    return this.fetch(`/api/student/my-requests/${requestId}`);
+  }
+
+  /**
+   * Get award template for resubmission
+   * @param requestId - The request ID
+   * @returns Award template data or null if not found
+   */
+  async getAwardTemplate(
+    requestId: string,
+  ): Promise<{ data: AwardTemplateResponse } | null> {
+    try {
+      return await this.fetch<{ data: AwardTemplateResponse }>(
+        `/api/student/requests/${requestId}/award-template`,
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Resubmit documents for a request
+   * @param requestId - The request ID
+   * @param files - Files to submit
+   * @returns Resubmission response
+   */
+  async resubmitDocuments(
+    requestId: string,
+    files: File[],
+  ): Promise<ResubmitResponse> {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
+
+    const response = await fetch(
+      `${this.baseURL}/api/student/requests/${requestId}/resubmit`,
+      {
+        method: "PATCH",
+        body: formData,
+        credentials: "include",
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || errorData.message || "ไม่สามารถส่งเอกสารได้",
+      );
+    }
+
+    return response.json();
   }
 
   // ============================================
