@@ -40,14 +40,14 @@ function ApplicationPage() {
       setLoading(true);
       setError(null);
 
-      // ✅ เรียก GET /api/sd/awards/:id
+      // เรียก GET /api/sd/awards/:id
       const response = await api.getAward(params.awardId as string);
       const foundAward = response.data;
 
       if (foundAward) {
         setAward(foundAward);
 
-        // ✅ Parse requirement_json จาก string เป็น JSON array
+        // Parse requirement_json จาก string เป็น JSON array
         if (foundAward.requirement_json) {
           try {
             const parsedRequirements: Requirement[] = JSON.parse(foundAward.requirement_json);
@@ -70,7 +70,7 @@ function ApplicationPage() {
     }
   };
 
-  // ✅ Handle form submit ด้วย multipart/form-data
+  // Handle form submit ด้วย multipart/form-data
   const handleFormSubmit = async (files: Record<string, File>) => {
     if (!award || !studentInfo) {
       alert("ข้อมูลไม่ครบ กรุณาลองใหม่");
@@ -101,7 +101,7 @@ function ApplicationPage() {
         }
       }
 
-      // ✅ POST /api/student/apply ด้วย multipart/form-data
+      // POST /api/student/apply ด้วย multipart/form-data
       await api.createApplication(formData);
       alert("สมัครสำเร็จ");
     } catch (err) {
@@ -156,7 +156,7 @@ function ApplicationPage() {
         awardId={award.award_id}
         awardName={award.award_name}
         awardDescription={award.description}
-        requirements={requirements} // ✅ ส่ง requirements ที่ parse แล้ว
+        requirements={requirements}
       />
     </div>
   );

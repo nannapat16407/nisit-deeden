@@ -42,7 +42,7 @@ function CustomAwardPage() {
   const fetchStudentProfile = async () => {
     try {
       const response = await api.getStudentProfileFull();
-      console.log("🔥 PROFILE RESPONSE:", response);
+      console.log("PROFILE RESPONSE:", response);
       setStudentInfo(response.data);
     } catch (err) {
       console.error("Failed to fetch student profile:", err);
@@ -76,8 +76,8 @@ function CustomAwardPage() {
   };
 
   const handleFormSubmit = async (files: Record<string, File>) => {
-    console.log("📤 Form submitted with files:", Object.keys(files));
-    console.log("🏆 Award ID:", params.awardId);
+    console.log("Form submitted with files:", Object.keys(files));
+    console.log("Award ID:", params.awardId);
 
     if (!award || !studentInfo) {
       alert("ข้อมูลไม่ครบ กรุณาลองใหม่");
@@ -104,15 +104,15 @@ function CustomAwardPage() {
     });
 
     try {
-      console.log("🚀 Calling API...");
+      console.log("Calling API...");
 
       await api.createApplication(formData);
 
-      console.log("✅ Application submitted successfully");
+      console.log("Application submitted successfully");
 
       router.push("/document");
     } catch (error) {
-      console.error("❌ Submit failed:", error);
+      console.error("Submit failed:", error);
       alert(error instanceof Error ? error.message : "ไม่สามารถส่งฟอร์มได้ กรุณาลองใหม่");
     }
   };
