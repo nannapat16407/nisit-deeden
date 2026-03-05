@@ -81,3 +81,71 @@ export function getFileExtension(fileName: string): string {
   }
   return fileName.slice(lastDotIndex + 1);
 }
+
+/**
+ * Generates a standardized file name for resubmission documents (NEEDS_DOCS)
+ *
+ * Format: {username}_{awardName}[.{extension}]
+ * - First file: username_award_name.ext
+ * - Second file: username_award_name_2.ext
+ * - Third file: username_award_name_3.ext
+ *
+ * @param username - User's username (e.g., "b6610450960")
+ * @param awardName - Name of the award (e.g., "ทุนเรียนดี ประจำปี 2569")
+ * @param extension - File extension without dot (e.g., "pdf")
+ * @param existingFilesCount - Number of files already selected (0 for first file)
+ * @returns Sanitized file name with the generated format
+ *
+ * @example
+ * generateResubmitFileName("b6610450960", "ทุนเรียนดี ประจำปี 2569", "pdf", 0)
+ * // Returns: "b6610450960_ทุนเรียนดี_ประจำปี_2569.pdf"
+ *
+ * generateResubmitFileName("b6610450960", "ทุนเรียนดี ประจำปี 2569", "pdf", 1)
+ * // Returns: "b6610450960_ทุนเรียนดี_ประจำปี_2569_2.pdf"
+ */
+export function generateResubmitFileName(
+  username: string,
+  awardName: string,
+  extension: string,
+  existingFilesCount: number = 0,
+): string {
+  const sanitizedUsername = sanitizeFileName(username);
+  const sanitizedAwardName = sanitizeFileName(awardName);
+  const sanitizedExtension = extension.toLowerCase().replace(/^\./, "");
+
+  const baseName = `${sanitizedUsername}_${sanitizedAwardName}`;
+
+  // First file has no suffix, subsequent files have _2, _3, etc.
+  const suffix = existingFilesCount > 0 ? `_${existingFilesCount + 1}` : "";
+
+  return `${baseName}${suffix}.${sanitizedExtension}`;
+}
+
+/**
+ * Renames multiple files for resubmission using the standardized format
+ *
+ * @param files - Array of files to rename
+ * @param username - User's username
+ * @param awardName - Name of the award
+ * @returns Array of renamed File objects
+ *
+ * @example
+ * const files = [file1, file2, file3];
+ * const renamed = renameResubmitFiles(files, "b6610450960", "ทุนเรียนดี ประจำปี 2569");
+ * // Returns: [
+ * //   File("b6610450960_ทุนเรียนดี_ประจำปี_2569.pdf"),
+ * //   File("b6610450960_ทุนเรียนดี_ประจำปี_2569_2.pdf"),
+ * //   File("b6610450960_ทุนเรียนดี_ประจำปี_2569_3.pdf")
+ * // ]
+ */
+export function renameResubmitFiles(
+  files: File[],
+  username: string,
+  awardName: string,
+): File[] {
+  return files.map((file, index) => {
+    const extension = getFileExtension(file.name);
+    const newName = generateResubmitFileName(username, awardName, extension, index);
+    return renameFile(file, newName);
+  });
+}

@@ -242,6 +242,19 @@ class ApiClient {
     return this.fetch<StudentProfileApiResponse>("/api/student/profile");
   }
 
+  /**
+   * Get student username for file renaming
+   * @returns Student username or null if not found
+   */
+  async getStudentUsername(): Promise<string | null> {
+    try {
+      const response = await this.fetch<StudentProfileApiResponse>("/api/student/profile");
+      return response?.data?.username || null;
+    } catch {
+      return null;
+    }
+  }
+
   async getCurrentPeriodAwards(): Promise<{
     message: string;
     data: {

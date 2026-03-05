@@ -12,6 +12,7 @@ import {
   Request,
 } from "@/types/request.type";
 import { RefreshCw, X, Check, Download } from "lucide-react";
+import { renameResubmitFiles } from "@/lib/utils";
 
 // Display log type for rendering in UI
 interface DisplayLog {
@@ -144,6 +145,7 @@ function TrackStatusPage() {
   // Resubmit modal states
   const [openResubmitModal, setOpenResubmitModal] = useState(false);
   const [templateData, setTemplateData] = useState<AwardTemplateResponse | null>(null);
+const [studentUsername, setStudentUsername] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -191,7 +193,7 @@ function TrackStatusPage() {
     };
     fetchRequestDetail();
   }, [requests]);
-
+  // Open resubmit modal and fetch template
   // Open resubmit modal and fetch template
   const handleOpenResubmitModal = async () => {
     if (!latestRequest?.request_id) return;
@@ -199,17 +201,29 @@ function TrackStatusPage() {
     const result = await api.getAwardTemplate(latestRequest.request_id);
     console.log("Award template result:", result);
     setTemplateData(result ?? null);
-    setSelectedFiles([]);
+
+    // Fetch username for file renaming
+    const username = await api.getStudentUsername();
+    setStudentUsername(username);
+
     setOpenResubmitModal(true);
   };
 
+  // Handle file selection
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
     const newFiles = Array.from(files);
-    setSelectedFiles((prev) => [...prev, ...newFiles]);
+
+    // Rename files using the standardized format
+    if (studentUsername && templateData?.award_name) {
+      const renamedFiles = renameResubmitFiles(newFiles, studentUsername, templateData.award_name);
+      setSelectedFiles((prev) => [...prev, ...renamedFiles]);
+    } else {
+      setSelectedFiles((prev) => [...prev, ...newFiles]);
+    }
 
     // Reset input
     if (fileInputRef.current) {
