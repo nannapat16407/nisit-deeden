@@ -7,6 +7,7 @@ import ApplicationForm from "@/components/document/application/ApplicationForm";
 import { api } from "@/lib/api";
 import { Award, Requirement } from "@/types/award.type";
 import { StudentProfileFullResponse } from "@/types/student.type";
+import { generateUploadFileName, getFileExtension, renameFile } from "@/lib/utils";
 
 // Helper function to safely parse requirement_json
 const parseRequirements = (requirementJson: string | undefined): Requirement[] => {
@@ -98,9 +99,19 @@ function CustomAwardPage() {
     formData.append("campus_id", String(studentInfo.campus_id));
     formData.append("award_id", award.award_id);
 
-    // Append each file with its label as the key
-    Object.entries(files).forEach(([label, file]) => {
-      formData.append(label, file);
+    // Rename and append each file with the standardized naming convention
+    // Format: username_awardName_requirementLabel[.extension]
+    Object.entries(files).forEach(([requirementLabel, file]) => {
+      const extension = getFileExtension(file.name);
+      const newFileName = generateUploadFileName(
+        studentInfo.username,
+        award.award_name,
+        requirementLabel,
+        extension,
+        0, // existingFilesCount - always 0 for single file per requirement
+      );
+      const renamedFile = renameFile(file, newFileName);
+      formData.append(requirementLabel, renamedFile);
     });
 
     try {
@@ -164,6 +175,7 @@ function CustomAwardPage() {
         awardName={award.award_name}
         awardDescription={award.description}
         requirements={requirements}
+        username={studentInfo?.username}
       />
     </div>
   );

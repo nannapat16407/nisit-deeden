@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Upload } from "lucide-react";
 import ConfirmSubmitModal from "./ConfirmSubmitModal";
 import { Requirement } from "@/types/award.type";
+import { generateUploadFileName, getFileExtension } from "@/lib/utils";
 
 interface ApplicationFormProps {
   onSubmit?: (files: Record<string, File>) => void;
@@ -12,7 +13,8 @@ interface ApplicationFormProps {
   awardId?: string;
   awardName?: string;
   awardDescription?: string;
-  requirements?: Requirement[]; // ✅ เพิ่ม requirements prop
+  requirements?: Requirement[];
+  username?: string; // ✅ เพิ่ม username สำหรับ generate ชื่อไฟล์
 }
 
 const ApplicationForm: React.FC<ApplicationFormProps> = ({
@@ -21,13 +23,23 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
   awardId,
   awardName,
   awardDescription,
-  requirements = [], // ✅ รับ requirements จาก API
+  requirements = [],
+  username,
 }) => {
   const router = useRouter();
   const fileInputRefs = useRef<Record<string, HTMLInputElement>>({});
   const [selectedFiles, setSelectedFiles] = useState<Record<string, File>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // ✅ Helper: Generate display filename (the name that will be used after rename)
+  const getDisplayFileName = (file: File, requirementLabel: string): string => {
+    if (!username || !awardName) {
+      return file.name; // Fallback to original name if data not ready
+    }
+    const extension = getFileExtension(file.name);
+    return generateUploadFileName(username, awardName, requirementLabel, extension, 0);
+  };
 
   // ✅ Handle file selection แบบ dynamic
   const handleFileChange = (requirement: Requirement, file: File | null) => {
@@ -215,7 +227,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
               <p className="text-sm text-gray-500 mt-2">
                 {selectedFile ? (
                   <span className="text-emerald-600 font-medium">
-                    ไฟล์ที่เลือก: {selectedFile.name}
+                    ไฟล์ที่เลือก: {getDisplayFileName(selectedFile, requirement.label)}
                   </span>
                 ) : (
                   "ยังไม่ได้เลือกไฟล์"
