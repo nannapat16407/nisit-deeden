@@ -197,7 +197,8 @@ function TrackStatusPage() {
     if (!latestRequest?.request_id) return;
 
     const result = await api.getAwardTemplate(latestRequest.request_id);
-    setTemplateData(result?.data ?? null);
+    console.log("Award template result:", result);
+    setTemplateData(result ?? null);
     setSelectedFiles([]);
     setOpenResubmitModal(true);
   };
@@ -1253,10 +1254,10 @@ const ResubmitModal: React.FC<ResubmitModalProps> = ({
 
         {/* Body */}
         <div className="p-6 max-h-[60vh] overflow-y-auto">
-          {/* Section 1: รายละเอียดในการขอแก้ไข */}
+          {/* Section 1: รายละเอียดในใบสมัคร */}
           <div className="mb-6">
             <h3 className="text-base font-semibold text-gray-900 mb-2">
-              รายละเอียดในการขอแก้ไข
+              รายละเอียดในใบสมัคร
             </h3>
             <p className="text-sm text-gray-700 mb-3">
               เอกสารที่แนบมาไม่ตรงกับประเภทรางวัลที่เลือก กรุณาตรวจสอบและแก้ไข ตามตัวอย่างเอกสาร
@@ -1269,7 +1270,7 @@ const ResubmitModal: React.FC<ResubmitModalProps> = ({
                 className="inline-flex items-center gap-2 text-sm text-[#599fa0] hover:text-[#4a8081] hover:underline font-medium"
               >
                 <Download size={16} />
-                ดาวน์โหลดไฟล์แบบฟอร์ม
+                ดาวน์โหลดตัวอย่างเอกสาร
               </a>
             )}
           </div>

@@ -278,12 +278,13 @@ class ApiClient {
    */
   async getAwardTemplate(
     requestId: string,
-  ): Promise<{ data: AwardTemplateResponse } | null> {
+  ): Promise<AwardTemplateResponse | null> {
     try {
-      return await this.fetch<{ data: AwardTemplateResponse }>(
+      return await this.fetch<AwardTemplateResponse>(
         `/api/student/requests/${requestId}/award-template`,
       );
-    } catch {
+    } catch (error) {
+      console.error("getAwardTemplate error:", error);
       return null;
     }
   }
