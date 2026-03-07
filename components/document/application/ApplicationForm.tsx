@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Upload } from "lucide-react";
+import { Upload, Download } from "lucide-react";
 import ConfirmSubmitModal from "./ConfirmSubmitModal";
 import { Requirement } from "@/types/award.type";
 import { generateUploadFileName, getFileExtension } from "@/lib/utils";
@@ -177,17 +177,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
           แบบฟอร์มสมัครนิสิตดีเด่น {awardName}
         </h2>
 
-        {/* Download Template Button */}
-        {templateFileUrl && (
-          <div className="mb-6">
-            <button
-              onClick={handleDownloadForm}
-              className="px-4 py-2 rounded-lg text-sm transition-colors bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
-            >
-              ดาวน์โหลดไฟล์แบบฟอร์ม
-            </button>
-          </div>
-        )}
+{/* Download Template Button */}        {templateFileUrl && (          <div className="mb-6">            <a              href={templateFileUrl}              target="_blank"              rel="noopener noreferrer"              className="inline-flex items-center gap-2 text-sm text-[#599fa0] hover:text-[#4a8081] hover:underline font-medium"            >              <Download size={16} />              ดาวน์โหลดไฟล์แบบฟอร์ม            </a>          </div>        )}
 
         {/* ✅ Render upload inputs แบบ dynamic */}
         {requirements.map((requirement, index) => {
@@ -218,9 +208,9 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
 
               <button
                 onClick={() => handleBrowseClick(requirement)}
-                className="px-4 py-2 bg-yellow-400 border border-yellow-500 rounded-lg text-gray-700 text-sm hover:bg-yellow-500 transition-colors flex items-center gap-2"
+                className="inline-flex items-center gap-2 text-sm text-[#599fa0] hover:text-[#4a8081] hover:underline font-medium"
               >
-                <Upload size={18} />
+                <Upload size={16} />
                 อัปโหลด
               </button>
 

@@ -11,7 +11,7 @@ import {
   AwardTemplateResponse,
   Request,
 } from "@/types/request.type";
-import { RefreshCw, X, Check, Download } from "lucide-react";
+import { RefreshCw, X, Check, Download, Upload } from "lucide-react";
 import { renameResubmitFiles } from "@/lib/utils";
 
 // Display log type for rendering in UI
@@ -1305,9 +1305,10 @@ const ResubmitModal: React.FC<ResubmitModalProps> = ({
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 bg-yellow-400 text-white rounded-lg hover:bg-yellow-500 transition-colors text-sm font-medium"
+              className="inline-flex items-center gap-2 text-sm text-[#599fa0] hover:text-[#4a8081] hover:underline font-medium"
             >
-              เลือกไฟล์
+              <Upload size={16} />
+              อัปโหลด
             </button>
 
             {selectedFiles.length > 0 && (
