@@ -78,9 +78,9 @@ const STATUS_COLORS: Record<RequestStatus, StatusColor> = {
     border: "border-pink-300",
   },
   NEEDS_DOCS: {
-    bg: "bg-yellow-100",
-    text: "text-yellow-800",
-    border: "border-yellow-300",
+    bg: "bg-red-100",
+    text: "text-red-800",
+    border: "border-red-300",
   },
   REJECTED_BY_HEAD: {
     bg: "bg-red-100",
@@ -407,6 +407,7 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
 
     const currentStep = STATUS_TO_STEP[statusToUse];
     const isRejected = isRejectedStatus(statusToUse);
+    const isNeedsDocs = statusToUse === "NEEDS_DOCS";
 
     // If rejected, only show red for the rejected step
     if (isRejected && currentStep === stepNumber)
@@ -418,6 +419,8 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
     if (isRejected && stepNumber < currentStep)
       return "bg-[#599fa0] border-[#599fa0]";
 
+    // For NEEDS_DOCS state - red circle
+    if (isNeedsDocs && currentStep === stepNumber) return "bg-red-500 border-red-500";
     // For pending/active state (yellow circle)
     if (currentStep === stepNumber) return "bg-[#FCD34D] border-[#FCD34D]";
     // For completed steps
@@ -438,6 +441,7 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
 
     const currentStep = STATUS_TO_STEP[statusToUse];
     const isRejected = isRejectedStatus(statusToUse);
+    const isNeedsDocs = statusToUse === "NEEDS_DOCS";
 
     const completedColor = "#599fa0"; // เขียว
     const pendingColor = "#FCD34D"; // เหลือง
@@ -451,11 +455,12 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
 
     // ⭐ เส้นเดียวที่ทำ blending
     if (stepNumber === currentStep - 1) {
+      const targetColor = isRejected ? rejectedColor : (isNeedsDocs ? rejectedColor : pendingColor);
       return {
         background: `linear-gradient(
           to right,
           ${completedColor},
-          ${isRejected ? rejectedColor : pendingColor}
+          ${targetColor}
         )`,
       };
     }
@@ -811,8 +816,8 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
     // NEEDS_DOC / NEEDS_DOCS state
     if (action === "NEEDS_DOCS") {
       return {
-        icon: <span className="text-6xl font-bold text-yellow-500">!</span>,
-        color: "text-yellow-500",
+        icon: <span className="text-6xl font-bold text-red-500">!</span>,
+        color: "text-red-500",
         label: "เอกสารเพิ่ม",
         statusText: "กองพัฒนานิสิต ต้องการเอกสารเพิ่มเติม",
       };
@@ -1126,7 +1131,7 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
                           return shouldShowButton ? (
                             <div className="flex-shrink-0 flex items-start">
                               <button
-                                className="bg-yellow-400 text-white px-6 py-2 rounded-lg hover:bg-yellow-500 transition-colors text-sm font-medium"
+                                className="bg-red-400 text-white px-6 py-2 rounded-lg hover:bg-red-500 transition-colors text-sm font-medium"
                                 onClick={handleOpenResubmitModal}
                               >
                                 รายละเอียดเอกสารที่ต้องส่งเพิ่มเติม &gt;
@@ -1253,8 +1258,8 @@ const ResubmitModal: React.FC<ResubmitModalProps> = ({
         className="bg-white w-full max-w-[600px] rounded-xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header: พื้นหลังสีเหลือง */}
-        <div className="relative bg-yellow-400 text-white py-4 px-6">
+        {/* Header: พื้นหลังสีแดง */}
+        <div className="relative bg-red-400 text-white py-4 px-6">
           <h2 className="text-lg font-semibold text-center">
             แจ้งเหตุผลการขอแก้ไขและส่งเอกสารเพิ่มเติม
           </h2>
