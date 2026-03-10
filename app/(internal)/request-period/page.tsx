@@ -55,7 +55,7 @@ function RequestPeriod() {
 
   useEffect(() => {
     const loadPeriodStates = async () => {
-      if (periods.length === 0) {
+      if (periods === null || periods.length === 0) {
         setPeriodCommitteeState({});
         return;
       }
@@ -90,6 +90,24 @@ function RequestPeriod() {
   };
 
   const handleDelete = async (id: string) => {
+    
+    // Find the period to check its dates
+    const periodToDelete = periods.find(p => p.period_id === id);
+    if (periodToDelete) {
+      const now = new Date();
+      const startDate = new Date(periodToDelete.start_date);
+      const endDate = new Date(periodToDelete.end_date);
+
+      if (now >= startDate && now <= endDate) {
+        setAlert({
+          open: true,
+          msg: "ไม่สามารถลบได้ เนื่องจากอยู่ในช่วงเวลารับสมัคร",
+          severity: "error",
+        });
+        return;
+      }
+    }
+
     if (
       window.confirm(
         "คุณแน่ใจหรือไม่ที่จะลบช่วงเวลานี้? การกระทำนี้ไม่สามารถย้อนกลับได้",
@@ -128,7 +146,16 @@ function RequestPeriod() {
       // --- Business Logic Validation ---
 
       // 1. Date Range Validation (Start must be before End)
-      if (startDate >= endDate) {
+      if (startDate.getDay() == endDate.getDay()) {
+        setAlert({
+          open: true,
+          msg: "วันที่เริ่มต้นและวันที่สิ้นสุดต้องไม่เป็นวันเดียวกัน",
+          severity: "error",
+        });
+        return;
+      }
+
+      if (startDate > endDate) {
         setAlert({
           open: true,
           msg: "วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด",
@@ -138,49 +165,51 @@ function RequestPeriod() {
       }
 
       // 2. Uniqueness Check (Year + Semester)
-      const duplicate = periods.find(
-        (p) =>
-          p.academic_year == academicYearNum &&
-          p.semester == semesterNum &&
-          p.period_id !== periodData.period_id, // Exclude self if editing
-      );
-
-      if (duplicate) {
-        setAlert({
-          open: true,
-          msg: `ช่วงเวลารับสมัครสำหรับ ปีการศึกษา ${academicYearStr} ภาคเรียนที่ ${semesterStr} มีอยู่แล้ว ไม่สามารถสร้างซ้ำได้`,
-          severity: "error",
+      if (periods !== null) {
+        const duplicate = periods.find(
+          (p) =>
+            p.academic_year == academicYearNum &&
+            p.semester == semesterNum &&
+            p.period_id !== periodData.period_id, // Exclude self if editing
+        );
+        if (duplicate) {
+          setAlert({
+            open: true,
+            msg: `ช่วงเวลารับสมัครสำหรับ ปีการศึกษา ${academicYearStr} ภาคเรียนที่ ${semesterStr} มีอยู่แล้ว ไม่สามารถสร้างซ้ำได้`,
+            severity: "error",
+          });
+          return; // Stop execution
+        }
+        // 3. Overlapping Period Check (Date Range Conflict)
+        const overlapping = periods.find((p) => {
+          // Skip self when editing
+          if (p.period_id === periodData.period_id) return false;
+  
+          const existingStart = new Date(p.start_date);
+          const existingEnd = new Date(p.end_date);
+  
+          // Check if date ranges overlap
+          // Overlap occurs when: (StartA <= EndB) AND (EndA >= StartB)
+          return startDate <= existingEnd && endDate >= existingStart;
         });
-        return; // Stop execution
+  
+        if (overlapping) {
+          const overlappingStartDate = new Date(
+            overlapping.start_date,
+          ).toLocaleDateString("th-TH");
+          const overlappingEndDate = new Date(
+            overlapping.end_date,
+          ).toLocaleDateString("th-TH");
+          setAlert({
+            open: true,
+            msg: `ช่วงเวลาที่เลือกทับซ้อนกับช่วงเวลารับสมัครที่มีอยู่แล้ว (${overlappingStartDate} - ${overlappingEndDate}) กรุณาเลือกช่วงเวลาใหม่`,
+            severity: "error",
+          });
+          return;
+        }
       }
 
-      // 3. Overlapping Period Check (Date Range Conflict)
-      const overlapping = periods.find((p) => {
-        // Skip self when editing
-        if (p.period_id === periodData.period_id) return false;
 
-        const existingStart = new Date(p.start_date);
-        const existingEnd = new Date(p.end_date);
-
-        // Check if date ranges overlap
-        // Overlap occurs when: (StartA <= EndB) AND (EndA >= StartB)
-        return startDate <= existingEnd && endDate >= existingStart;
-      });
-
-      if (overlapping) {
-        const overlappingStartDate = new Date(
-          overlapping.start_date,
-        ).toLocaleDateString("th-TH");
-        const overlappingEndDate = new Date(
-          overlapping.end_date,
-        ).toLocaleDateString("th-TH");
-        setAlert({
-          open: true,
-          msg: `ช่วงเวลาที่เลือกทับซ้อนกับช่วงเวลารับสมัครที่มีอยู่แล้ว (${overlappingStartDate} - ${overlappingEndDate}) กรุณาเลือกช่วงเวลาใหม่`,
-          severity: "error",
-        });
-        return;
-      }
 
       // 4. Year Consistency Check (Strict-ish Validation)
       if (startDate >= endDate) {
@@ -362,7 +391,7 @@ function RequestPeriod() {
         <div className="text-center py-20 text-red-500">{error}</div>
       ) : (
         <div className="flex flex-col gap-4">
-          {filteredPeriods.map((period) => (
+          {filteredPeriods !== null && filteredPeriods.map((period) => (
             <PeriodCard
               key={period.period_id}
               period={period}
@@ -378,7 +407,7 @@ function RequestPeriod() {
             />
           ))}
 
-          {filteredPeriods.length === 0 && (
+          {filteredPeriods !== null && (
             <div className="text-center py-20 text-gray-400">
               {isCommitteeRole || isPresidentRole
                 ? "ไม่พบข้อมูลช่วงเวลาที่ต้องอนุมัติ"

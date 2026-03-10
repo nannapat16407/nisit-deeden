@@ -45,6 +45,7 @@ const PeriodFormModal: React.FC<PeriodFormModalProps> = ({
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
+    
     e.preventDefault();
     onSave({
       period_id: initialData?.period_id,
