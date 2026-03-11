@@ -41,7 +41,7 @@ function useAuth() {
       const response = await api.getCurrentUser()
       console.log(response); 
       if (response.authenticated && response.user) {
-        // response.user.role = "PRESIDENT";
+        // response.user.role = "COMMITTEE_HEAD";
         setUser(response.user)
       } else {
         setUser(null)

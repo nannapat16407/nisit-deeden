@@ -2,7 +2,9 @@ type User = {
   user_id: string;
   email: string;
   fname: string;
+  full_name: string;
   lname: string;
+  last_name: string;
   role: string | { RoleName: string };
   campus_id?: number;
   provider?: string;

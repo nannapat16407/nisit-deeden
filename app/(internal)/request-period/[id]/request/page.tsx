@@ -11,6 +11,10 @@ import {
   useConfirmPopUp,
   ConfirmPopUpUI,
 } from "@/components/pop-up/ConfirmPopUp";
+import {
+  usePDFUploadPopUp,
+  PDFUploadPopUpUI,
+} from "@/components/pop-up/PDFUploadPopUp";
 import { Award } from "@/types/award.type";
 
 type Params = Promise<{ id: string }>;
@@ -22,6 +26,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
   const { user, logout } = useAuth();
   const { setAlert } = useAlertPopUp();
   const { trigger: triggerConfirmPopUp } = useConfirmPopUp();
+  const { trigger: triggerPDFUploadPopUp } = usePDFUploadPopUp();
   const role = user?.role;
 
   const [requests, setRequests] = useState<Request[]>([]);
@@ -37,6 +42,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
       setLoading(true);
       let data: Request[] = [];
 
+      console.log("USER",user)
       if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
         const res = await api.getCommitteeRequest();
         data = res.data;
@@ -254,6 +260,35 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
     }
   };
 
+  const presidentApproveCallback = async (file: File | null) => {
+    if (!file) {
+      setAlert({
+        open: true,
+        msg: "กรุณาเลือกไฟล์ PDF ก่อนอนุมัติ",
+        severity: "warning",
+      });
+      return;
+    }
+
+    try {
+      await api.uploadPresidentPdf(periodId, file);
+      setAlert({
+        open: true,
+        msg: "อัปโหลดเอกสารอนุมัติของอธิการบดีสำเร็จ",
+        severity: "success",
+      });
+      router.back();
+    } catch (err: any) {
+      setAlert({
+        open: true,
+        msg: err?.message || "อัปโหลดเอกสารไม่สำเร็จ",
+        severity: "error",
+      });
+      console.log(err?.message);
+      router.back();
+    }
+  };
+
   const handleApproveClick = () => {
     triggerConfirmPopUp({
       title: "ยืนยันการอนุมัติ",
@@ -265,12 +300,12 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
   };
 
   const handlePresidentApproveClick = () => {
-    triggerConfirmPopUp({
+    triggerPDFUploadPopUp({
       title: "ยืนยันการอนุมัติ",
-      message: "คุณแน่ใจหรือไม่ว่าต้องการอนุมัติรายการที่เลือก?",
+      message: "คุณแน่ใจหรือไม่ว่าต้องการอนุมัติคำร้องในรอบนี้",
       confirmText: "อนุมัติ",
       cancelText: "ยกเลิก",
-      onConfirm: () => {router.back()},
+      onConfirm: presidentApproveCallback,
     });
   };
   const getStatusBadge = (status: string) => {
@@ -325,10 +360,10 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
                   isPresidentRole ? handlePresidentApproveClick : () => {}
                 )
               }
-              disabled={selectedRequestIds.length === 0}
+              disabled={isPresidentRole ? false : selectedRequestIds.length === 0}
               className="bg-primary hover:bg-primary-hover disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium"
             >
-              อนุมัติที่เลือก ({selectedRequestIds.length})
+              {isPresidentRole ? "อนุมัติ" : `อนุมัติที่เลือก ${selectedRequestIds.length}` }
             </button>
           )}
 
@@ -363,7 +398,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 text-sm">
-                {(isCommitteeHead || isPresidentRole) && (
+                {(isCommitteeHead ) && (
                   <th className="px-4 py-4 font-semibold w-12">
                     <input
                       type="checkbox"
@@ -384,7 +419,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={(isCommitteeHead ||isPresidentRole )? 6 : 5}
+                    colSpan={(isCommitteeHead)? 6 : 5}
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     Loading...
@@ -393,7 +428,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
               ) : filteredRequests.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={(isCommitteeHead || isPresidentRole) ? 6 : 5}
+                    colSpan={(isCommitteeHead) ? 6 : 5}
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     ไม่พบคำร้อง
@@ -405,7 +440,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
                     key={req.RequestID}
                     className="hover:bg-gray-50 transition-colors"
                   >
-                    {(isCommitteeHead || isPresidentRole )&& (
+                    {(isCommitteeHead)&& (
                       <td
                         className="px-4 py-4 cursor-pointer"
                         onClick={() =>
@@ -460,8 +495,10 @@ export default function RequestPeriodRequestPage({
   params: Params;
 }) {
   return (
-    <ConfirmPopUpUI>
-      <RequestPeriodRequestContent params={params} />
-    </ConfirmPopUpUI>
+    <PDFUploadPopUpUI>
+      <ConfirmPopUpUI>
+        <RequestPeriodRequestContent params={params} />
+      </ConfirmPopUpUI>
+    </PDFUploadPopUpUI>
   );
 }
