@@ -46,3 +46,27 @@ export type EditDocListContextType = {
   state: EditDocListState;
   trigger: (config: EditDocListConfig) => void;
 };
+
+export type PDFUploadPopUpState = {
+  open: boolean;
+  title: string;
+  message: string;
+  confirmText: string;
+  cancelText: string;
+  isLoading: boolean;
+  selectedFileName: string;
+};
+
+export type PDFUploadPopUpConfig = {
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm: (file: File | null) => void | Promise<void>;
+  onCancel?: () => void | Promise<void>;
+};
+
+export type PDFUploadPopUpContextType = {
+  state: PDFUploadPopUpState;
+  trigger: (config: PDFUploadPopUpConfig) => void;
+};

@@ -10,7 +10,8 @@ interface PeriodCardProps {
   isCommitteeRole?: boolean;
   isPresidentRole? : boolean;
   committeeDocumentAvailable?: boolean;
-  onCommitteePDFView?: (periodId: string) => void;
+  presidentDocumentAvailable?: boolean;
+  onPDFView?: (periodId: string) => void;
 }
 
 const PeriodCard: React.FC<PeriodCardProps> = ({
@@ -21,7 +22,8 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
   isCommitteeRole = false,
   isPresidentRole = false,
   committeeDocumentAvailable = false,
-  onCommitteePDFView,
+  presidentDocumentAvailable = false,
+  onPDFView,
 }) => {
   // Assuming isActive is calculated or defaulted
   const isActive = period.is_active !== undefined ? period.is_active : true;
@@ -95,7 +97,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
           </Link>
         )}
 
-        {(!isCommitteeRole || !committeeDocumentAvailable) && (
+        {((!isCommitteeRole && !isPresidentRole) || (isCommitteeRole && !committeeDocumentAvailable) || (isPresidentRole && !presidentDocumentAvailable)) && (
           <Link
             href={`/request-period/${period.period_id}/request`}
             className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline flex items-center gap-1"
@@ -122,10 +124,10 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
           </Link>
         )}
         
-        {(isCommitteeRole || isPresidentRole) && committeeDocumentAvailable && (
+        {((isCommitteeRole && committeeDocumentAvailable) || (isPresidentRole && presidentDocumentAvailable)) && (
           <button
             type="button"
-            onClick={() => onCommitteePDFView?.(period.period_id)}
+            onClick={() => onPDFView?.(period.period_id)}
             className="px-2 py-2 rounded-lg border flex flex-row items-center justify-center gap-1 text-xs font-medium transition-colors border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
           >
             <svg
@@ -145,7 +147,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
               <path d="M9 19h6" />
               <path d="M9 11h2" />
             </svg>
-            <span>{isPresidentRole ? "Committee" : "Approve"} Document</span>
+            <span>{"Approve"} Document</span>
           </button>
         )}
 
