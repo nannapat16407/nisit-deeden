@@ -35,7 +35,6 @@ const TIMELINE_STEPS = [
   { key: "vice_dean", label: "รองคณบดี" },
   { key: "dean", label: "คณบดี" },
   { key: "sd_staff", label: "กองพัฒนานิสิต" },
-  { key: "committee", label: "คณะกรรมการ" },
   { key: "president", label: "อธิการบดี" },
 ];
 
@@ -119,15 +118,15 @@ const STATUS_TO_STEP: Record<RequestStatus, number> = {
   PENDING_VICEDEAN: 2,
   PENDING_DEAN: 3,
   PENDING_SD: 4,
-  PENDING_COMMITTEE: 5,
-  PENDING_PRESIDENT: 6,
+  PENDING_COMMITTEE: 5, // Keep for status mapping, but not displayed in stepper
+  PENDING_PRESIDENT: 5, // Changed from 6 to 5
   NEEDS_DOCS: 4, // กองพัฒนานิสิต
   REJECTED_BY_HEAD: 1,
   REJECTED_BY_VICEDEAN: 2,
   REJECTED_BY_DEAN: 3,
-  REJECTED_BY_COMMITTEE: 5,
-  COMPLETE: 6,
-  COMPLETED: 6,
+  REJECTED_BY_COMMITTEE: 5, // Keep for status mapping
+  COMPLETE: 5, // Changed from 6 to 5
+  COMPLETED: 5, // Changed from 6 to 5
 };
 
 function TrackStatusPage() {
@@ -676,14 +675,6 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
 
-    // 🟢 สำหรับ PENDING_SD: เก็บเฉพาะ log ที่เก่าที่สุด (oldest) เพื่อแสดง "อนุมัติแล้ว"
-    const pendingSdLogs = sortedLogs.filter(log => log.action === "PENDING_SD");
-    const oldestPendingSdLog = pendingSdLogs.length > 0
-      ? pendingSdLogs.reduce((oldest, current) =>
-          new Date(current.timestamp).getTime() < new Date(oldest.timestamp).getTime() ? current : oldest
-        )
-      : null;
-
     // ประมวลผล logs ทั้งหมด
     for (let i = 0; i < sortedLogs.length; i++) {
       const log = sortedLogs[i];
@@ -694,38 +685,6 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
       // ถ้ามีหลาย logs และเจอ PENDING_HEAD ให้ข้าม (ห้ามแสดง)
       if (action === "PENDING_HEAD") {
         continue;
-      }
-
-      // 🟢 กรณีที่ 1: PENDING_SD ที่ไม่ใช่ล่าสุด
-      // - แสดงเฉพาะ log ที่เก่าที่สุด (เพื่อแสดง "อนุมัติแล้วของคณบดี")
-      // - ห้ามแสดง PENDING_SD ซ้ำหลายอัน
-      if (action === "PENDING_SD" && !isLatest) {
-        // แสดงเฉพาะ log ที่เก่าที่สุด
-        if (log !== oldestPendingSdLog) {
-          continue; // ข้าม PENDING_SD ที่ไม่ใช่อันเก่าที่สุด
-        }
-      }
-
-      // 🟢 กรณีที่ 2: PENDING_SD เป็น timestamp ล่าสุด
-      // - แสดงเพียง 1 กล่อง: "กองพัฒนานิสิต อยู่ระหว่างการพิจารณา"
-      // - ห้ามแสดงกล่อง "อนุมัติแล้วของขั้นตอนก่อนหน้า" เพิ่ม
-      if (isLatest && action === "PENDING_SD") {
-        // แสดงเฉพาะกล่อง current (รอพิจารณา) ไม่สร้าง accept box
-        const displayInfo = getDisplayInfoForAction(action, "current", currentStatus);
-        result.push({
-          icon: displayInfo.icon,
-          color: displayInfo.color,
-          label: displayInfo.label,
-          timestamp: formatThaiDate(log.timestamp),
-          statusText: displayInfo.statusText,
-          approverName: undefined,
-          isFromData: false,
-          comment: log.comment,
-          isReject: false,
-          rawTimestamp: log.timestamp,
-          action: log.action,
-        });
-        continue; // ข้ามการสร้าง accept box
       }
 
       // กำหนด mode สำหรับ getDisplayInfoForAction
@@ -764,11 +723,9 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
         action: log.action,
       });
 
-      // กรณี log ล่าสุด = PENDING_{VICEDEAN/DEAN/COMMITTEE/PRESIDENT}
+      // กรณี log ล่าสุด = PENDING_{VICEDEAN/DEAN/SD/PRESIDENT}
       // ต้องสร้าง 2 กล่อง: current (รอ) + accept (ของก่อนหน้า)
-
-      // 🟢 PENDING_SD ถูกแยกไปจัดการด้านบนแล้ว (แสดงเฉพาะ 1 กล่อง)
-      if (isLatest && ["PENDING_VICEDEAN", "PENDING_DEAN", "PENDING_COMMITTEE", "PENDING_PRESIDENT"].includes(action)) {
+      if (isLatest && ["PENDING_VICEDEAN", "PENDING_DEAN", "PENDING_SD", "PENDING_PRESIDENT"].includes(action)) {
         const acceptDisplayInfo = getDisplayInfoForAction(action, "accept", currentStatus);
         result.push({
           icon: acceptDisplayInfo.icon,
@@ -877,18 +834,6 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
           color: "text-[#599fa0]",
         },
       },
-      PENDING_COMMITTEE: {
-        currentStep: {
-          statusText: "คณะกรรมการ อยู่ระหว่างการพิจารณา",
-          label: "รอพิจารณา",
-          color: "text-yellow-500",
-        },
-        acceptStep: {
-          statusText: "กองพัฒนานิสิต อนุมัติแล้ว",
-          label: "อนุมัติแล้ว",
-          color: "text-[#599fa0]",
-        },
-      },
       PENDING_PRESIDENT: {
         currentStep: {
           statusText: "อธิการบดี อยู่ระหว่างการพิจารณา",
@@ -896,7 +841,7 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
           color: "text-yellow-500",
         },
         acceptStep: {
-          statusText: "คณะกรรมการ อนุมัติแล้ว",
+          statusText: "กองพัฒนานิสิต อนุมัติแล้ว",
           label: "อนุมัติแล้ว",
           color: "text-[#599fa0]",
         },
