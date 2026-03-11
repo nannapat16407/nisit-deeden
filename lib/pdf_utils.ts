@@ -38,12 +38,24 @@ export async function genCommitteePDF(
     lines.push(`กลุ่มที่ ${sectionIndex} รางวัล ${awardName}`);
 
     approved.forEach((request, index) => {
-      const requesterName =
-        request.Owner?.fname && request.Owner?.lname
-          ? `${request.Owner.fname} ${request.Owner.lname}`
-          : [request.owner_fname, request.owner_lname].filter(Boolean).join(" ") || "-";
-      const requestId = request.RequestID || request.request_id || "-";
-      lines.push(`   ${index + 1}) ${requesterName} | Request: ${requestId}`);
+      const prefix =
+        request.Owner?.prefix || request.prefix || request.owner_prefix || "";
+      const firstName = request.Owner?.fname || request.fname || request.owner_fname || "";
+      const lastName = request.Owner?.lname || request.lname || request.owner_lname || "";
+      const fullName = [prefix, firstName, lastName].filter(Boolean).join(" ").trim() || "-";
+
+      const rawUsername =
+        request.Owner?.username ||
+        request.owner_student_id ||
+        request.student_id ||
+        "";
+      const usernameMatch = rawUsername.match(/^.*(\d{10})$/);
+      const displayUsername = usernameMatch ? usernameMatch[1] : rawUsername;
+      const requesterName = displayUsername
+        ? `${fullName} ${displayUsername}`
+        : fullName;
+
+      lines.push(`   ${index + 1}) |  ${requesterName} `);
     });
     lines.push("");
     sectionIndex += 1;
@@ -55,7 +67,7 @@ export async function genCommitteePDF(
   }
 
   const signatureLabel = "ลงชื่อ";
-  const signatureName = `${issue_account.prefix || ""} ${issue_account.fname} ${issue_account.lname}`.trim();
+  const signatureName = `${issue_account.prefix || ""} ${issue_account.first_name} ${issue_account.last_name}`.trim();
   const thaiMonths = [
     "มกราคม",
     "กุมภาพันธ์",

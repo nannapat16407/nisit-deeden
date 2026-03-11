@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { useAlertPopUp } from "@/components/pop-up/AlertPopUp";
 import useAuth from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
+import { PDFDocument } from "pdf-lib";
 
 function RequestPeriod() {
   // State and Hooks
@@ -19,8 +20,8 @@ function RequestPeriod() {
   const [editingPeriod, setEditingPeriod] = useState<Period | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [periodCommitteeState, setPeriodCommitteeState] = useState<
-    Record<string, boolean>
+  const [periodState, setPeriodState] = useState<
+    Record<string, { committee_state: boolean; president_state: boolean }>
   >({});
 
   // Check if user is COMMITTEE or COMMITTEE_HEAD
@@ -56,7 +57,7 @@ function RequestPeriod() {
   useEffect(() => {
     const loadPeriodStates = async () => {
       if (periods.length === 0) {
-        setPeriodCommitteeState({});
+        setPeriodState({});
         return;
       }
 
@@ -64,15 +65,24 @@ function RequestPeriod() {
         periods.map(async (period) => {
           try {
             const state = await api.getPeriodState(period.period_id);
-            return [period.period_id, state.committee_state] as const;
+            return [
+              period.period_id,
+              {
+                committee_state: state.committee_state,
+                president_state: state.president_state,
+              },
+            ] as const;
           } catch (err) {
             console.error("Failed to fetch period state:", err);
-            return [period.period_id, false] as const;
+            return [
+              period.period_id,
+              { committee_state: false, president_state: false },
+            ] as const;
           }
         }),
       );
 
-      setPeriodCommitteeState(Object.fromEntries(entries));
+      setPeriodState(Object.fromEntries(entries));
     };
 
     loadPeriodStates();
@@ -317,11 +327,61 @@ function RequestPeriod() {
     }
   };
 
+  const combineAndOpenPdfs = async (pdfUrls: string[]) => {
+    const mergedPdf = await PDFDocument.create();
+
+    for (const pdfUrl of pdfUrls) {
+      const response = await fetch(pdfUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch PDF: ${pdfUrl}`);
+      }
+      const bytes = await response.arrayBuffer();
+      const pdf = await PDFDocument.load(bytes);
+      const pageIndices = pdf.getPageIndices();
+      const copiedPages = await mergedPdf.copyPages(pdf, pageIndices);
+      copiedPages.forEach((page) => mergedPdf.addPage(page));
+    }
+
+    const mergedBytes = await mergedPdf.save();
+    const bytes = Uint8Array.from(mergedBytes);
+    const blob = new Blob([bytes.buffer], {
+      type: "application/pdf",
+    });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank", "noopener,noreferrer");
+
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  };
+
+  const PresidentPDFViewCallback = async (periodId: string) => {
+    try {
+      const state = await api.getPeriodState(periodId);
+      if (!state.president_file_url || !state.committee_file_url) {
+        setAlert({
+          open: true,
+          msg: "ไม่พบไฟล์เอกสารสำหรับรวม (อธิการบดี/คณะกรรมการ)",
+          severity: "warning",
+        });
+        return;
+      }
+
+      await combineAndOpenPdfs([
+        state.president_file_url,
+        state.committee_file_url,
+      ]);
+    } catch (err: any) {
+      setAlert({
+        open: true,
+        msg: "รวมและเปิดเอกสารไม่สำเร็จ",
+        severity: "error",
+      });
+    }
+  };
   // Filter periods based on role
   const filteredPeriods = isCommitteeRole
     ? periods.filter((p) => p.is_active)
     : (isPresidentRole ? periods.filter((p) => 
-      p.is_active && ( periodCommitteeState[p.period_id] ?? false)
+      p.is_active && (periodState[p.period_id]?.committee_state ?? false)
     ) : periods);
 
   return (
@@ -372,9 +432,12 @@ function RequestPeriod() {
               isCommitteeRole={isCommitteeRole}
               isPresidentRole={isPresidentRole}
               committeeDocumentAvailable={
-                periodCommitteeState[period.period_id] ?? false
+                periodState[period.period_id]?.committee_state ?? false
               }
-              onCommitteePDFView={CommitteePDFViewCallback}
+              presidentDocumentAvailable={
+                periodState[period.period_id]?.president_state ?? false
+              }
+              onPDFView={isPresidentRole || (periodState[period.period_id]?.president_state ?? false) ? PresidentPDFViewCallback : CommitteePDFViewCallback}
             />
           ))}
 

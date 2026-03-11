@@ -492,6 +492,32 @@ class ApiClient {
   async getPresidentRequest(): Promise<{ data: RequestType[] }> {
     return this.fetch("/api/president/requests");
   }
+
+  async uploadPresidentPdf(
+    periodId: string,
+    file: File,
+  ): Promise<{ message: string; data: any }> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(
+      `${this.baseURL}/api/president/upload/period/${periodId}`,
+      {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || errorData.message || "Failed to upload committee PDF",
+      );
+    }
+
+    return response.json();
+  }
 }
 
 // Export singleton instance
