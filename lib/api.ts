@@ -9,10 +9,11 @@ import {
   StudentProfileResponse,
 } from "@/types/student.type";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8008";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 class ApiClient {
   private baseURL: string;
+  private ngrokHeaders: HeadersInit = { "ngrok-skip-browser-warning": "true" };
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
@@ -26,6 +27,7 @@ class ApiClient {
 
     const defaultHeaders: HeadersInit = {
       "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
     };
 
     const config: RequestInit = {
@@ -111,6 +113,7 @@ class ApiClient {
       method: "POST",
       body: formData,
       credentials: "include",
+      headers: this.ngrokHeaders,
     });
 
     if (!response.ok) {
@@ -130,6 +133,7 @@ class ApiClient {
       method: "PUT",
       body: formData,
       credentials: "include",
+      headers: this.ngrokHeaders,
     });
 
     if (!response.ok) {
@@ -217,7 +221,8 @@ class ApiClient {
     const response = await fetch(`${this.baseURL}/api/student/apply`, {
       method: "POST",
       body: formData,
-      credentials: "include", // สำคัญมาก (ส่ง cookie)
+      credentials: "include",
+      headers: this.ngrokHeaders,
     });
 
     if (!response.ok) {
@@ -277,6 +282,7 @@ class ApiClient {
         method: "PATCH",
         body: formData,
         credentials: "include",
+        headers: this.ngrokHeaders,
       },
     );
     if (!response.ok) {
@@ -309,6 +315,7 @@ class ApiClient {
         method: "PATCH",
         body: formData,
         credentials: "include",
+        headers: this.ngrokHeaders,
       },
     );
     if (!response.ok) {
@@ -338,6 +345,7 @@ class ApiClient {
         method: "PATCH",
         body: formData,
         credentials: "include",
+        headers: this.ngrokHeaders,
       },
     );
     if (!response.ok) {
@@ -439,6 +447,7 @@ class ApiClient {
         method: "POST",
         body: formData,
         credentials: "include",
+        headers: this.ngrokHeaders,
       },
     );
 
@@ -506,6 +515,7 @@ class ApiClient {
         method: "POST",
         body: formData,
         credentials: "include",
+        headers: this.ngrokHeaders,
       },
     );
 

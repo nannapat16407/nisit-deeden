@@ -2,13 +2,9 @@ name: Frontend CI/CD
 
 on:
   pull_request:
-    branches:
-      - develop
-      - main
+    branches: [develop, uat, main]
   push:
-    branches:
-      - develop
-      - main
+    branches: [develop, uat, main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -16,24 +12,20 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/kuis-frontend
 
 jobs:
   lint-and-test:
     name: Lint, Type-check & Build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
       - name: Lint codebase
         run: npm run lint
@@ -46,61 +38,68 @@ jobs:
       - name: Build Next.js (smoke test)
         run: npm run build
         env:
-          # URL ที่ Browser ของ User เรียก Backend ผ่าน K8s Ingress
-          NEXT_PUBLIC_API_URL: http://api.kuis-award.local
-          NEXT_PUBLIC_FRONTEND_URL: http://kuis-award.local
+          NEXT_PUBLIC_API_URL: ""
+          NEXT_PUBLIC_FRONTEND_URL: http://uat-kuis-award.local
+          NEXT_PUBLIC_OAUTH_URL: https://example.ngrok-free.app
           NEXT_TELEMETRY_DISABLED: 1
 
   docker-build-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
     needs: lint-and-test
-    # Push image เฉพาะ push event ไม่ใช่ PR
     if: github.event_name == 'push'
     permissions:
       contents: read
       packages: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Determine environment tag
-        id: env-tag
+      - name: Determine image tag & build-args
+        id: meta
         run: |
-          # GHCR requires lowercase — convert repository_owner to lowercase
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "image=${{ env.REGISTRY }}/${OWNER}/kuis-frontend" >> $GITHUB_OUTPUT
+          IMAGE="${{ env.REGISTRY }}/${OWNER}/kuis-frontend"
+          echo "image=${IMAGE}" >> $GITHUB_OUTPUT
 
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "tag=uat-latest"      >> $GITHUB_OUTPUT
-            echo "sha_tag=uat-${{ github.sha }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=develop-latest"  >> $GITHUB_OUTPUT
-            echo "sha_tag=develop-${{ github.sha }}" >> $GITHUB_OUTPUT
-          fi
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          case "${BRANCH}" in
+            main)
+              ENV="prod"
+              FRONTEND_URL="http://kuis-award.local"
+              ;;
+            uat)
+              ENV="uat"
+              FRONTEND_URL="http://uat-kuis-award.local"
+              ;;
+            *)
+              ENV="dev"
+              FRONTEND_URL="http://uat-kuis-award.local"
+              ;;
+          esac
+          echo "tag=${ENV}-latest"                >> $GITHUB_OUTPUT
+          echo "sha_tag=${ENV}-${GITHUB_SHA::7}"  >> $GITHUB_OUTPUT
+          echo "frontend_url=${FRONTEND_URL}"     >> $GITHUB_OUTPUT
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push (Dockerfile.prod)
-        uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile.prod
           push: true
           tags: |
-            ${{ steps.env-tag.outputs.image }}:${{ steps.env-tag.outputs.tag }}
-            ${{ steps.env-tag.outputs.image }}:${{ steps.env-tag.outputs.sha_tag }}
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha_tag }}
           build-args: |
-            NEXT_PUBLIC_API_URL=https://b41d-158-108-229-42.ngrok-free.app
-            NEXT_PUBLIC_FRONTEND_URL=http://kuis-award.local
+            NEXT_PUBLIC_API_URL=
+            NEXT_PUBLIC_FRONTEND_URL=${{ steps.meta.outputs.frontend_url }}
+            NEXT_PUBLIC_OAUTH_URL=${{ secrets.NGROK_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

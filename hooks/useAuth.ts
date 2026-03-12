@@ -62,12 +62,9 @@ function useAuth() {
     try {
       setLoading(true)
       setError(null)
-      
-      // Get Google OAuth URL from backend
-      const { url } = await api.getGoogleAuthUrl()
-      
-      // Redirect to Google OAuth
-      window.location.href = url
+
+      const oauthUrl = process.env.NEXT_PUBLIC_OAUTH_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8008'
+      window.location.href = `${oauthUrl}/api/auth/google`
     } catch (err) {
       console.error('Google login failed:', err)
       setError(err instanceof Error ? err.message : 'Google login failed')
