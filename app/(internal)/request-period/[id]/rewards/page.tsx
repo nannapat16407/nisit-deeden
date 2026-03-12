@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, use } from "react";
 import { Award } from "@/types/award.type";
+import { Period } from "@/types/period.type";
 import AwardCard from "@/components/reward/AwardCard";
 import AwardFormModal from "@/components/reward/AwardFormModal";
 import { api } from "@/lib/api";
@@ -22,10 +23,24 @@ export default function RequestPeriodRewardsPage({
   const router = useRouter();
   const { setAlert } = useAlertPopUp();
   const [awards, setAwards] = useState<Award[]>([]);
+  const [period, setPeriod] = useState<Period | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAward, setEditingAward] = useState<Award | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchPeriod = async () => {
+    try {
+      const response = await api.getPeriods();
+      const periods = response?.data || [];
+      const currentPeriod = periods.find(
+        (p: Period) => String(p.period_id).trim() === String(periodId).trim(),
+      );
+      setPeriod(currentPeriod || null);
+    } catch (err) {
+      console.error("Failed to fetch period:", err);
+    }
+  };
 
   const fetchAwards = async () => {
     try {
@@ -73,6 +88,7 @@ export default function RequestPeriodRewardsPage({
 
   useEffect(() => {
     if (periodId) {
+      fetchPeriod();
       fetchAwards();
     }
   }, [periodId]);
@@ -135,6 +151,21 @@ export default function RequestPeriodRewardsPage({
   };
 
   const handlDelete = async (id: string) => {
+    // ตรวจสอบว่าถึงเวลาเริ่มช่วงรับสมัครแล้วหรือไม่
+    if (period) {
+      const now = new Date();
+      const startDate = new Date(period.start_date);
+
+      if (now >= startDate) {
+        setAlert({
+          open: true,
+          msg: "ไม่สามารถลบรางวัลได้ เนื่องจากถึงเวลาเริ่มรับสมัครแล้ว",
+          severity: "error",
+        });
+        return;
+      }
+    }
+
     if (window.confirm("คุณแน่ใจหรือไม่ที่จะลบรางวัลนี้?")) {
       try {
         await api.deleteAward(id);

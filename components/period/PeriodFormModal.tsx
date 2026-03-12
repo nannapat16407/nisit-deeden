@@ -92,7 +92,6 @@ const PeriodFormModal: React.FC<PeriodFormModalProps> = ({
               >
                 <option value="1">ภาคเรียนที่ 1</option>
                 <option value="2">ภาคเรียนที่ 2</option>
-                <option value="3">ภาคฤดูร้อน</option>
               </select>
             </div>
           </div>
@@ -136,7 +135,7 @@ const PeriodFormModal: React.FC<PeriodFormModalProps> = ({
               htmlFor="isActive"
               className="text-sm font-medium text-gray-700 cursor-pointer"
             >
-              เปิดรับสมัครทันที (Active)
+              เปิดรับสมัคร
             </label>
           </div>
 

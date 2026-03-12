@@ -273,7 +273,7 @@ function RequestPeriod() {
         now.setHours(0, 0, 0, 0);
         const endDateOnly = new Date(endDate);
         endDateOnly.setHours(0, 0, 0, 0);
-        
+
         if (endDateOnly < now) {
           setAlert({
             open: true,
