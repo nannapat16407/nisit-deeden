@@ -84,7 +84,7 @@ export default function AnnouncementPage() {
         });
       } else {
         // Create - Get campus_id from user
-        const campusId = user?.ref_id || 1;
+        const campusId = user?.campus_id || 1;
         await api.createAnnouncement({
           title: formData.title,
           description: formData.description,
