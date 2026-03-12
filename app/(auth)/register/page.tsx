@@ -1,9 +1,13 @@
-import React from 'react'
+import RegisterForm from '@/components/auth/RegisterForm'
+import HalfBackground from '@/components/ui/HalfBackground'
 
-function page() {
+function RegisterPage() {
   return (
-    <div>page</div>
+    <div className='relative min-h-screen'>
+      <HalfBackground />
+      <RegisterForm />
+    </div>
   )
 }
 
-export default page
+export default RegisterPage

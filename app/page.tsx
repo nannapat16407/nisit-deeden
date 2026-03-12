@@ -1,7 +1,12 @@
-export default function Home() {
+"use client";
+import LeftMenu from "@/components/ui/LeftMenu";
+
+function Home() {
   return (
-    <h1 className="text-3xl font-bold underline">
-      Hello world!
-    </h1>
-  )
+    <div>
+      
+    </div>
+  );
 }
+
+export default Home;
