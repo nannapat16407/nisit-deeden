@@ -184,7 +184,7 @@ function RequestDetailContent() {
           0,
         );
         const renamedFile = renameFile(reviewFile, newFileName);
-        formData.append("ใบสมัครที่ลงนามโดยคณบดี", renamedFile);
+        formData.append("SIGNED_BY_DEAN", renamedFile);
       }
 
       if (roleName === "DEPARTMENT_HEAD") {
