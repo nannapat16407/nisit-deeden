@@ -420,8 +420,15 @@ function RequestDetailContent() {
               (() => {
                 let displayAttachments = [...request.attachments];
 
-                // SD role: ถ้ามี "ใบสมัครที่ลงนามโดยคณบดี" → ซ่อน "ใบสมัครที่ลงนามโดยนิสิต" แล้วเอา "ใบสมัครที่ลงนามโดยคณบดี" ขึ้นแรก
-                if (role === "SD_STAFF") {
+                // ถ้ามี "ใบสมัครที่ลงนามโดยคณบดี" → ซ่อน "ใบสมัครที่ลงนามโดยนิสิต" แล้วเอา "ใบสมัครที่ลงนามโดยคณบดี" ขึ้นแรก
+                if (
+                  [
+                    "SD_STAFF",
+                    "COMMITTEE",
+                    "COMMITTEE_HEAD",
+                    "PRESIDENT",
+                  ].includes(role || "")
+                ) {
                   const hasDeanSigned = displayAttachments.some(
                     (a) => a.label === "ใบสมัครที่ลงนามโดยคณบดี",
                   );

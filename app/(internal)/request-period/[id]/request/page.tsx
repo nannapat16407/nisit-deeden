@@ -285,7 +285,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
   const handlePresidentApproveClick = () => {
     triggerPDFUploadPopUp({
       title: "ยืนยันการอนุมัติ",
-      message: "คุณแน่ใจหรือไม่ว่าต้องการอนุมัติคำร้องในรอบนี้",
+      message: "อัพโหลดไฟล์ PDF ประกาศมหาวิทยาลัยที่ลงนามโดยอธิการบดีเพื่ออนุมัติใบสมัครในรอบนี้",
       confirmText: "อนุมัติ",
       cancelText: "ยกเลิก",
       onConfirm: presidentApproveCallback,
