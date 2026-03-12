@@ -171,6 +171,7 @@ function RequestDetailContent() {
         const studentUsername =
           request.student_id ||
           request.owner_student_id ||
+          request.username ||
           request.Owner?.username ||
           "unknown";
         const awardName =
@@ -377,7 +378,12 @@ function RequestDetailContent() {
               </div>
               <div>
                 <span className="text-gray-500 block">รหัสนิสิต</span>
-                <span className="font-medium text-gray-800 text-lg">-</span>
+                <span className="font-medium text-gray-800 text-lg">
+                  {request.student_id ||
+                    request.owner_student_id ||
+                    request.Owner?.username ||
+                    "-"}
+                </span>
               </div>
               <div>
                 <span className="text-gray-500 block">Email</span>
@@ -427,7 +433,7 @@ function RequestDetailContent() {
                     "COMMITTEE",
                     "COMMITTEE_HEAD",
                     "PRESIDENT",
-                  ].includes(role || "")
+                  ].includes(typeof role === "string" ? role : role?.RoleName || "")
                 ) {
                   const hasDeanSigned = displayAttachments.some(
                     (a) => a.label === "ใบสมัครที่ลงนามโดยคณบดี",

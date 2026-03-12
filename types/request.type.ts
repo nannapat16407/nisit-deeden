@@ -42,6 +42,7 @@ export interface Request {
   
   // Legacy fields (for backward compatibility)
   student_id?: string;
+  username?: string;
   student_name?: string;
   student_email?: string;
   owner_prefix?: string;
