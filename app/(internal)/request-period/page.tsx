@@ -85,6 +85,19 @@ function RequestPeriod() {
   };
 
   const handleEdit = (period: Period) => {
+    // ตรวจสอบว่าถ้าถึงเวลารับสมัครแล้ว ห้ามแก้ไข (ยกเว้นสถานะการเปิด/ปิด)
+    const now = new Date();
+    const startDate = new Date(period.start_date);
+    
+    if (now >= startDate) {
+      setAlert({
+        open: true,
+        msg: "ไม่สามารถแก้ไขช่วงเวลาได้ เนื่องจากถึงเวลารับสมัครแล้ว (สามารถเปลี่ยนสถานะเปิด/ปิดรับสมัครได้เท่านั้น)",
+        severity: "warning",
+      });
+      return;
+    }
+    
     setEditingPeriod(period);
     setIsModalOpen(true);
   };
@@ -96,12 +109,12 @@ function RequestPeriod() {
     if (periodToDelete) {
       const now = new Date();
       const startDate = new Date(periodToDelete.start_date);
-      const endDate = new Date(periodToDelete.end_date);
 
-      if (now >= startDate && now <= endDate) {
+      // ห้ามลบถ้าถึงเวลารับสมัครแล้ว (ไม่ว่าจะปิดรับสมัครหรือยัง)
+      if (now >= startDate) {
         setAlert({
           open: true,
-          msg: "ไม่สามารถลบได้ เนื่องจากอยู่ในช่วงเวลารับสมัคร",
+          msg: "ไม่สามารถลบได้ เนื่องจากถึงเวลารับสมัครแล้ว",
           severity: "error",
         });
         return;
@@ -145,8 +158,37 @@ function RequestPeriod() {
 
       // --- Business Logic Validation ---
 
-      // 1. Date Range Validation (Start must be before End)
-      if (startDate.getDay() == endDate.getDay()) {
+      // 1. Check if editing period that has already started (only allow is_active change)
+      if (periodData.period_id) {
+        const existingPeriod = periods.find(p => p.period_id === periodData.period_id);
+        if (existingPeriod) {
+          const now = new Date();
+          const existingStartDate = new Date(existingPeriod.start_date);
+          
+          // ถ้าถึงเวลารับสมัครแล้ว อนุญาตแค่เปลี่ยน is_active
+          if (now >= existingStartDate) {
+            // เช็คว่ามีการเปลี่ยนแปลงอะไรนอกจาก is_active หรือไม่
+            const hasOtherChanges = 
+              existingPeriod.academic_year != academicYearNum ||
+              existingPeriod.semester != semesterNum ||
+              new Date(existingPeriod.start_date).toISOString() !== startDate.toISOString() ||
+              new Date(existingPeriod.end_date).toISOString() !== endDate.toISOString();
+            
+            if (hasOtherChanges) {
+              setAlert({
+                open: true,
+                msg: "ไม่สามารถแก้ไขข้อมูลได้ เนื่องจากถึงเวลารับสมัครแล้ว (สามารถเปลี่ยนสถานะเปิด/ปิดรับสมัครได้เท่านั้น)",
+                severity: "error",
+              });
+              return;
+            }
+            // ถ้าเปลี่ยนแค่ is_active ให้ดำเนินการต่อได้
+          }
+        }
+      }
+
+      // 2. Date Same Day Validation (ไม่เป็นวันเดียวกัน)
+      if (startDate.toDateString() === endDate.toDateString()) {
         setAlert({
           open: true,
           msg: "วันที่เริ่มต้นและวันที่สิ้นสุดต้องไม่เป็นวันเดียวกัน",
@@ -155,6 +197,7 @@ function RequestPeriod() {
         return;
       }
 
+      // 3. Date Range Validation (Start must be before End)
       if (startDate > endDate) {
         setAlert({
           open: true,
@@ -164,7 +207,7 @@ function RequestPeriod() {
         return;
       }
 
-      // 2. Uniqueness Check (Year + Semester)
+      // 4. Uniqueness Check (Year + Semester)
       if (periods !== null) {
         const duplicate = periods.find(
           (p) =>
@@ -180,7 +223,7 @@ function RequestPeriod() {
           });
           return; // Stop execution
         }
-        // 3. Overlapping Period Check (Date Range Conflict)
+        // 5. Overlapping Period Check (Date Range Conflict)
         const overlapping = periods.find((p) => {
           // Skip self when editing
           if (p.period_id === periodData.period_id) return false;
@@ -209,10 +252,7 @@ function RequestPeriod() {
         }
       }
 
-
-
-      // 4. Year Consistency Check (Strict-ish Validation)
-      if (startDate >= endDate) {
+      // 6. Year Consistency Check (Strict-ish Validation)
         setAlert({
           open: true,
           msg: "วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด",
@@ -221,7 +261,7 @@ function RequestPeriod() {
         return;
       }
 
-      // 4. Year Consistency Check (Strict-ish Validation)
+      // 7. Year-Date Consistency Check
       // BE Year to AD Year approx: BE - 543.
       // User requested "strict" logic.
       // We will BLOCK if the year is totally off (more than 1 year difference).
