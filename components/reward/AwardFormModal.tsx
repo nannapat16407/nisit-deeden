@@ -37,8 +37,12 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
         const parsedReqs = initialData.requirement_json
           ? JSON.parse(initialData.requirement_json)
           : [];
+        // Filter out SIGN_BY_STUDENT (hidden from SD)
+        const visibleReqs = parsedReqs.filter(
+          (req: any) => req.label !== "SIGN_BY_STUDENT",
+        );
         // Ensure all requirements have extensions array
-        const normalizedReqs = parsedReqs.map((req: any) => ({
+        const normalizedReqs = visibleReqs.map((req: any) => ({
           ...req,
           extensions: req.extensions || [],
           required: req.required !== undefined ? req.required : true,
@@ -115,7 +119,16 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
     formData.append("award_type", "General"); // Defaulting correctly
     formData.append("description", description);
     formData.append("is_active", isActive ? "true" : "false");
-    formData.append("requirement_json", JSON.stringify(requirements));
+
+    // Inject SIGN_BY_STUDENT requirement at the beginning
+    const signByStudentReq = {
+      label: "SIGN_BY_STUDENT",
+      type: "file",
+      required: true,
+      extensions: ["pdf"],
+    };
+    const finalRequirements = [signByStudentReq, ...requirements];
+    formData.append("requirement_json", JSON.stringify(finalRequirements));
 
     if (selectedFile) {
       formData.append("template_file", selectedFile);
