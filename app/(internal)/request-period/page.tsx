@@ -84,17 +84,27 @@ function RequestPeriod() {
   };
 
   const handleEdit = (period: Period) => {
-    // ตรวจสอบว่าถ้าถึงเวลารับสมัครแล้ว ห้ามแก้ไข (ยกเว้นสถานะการเปิด/ปิด)
     const now = new Date();
     const startDate = new Date(period.start_date);
+    const endDate = new Date(period.end_date);
 
-    if (now >= startDate) {
+    // ห้ามแก้ไขถ้าหมดเวลาไปแล้ว
+    if (now > endDate) {
       setAlert({
         open: true,
-        msg: "ไม่สามารถแก้ไขช่วงเวลาได้ เนื่องจากถึงเวลารับสมัครแล้ว (สามารถเปลี่ยนสถานะเปิด/ปิดรับสมัครได้เท่านั้น)",
-        severity: "warning",
+        msg: "ไม่สามารถแก้ไขช่วงเวลาได้ เนื่องจากหมดเวลารับสมัครไปแล้ว",
+        severity: "error",
       });
       return;
+    }
+
+    // ถ้าอยู่ในช่วงรับสมัคร แจ้งว่าแก้ได้แค่บางส่วน
+    if (now >= startDate && now <= endDate) {
+      setAlert({
+        open: true,
+        msg: "อยู่ในช่วงรับสมัคร: สามารถแก้ไขเฉพาะสถานะการเปิด/ปิด และวันสิ้นสุดเท่านั้น",
+        severity: "info",
+      });
     }
 
     setEditingPeriod(period);
@@ -107,6 +117,17 @@ function RequestPeriod() {
     if (periodToDelete) {
       const now = new Date();
       const startDate = new Date(periodToDelete.start_date);
+      const endDate = new Date(periodToDelete.end_date);
+
+      // ห้ามลบถ้าหมดเวลาไปแล้ว
+      if (now > endDate) {
+        setAlert({
+          open: true,
+          msg: "ไม่สามารถลบได้ เนื่องจากหมดเวลารับสมัครไปแล้ว",
+          severity: "error",
+        });
+        return;
+      }
 
       // ห้ามลบถ้าถึงเวลารับสมัครแล้ว (ไม่ว่าจะปิดรับสมัครหรือยัง)
       if (now >= startDate) {
@@ -156,7 +177,7 @@ function RequestPeriod() {
 
       // --- Business Logic Validation ---
 
-      // 1. Check if editing period that has already started (only allow is_active change)
+      // 1. Check if editing period that has already started or ended
       if (periodData.period_id) {
         const existingPeriod = periods.find(
           (p) => p.period_id === periodData.period_id,
@@ -164,27 +185,63 @@ function RequestPeriod() {
         if (existingPeriod) {
           const now = new Date();
           const existingStartDate = new Date(existingPeriod.start_date);
+          const existingEndDate = new Date(existingPeriod.end_date);
 
-          // ถ้าถึงเวลารับสมัครแล้ว อนุญาตแค่เปลี่ยน is_active
-          if (now >= existingStartDate) {
-            // เช็คว่ามีการเปลี่ยนแปลงอะไรนอกจาก is_active หรือไม่
-            const hasOtherChanges =
+          // ห้ามแก้ไขถ้าหมดเวลาไปแล้ว
+          if (now > existingEndDate) {
+            setAlert({
+              open: true,
+              msg: "ไม่สามารถแก้ไขได้ เนื่องจากหมดเวลารับสมัครไปแล้ว",
+              severity: "error",
+            });
+            return;
+          }
+
+          // ถ้าอยู่ในช่วงรับสมัคร อนุญาตแค่เปลี่ยน is_active และ end_date
+          if (now >= existingStartDate && now <= existingEndDate) {
+            // เช็คว่ามีการเปลี่ยนแปลงอะไรนอกจาก is_active และ end_date หรือไม่
+            const hasRestrictedChanges =
               existingPeriod.academic_year != academicYearNum ||
               existingPeriod.semester != semesterNum ||
               new Date(existingPeriod.start_date).toISOString() !==
-                startDate.toISOString() ||
-              new Date(existingPeriod.end_date).toISOString() !==
-                endDate.toISOString();
+                startDate.toISOString();
 
-            if (hasOtherChanges) {
+            if (hasRestrictedChanges) {
               setAlert({
                 open: true,
-                msg: "ไม่สามารถแก้ไขข้อมูลได้ เนื่องจากถึงเวลารับสมัครแล้ว (สามารถเปลี่ยนสถานะเปิด/ปิดรับสมัครได้เท่านั้น)",
+                msg: "ไม่สามารถแก้ไขปีการศึกษา ภาคเรียน หรือวันเริ่มต้นได้ เนื่องจากอยู่ในช่วงรับสมัคร (แก้ไขได้เฉพาะสถานะและวันสิ้นสุด)",
                 severity: "error",
               });
               return;
             }
-            // ถ้าเปลี่ยนแค่ is_active ให้ดำเนินการต่อได้
+
+            // ถ้าแก้ไข end_date ต้อง validate เพิ่มเติม
+            const endDateChanged =
+              new Date(existingPeriod.end_date).toISOString() !==
+              endDate.toISOString();
+
+            if (endDateChanged) {
+              // วันสิ้นสุดใหม่ต้องไม่ก่อนวันปัจจุบัน
+              if (endDate < now) {
+                setAlert({
+                  open: true,
+                  msg: "วันสิ้นสุดใหม่ต้องไม่ก่อนวันปัจจุบัน",
+                  severity: "error",
+                });
+                return;
+              }
+
+              // วันสิ้นสุดใหม่ต้องไม่ก่อนวันเริ่มต้น
+              if (endDate <= existingStartDate) {
+                setAlert({
+                  open: true,
+                  msg: "วันสิ้นสุดต้องมาหลังวันเริ่มต้น",
+                  severity: "error",
+                });
+                return;
+              }
+            }
+            // ถ้าแก้แค่ is_active หรือ end_date (และผ่าน validation) ให้ดำเนินการต่อได้
           }
         }
       }
