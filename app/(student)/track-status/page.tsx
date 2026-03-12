@@ -4,37 +4,15 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useAuth from "@/hooks/useAuth";
 import { api } from "@/lib/api";
-import { RequestStatus } from "@/types/request.type";
-import { RefreshCw, X, Check } from "lucide-react";
-
-// API Response type matching the backend response
-interface MyRequestResponse {
-  request_id: string;
-  campus_id: number;
-  award_id: string;
-  award_name: string;
-  academic_year: number;
-  semester: number;
-  status: RequestStatus;
-  created_at: string;
-  attachments: unknown[];
-}
-
-// Detailed request response with logs
-interface RequestDetailResponse {
-  request_id: string;
-  status: RequestStatus;
-  status_thai: string;
-  created_at: string;
-  logs: RequestLog[];
-}
-
-interface RequestLog {
-  action: string;
-  comment: string;
-  approver_name: string;
-  timestamp: string;
-}
+import {
+  RequestStatus,
+  RequestDetailResponse,
+  RequestLog,
+  AwardTemplateResponse,
+  Request,
+} from "@/types/request.type";
+import { RefreshCw, X, Check, Download, Upload } from "lucide-react";
+import { renameResubmitFiles } from "@/lib/utils";
 
 // Display log type for rendering in UI
 interface DisplayLog {
@@ -47,6 +25,9 @@ interface DisplayLog {
   isFromData: boolean;
   comment?: string;
   isReject?: boolean;
+  isResubmitted?: boolean; // Flag to indicate if user has resubmitted documents
+  rawTimestamp: string; // Original ISO timestamp for comparison
+  action: string; // Original action for button display logic
 }
 
 const TIMELINE_STEPS = [
@@ -54,11 +35,17 @@ const TIMELINE_STEPS = [
   { key: "vice_dean", label: "รองคณบดี" },
   { key: "dean", label: "คณบดี" },
   { key: "sd_staff", label: "กองพัฒนานิสิต" },
-  { key: "committee", label: "คณะกรรมการ" },
   { key: "president", label: "อธิการบดี" },
 ];
 
-const STATUS_COLORS = {
+// Status color mapping type
+interface StatusColor {
+  bg: string;
+  text: string;
+  border: string;
+}
+
+const STATUS_COLORS: Record<RequestStatus, StatusColor> = {
   PENDING_HEAD: {
     bg: "bg-yellow-100",
     text: "text-yellow-800",
@@ -90,9 +77,9 @@ const STATUS_COLORS = {
     border: "border-pink-300",
   },
   NEEDS_DOCS: {
-    bg: "bg-yellow-100",
-    text: "text-yellow-800",
-    border: "border-yellow-300",
+    bg: "bg-red-100",
+    text: "text-red-800",
+    border: "border-red-300",
   },
   REJECTED_BY_HEAD: {
     bg: "bg-red-100",
@@ -126,26 +113,26 @@ const STATUS_COLORS = {
   },
 };
 
-const STATUS_TO_STEP = {
+const STATUS_TO_STEP: Record<RequestStatus, number> = {
   PENDING_HEAD: 1,
   PENDING_VICEDEAN: 2,
   PENDING_DEAN: 3,
   PENDING_SD: 4,
-  PENDING_COMMITTEE: 5,
-  PENDING_PRESIDENT: 6,
+  PENDING_COMMITTEE: 5, // Keep for status mapping, but not displayed in stepper
+  PENDING_PRESIDENT: 5, // Changed from 6 to 5
   NEEDS_DOCS: 4, // กองพัฒนานิสิต
   REJECTED_BY_HEAD: 1,
   REJECTED_BY_VICEDEAN: 2,
   REJECTED_BY_DEAN: 3,
-  REJECTED_BY_COMMITTEE: 5,
-  COMPLETE: 6,
-  COMPLETED: 6,
+  REJECTED_BY_COMMITTEE: 5, // Keep for status mapping
+  COMPLETE: 5, // Changed from 6 to 5
+  COMPLETED: 5, // Changed from 6 to 5
 };
 
 function TrackStatusPage() {
   const router = useRouter();
   const { user, loading: authLoading, isAuthenticated } = useAuth();
-  const [requests, setRequests] = useState<MyRequestResponse[]>([]);
+  const [requests, setRequests] = useState<Request[]>([]);
   const [requestDetail, setRequestDetail] =
     useState<RequestDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -153,6 +140,14 @@ function TrackStatusPage() {
   const [error, setError] = useState<string | null>(null);
   const [openRejectModal, setOpenRejectModal] = useState(false);
   const [rejectComment, setRejectComment] = useState<string>("");
+
+  // Resubmit modal states
+  const [openResubmitModal, setOpenResubmitModal] = useState(false);
+  const [templateData, setTemplateData] = useState<AwardTemplateResponse | null>(null);
+const [studentUsername, setStudentUsername] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   // Fetch list of requests
   useEffect(() => {
@@ -167,9 +162,8 @@ function TrackStatusPage() {
             new Date(b.created_at || b.CreatedAt || 0).getTime() -
             new Date(a.created_at || a.CreatedAt || 0).getTime(),
         );
-        setRequests(sortedData as any);
+        setRequests(sortedData);
       } catch (err) {
-        console.error("Failed to fetch requests", err);
         setError("ไม่สามารถโหลดข้อมูลคำร้องได้");
       } finally {
         setLoading(false);
@@ -189,29 +183,79 @@ function TrackStatusPage() {
       }
 
       try {
-        const API_URL =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:8008";
-        const response = await fetch(
-          `${API_URL}/api/student/my-requests/${latestRequestId}`,
-          {
-            credentials: "include",
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch request detail");
-        }
-
-        const result = await response.json();
+        const result = await api.getRequestDetailByRequestId(latestRequestId);
         setRequestDetail(result.data);
       } catch (err) {
-        console.error("Failed to fetch request detail", err);
       } finally {
         setDetailLoading(false);
       }
     };
     fetchRequestDetail();
   }, [requests]);
+  // Open resubmit modal and fetch template
+  // Open resubmit modal and fetch template
+  const handleOpenResubmitModal = async () => {
+    if (!latestRequest?.request_id) return;
+
+    const result = await api.getAwardTemplate(latestRequest.request_id);
+    console.log("Award template result:", result);
+    setTemplateData(result ?? null);
+
+    // Fetch username for file renaming
+    const username = await api.getStudentUsername();
+    setStudentUsername(username);
+
+    setOpenResubmitModal(true);
+  };
+
+  // Handle file selection
+  // Handle file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files);
+
+    // Rename files using the standardized format
+    if (studentUsername && templateData?.award_name) {
+      const renamedFiles = renameResubmitFiles(newFiles, studentUsername, templateData.award_name);
+      setSelectedFiles((prev) => [...prev, ...renamedFiles]);
+    } else {
+      setSelectedFiles((prev) => [...prev, ...newFiles]);
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Remove file from selection
+  const handleRemoveFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Handle resubmit form submission
+  const handleResubmit = async () => {
+    if (!latestRequest?.request_id || selectedFiles.length === 0) {
+      alert("กรุณาเลือกไฟล์อย่างน้อย 1 ไฟล์");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      await api.resubmitDocuments(latestRequest.request_id, selectedFiles);
+
+      // Success - close modal and refresh data
+      setOpenResubmitModal(false);
+      window.location.reload();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "ไม่สามารถส่งเอกสารได้ กรุณาลองใหม่");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (authLoading || loading) {
     return (
@@ -293,7 +337,7 @@ function TrackStatusPage() {
   const isRejectedStatus = (status: RequestStatus): boolean =>
     status.startsWith("REJECTED_BY_");
 
-  const statusThai: Record<RequestStatus | string, string> = {
+  const statusThai: Record<RequestStatus, string> = {
     PENDING_HEAD: "หัวหน้าภาค อยู่ระหว่างการพิจารณา",
     PENDING_VICEDEAN: "รองคณบดี อยู่ระหว่างการพิจารณา",
     PENDING_DEAN: "คณบดี อยู่ระหว่างการพิจารณา",
@@ -306,6 +350,7 @@ function TrackStatusPage() {
     REJECTED_BY_DEAN: "คณบดี ไม่อนุมัติ",
     REJECTED_BY_COMMITTEE: "คณะกรรมการ ไม่อนุมัติ",
     COMPLETE: "ดำเนินการครบถ้วนสมบูรณ์",
+    COMPLETED: "ดำเนินการครบถ้วนสมบูรณ์",
   };
 
   const getStatusLabel = (status: RequestStatus): string => {
@@ -361,6 +406,7 @@ function TrackStatusPage() {
 
     const currentStep = STATUS_TO_STEP[statusToUse];
     const isRejected = isRejectedStatus(statusToUse);
+    const isNeedsDocs = statusToUse === "NEEDS_DOCS";
 
     // If rejected, only show red for the rejected step
     if (isRejected && currentStep === stepNumber)
@@ -372,6 +418,8 @@ function TrackStatusPage() {
     if (isRejected && stepNumber < currentStep)
       return "bg-[#599fa0] border-[#599fa0]";
 
+    // For NEEDS_DOCS state - red circle
+    if (isNeedsDocs && currentStep === stepNumber) return "bg-red-500 border-red-500";
     // For pending/active state (yellow circle)
     if (currentStep === stepNumber) return "bg-[#FCD34D] border-[#FCD34D]";
     // For completed steps
@@ -392,6 +440,7 @@ function TrackStatusPage() {
 
     const currentStep = STATUS_TO_STEP[statusToUse];
     const isRejected = isRejectedStatus(statusToUse);
+    const isNeedsDocs = statusToUse === "NEEDS_DOCS";
 
     const completedColor = "#599fa0"; // เขียว
     const pendingColor = "#FCD34D"; // เหลือง
@@ -405,11 +454,12 @@ function TrackStatusPage() {
 
     // ⭐ เส้นเดียวที่ทำ blending
     if (stepNumber === currentStep - 1) {
+      const targetColor = isRejected ? rejectedColor : (isNeedsDocs ? rejectedColor : pendingColor);
       return {
         background: `linear-gradient(
           to right,
           ${completedColor},
-          ${isRejected ? rejectedColor : pendingColor}
+          ${targetColor}
         )`,
       };
     }
@@ -556,6 +606,20 @@ function TrackStatusPage() {
 
   const currentStatusColors = statusToUse ? STATUS_COLORS[statusToUse] : null;
 
+  // Get the latest log by timestamp (newest first)
+  const getLatestLog = (detail: RequestDetailResponse | null): RequestLog | null => {
+    if (!detail) return null;
+    const logs = detail.logs || [];
+    if (logs.length === 0) return null;
+
+    // Sort logs by timestamp descending (newest first) - does not mutate original array
+    const sortedLogs = [...logs].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+    return sortedLogs[0];
+  };
+
   // Build display logs for Section 3: สถานะล่าสุด
   const buildDisplayLogs = (detail: RequestDetailResponse): DisplayLog[] => {
     const result: DisplayLog[] = [];
@@ -575,6 +639,8 @@ function TrackStatusPage() {
         isFromData: true,
         comment: undefined,
         isReject: false,
+        rawTimestamp: detail.created_at,
+        action: currentStatus,
       });
       return result;
     }
@@ -597,6 +663,8 @@ function TrackStatusPage() {
         isFromData: false,
         comment: logs[0].comment,
         isReject: false,
+        rawTimestamp: logs[0].timestamp,
+        action: logs[0].action,
       });
       return result;
     }
@@ -635,7 +703,6 @@ function TrackStatusPage() {
         showApprover = true;
       } else {
         // log ล่าสุด: แสดงผู้พิจารณาเฉพาะกรณีที่กำหนด
-        // ✅ เพิ่ม COMPLETED เพื่อรองรับ action ที่ส่งมาจาก API
         const isComplete = action === "COMPLETE" || action === "COMPLETED";
         showApprover = isRejected || isComplete;
       }
@@ -652,42 +719,31 @@ function TrackStatusPage() {
         isFromData: false,
         comment: log.comment,
         isReject: isRejected,
+        rawTimestamp: log.timestamp,
+        action: log.action,
       });
 
-      // กรณี log ล่าสุด = PENDING_{VICEDEAN/DEAN/SD/COMMITTEE/PRESIDENT}
+      // กรณี log ล่าสุด = PENDING_{VICEDEAN/DEAN/SD/PRESIDENT}
       // ต้องสร้าง 2 กล่อง: current (รอ) + accept (ของก่อนหน้า)
-      if (
-        isLatest &&
-        [
-          "PENDING_VICEDEAN",
-          "PENDING_DEAN",
-          "PENDING_SD",
-          "PENDING_COMMITTEE",
-          "PENDING_PRESIDENT",
-        ].includes(action)
-      ) {
-        // เพิ่มกล่อง accept ของขั้นก่อนหน้า (ใช้ log เดียวกัน แต่ mode = accept)
-        const acceptDisplayInfo = getDisplayInfoForAction(
-          action,
-          "accept",
-          currentStatus,
-        );
+      if (isLatest && ["PENDING_VICEDEAN", "PENDING_DEAN", "PENDING_SD", "PENDING_PRESIDENT"].includes(action)) {
+        const acceptDisplayInfo = getDisplayInfoForAction(action, "accept", currentStatus);
         result.push({
           icon: acceptDisplayInfo.icon,
           color: acceptDisplayInfo.color,
           label: acceptDisplayInfo.label,
-          timestamp: formatThaiDate(log.timestamp), // ใช้ timestamp เดียวกัน
+          timestamp: formatThaiDate(log.timestamp),
           statusText: acceptDisplayInfo.statusText,
           approverName: log.approver_name || "-",
           isFromData: false,
           comment: log.comment,
           isReject: false,
+          rawTimestamp: log.timestamp,
+          action: log.action,
         });
       }
     }
 
     // เรียง logs ตาม timestamp จากใหม่ → เก่า (บน-ล่าง)
-    // result อยู่ในลำดับที่ถูกต้องแล้ว (latest first)
     return result;
   };
 
@@ -717,8 +773,8 @@ function TrackStatusPage() {
     // NEEDS_DOC / NEEDS_DOCS state
     if (action === "NEEDS_DOCS") {
       return {
-        icon: <span className="text-6xl font-bold text-yellow-500">!</span>,
-        color: "text-yellow-500",
+        icon: <span className="text-6xl font-bold text-red-500">!</span>,
+        color: "text-red-500",
         label: "เอกสารเพิ่ม",
         statusText: "กองพัฒนานิสิต ต้องการเอกสารเพิ่มเติม",
       };
@@ -778,18 +834,6 @@ function TrackStatusPage() {
           color: "text-[#599fa0]",
         },
       },
-      PENDING_COMMITTEE: {
-        currentStep: {
-          statusText: "คณะกรรมการ อยู่ระหว่างการพิจารณา",
-          label: "รอพิจารณา",
-          color: "text-yellow-500",
-        },
-        acceptStep: {
-          statusText: "กองพัฒนานิสิต อนุมัติแล้ว",
-          label: "อนุมัติแล้ว",
-          color: "text-[#599fa0]",
-        },
-      },
       PENDING_PRESIDENT: {
         currentStep: {
           statusText: "อธิการบดี อยู่ระหว่างการพิจารณา",
@@ -797,7 +841,7 @@ function TrackStatusPage() {
           color: "text-yellow-500",
         },
         acceptStep: {
-          statusText: "คณะกรรมการ อนุมัติแล้ว",
+          statusText: "กองพัฒนานิสิต อนุมัติแล้ว",
           label: "อนุมัติแล้ว",
           color: "text-[#599fa0]",
         },
@@ -968,7 +1012,10 @@ function TrackStatusPage() {
                 </div>
               ) : requestDetail ? (
                 <div className="space-y-3">
-                  {buildDisplayLogs(requestDetail).map((log, index) => (
+                  {(() => {
+                    const displayLogs = buildDisplayLogs(requestDetail);
+                    const latestLog = getLatestLog(requestDetail);
+                    return displayLogs.map((log, index) => (
                     <div
                       key={index}
                       className="bg-white rounded-lg shadow-sm p-6"
@@ -1020,9 +1067,27 @@ function TrackStatusPage() {
                             </button>
                           </div>
                         )}
+
+                        {/* ปุ่มรายละเอียดเอกสารที่ต้องส่งเพิ่มเติม - เฉพาะ log ล่าสุดเท่านั้น */}
+                        {(() => {
+                          const isLatest = latestLog?.timestamp === log.rawTimestamp;
+                          const shouldShowButton = isLatest && log.action === "NEEDS_DOCS";
+
+                          return shouldShowButton ? (
+                            <div className="flex-shrink-0 flex items-start">
+                              <button
+                                className="bg-red-400 text-white px-6 py-2 rounded-lg hover:bg-red-500 transition-colors text-sm font-medium"
+                                onClick={handleOpenResubmitModal}
+                              >
+                                รายละเอียดเอกสารที่ต้องส่งเพิ่มเติม &gt;
+                              </button>
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
-                  ))}
+                  ));
+                  })()}
                 </div>
               ) : (
                 <div className="bg-white rounded-lg shadow-sm p-6">
@@ -1080,9 +1145,165 @@ function TrackStatusPage() {
             </div>
           </div>
         )}
+
+        {/* Modal: ส่งเอกสารเพิ่มเติม */}
+        {openResubmitModal && (
+          <ResubmitModal
+            isOpen={openResubmitModal}
+            onClose={() => setOpenResubmitModal(false)}
+            templateData={templateData}
+            selectedFiles={selectedFiles}
+            onFileChange={handleFileChange}
+            onRemoveFile={handleRemoveFile}
+            onSubmit={handleResubmit}
+            isSubmitting={isSubmitting}
+            fileInputRef={fileInputRef}
+          />
+        )}
       </div>
     </div>
   );
 }
+
+// ============================================
+// Resubmit Modal Component
+// ============================================
+
+interface ResubmitModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  templateData: AwardTemplateResponse | null;
+  selectedFiles: File[];
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveFile: (index: number) => void;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+}
+
+const ResubmitModal: React.FC<ResubmitModalProps> = ({
+  isOpen,
+  onClose,
+  templateData,
+  selectedFiles,
+  onFileChange,
+  onRemoveFile,
+  onSubmit,
+  isSubmitting,
+  fileInputRef,
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white w-full max-w-[600px] rounded-xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header: พื้นหลังสีแดง */}
+        <div className="relative bg-red-400 text-white py-4 px-6">
+          <h2 className="text-lg font-semibold text-center">
+            แจ้งเหตุผลการขอแก้ไขและส่งเอกสารเพิ่มเติม
+          </h2>
+          <button
+            onClick={onClose}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-xl hover:opacity-80 transition-opacity"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-6 max-h-[60vh] overflow-y-auto">
+          {/* Section 1: รายละเอียดในใบสมัคร */}
+          <div className="mb-6">
+            <h3 className="text-base font-semibold text-gray-900 mb-2">
+              รายละเอียดในใบสมัคร
+            </h3>
+            <p className="text-sm text-gray-700 mb-3">
+              เอกสารที่แนบมาไม่ตรงกับประเภทรางวัลที่เลือก กรุณาตรวจสอบและแก้ไข ตามตัวอย่างเอกสาร
+            </p>
+            {templateData?.template_file_url && (
+              <a
+                href={templateData.template_file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-[#599fa0] hover:text-[#4a8081] hover:underline font-medium"
+              >
+                <Download size={16} />
+                ดาวน์โหลดตัวอย่างเอกสาร
+              </a>
+            )}
+          </div>
+
+          {/* Section 2: กรุณาอัปโหลดไฟล์ที่แก้ไขแล้ว */}
+          <div className="mb-6">
+            <h3 className="text-base font-semibold text-gray-900 mb-2">
+              กรุณาอัปโหลดไฟล์ที่แก้ไขแล้ว
+            </h3>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={onFileChange}
+              className="hidden"
+              multiple
+            />
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-2 text-sm text-[#599fa0] hover:text-[#4a8081] hover:underline font-medium"
+            >
+              <Upload size={16} />
+              อัปโหลด
+            </button>
+
+            {selectedFiles.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {selectedFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                  >
+                    <span className="text-sm text-gray-700 truncate flex-1">
+                      {file.name}
+                    </span>
+                    <button
+                      onClick={() => onRemoveFile(index)}
+                      className="text-red-500 hover:text-red-700 text-sm ml-2"
+                    >
+                      ลบ
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 border-t">
+          <button
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="px-6 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            ยกเลิก
+          </button>
+          <button
+            onClick={onSubmit}
+            disabled={selectedFiles.length === 0 || isSubmitting}
+            className="px-6 py-2 text-white bg-[#599fa0] rounded-lg hover:bg-[#4a8081] transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? "กำลังส่ง..." : "ยืนยัน"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default TrackStatusPage;

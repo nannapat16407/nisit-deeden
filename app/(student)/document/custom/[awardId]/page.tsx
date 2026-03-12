@@ -5,16 +5,30 @@ import { useParams, useRouter } from "next/navigation";
 import StudentInfoCard from "@/components/document/application/StudentInfoCard";
 import ApplicationForm from "@/components/document/application/ApplicationForm";
 import { api } from "@/lib/api";
-import { Award } from "@/types/award.type";
+import { Award, Requirement } from "@/types/award.type";
 import { StudentProfileFullResponse } from "@/types/student.type";
+import { generateUploadFileName, getFileExtension, renameFile } from "@/lib/utils";
+
+// Helper function to safely parse requirement_json
+const parseRequirements = (requirementJson: string | undefined): Requirement[] => {
+  if (!requirementJson) return [];
+
+  try {
+    const parsed = JSON.parse(requirementJson);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error("Failed to parse requirement_json:", error);
+    return [];
+  }
+};
 
 function CustomAwardPage() {
   const params = useParams();
   const router = useRouter();
 
   const [award, setAward] = useState<Award | null>(null);
-  const [studentInfo, setStudentInfo] =
-    useState<StudentProfileFullResponse | null>(null);
+  const [studentInfo, setStudentInfo] = useState<StudentProfileFullResponse | null>(null);
+  const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +43,7 @@ function CustomAwardPage() {
   const fetchStudentProfile = async () => {
     try {
       const response = await api.getStudentProfileFull();
-      console.log("🔥 PROFILE RESPONSE:", response);
+      console.log("PROFILE RESPONSE:", response);
       setStudentInfo(response.data);
     } catch (err) {
       console.error("Failed to fetch student profile:", err);
@@ -46,6 +60,9 @@ function CustomAwardPage() {
 
       if (foundAward) {
         setAward(foundAward);
+        // Parse requirement_json and set requirements
+        const parsedRequirements = parseRequirements(foundAward.requirement_json);
+        setRequirements(parsedRequirements);
       } else {
         setError("ไม่พบข้อมูลรางวัลที่เลือก");
       }
@@ -59,31 +76,55 @@ function CustomAwardPage() {
     }
   };
 
-  const handleFormSubmit = async (file: File) => {
-    console.log("📤 Form submitted with file:", file.name);
-    console.log("🏆 Award ID:", params.awardId);
+  const handleFormSubmit = async (files: Record<string, File>) => {
+    console.log("Form submitted with files:", Object.keys(files));
+    console.log("Award ID:", params.awardId);
 
     if (!award || !studentInfo) {
       alert("ข้อมูลไม่ครบ กรุณาลองใหม่");
       return;
     }
 
+    // Validate that all required files are present
+    const missingRequirements = requirements.filter(
+      (req) => req.required && !files[req.label]
+    );
+
+    if (missingRequirements.length > 0) {
+      alert(`กรุณาอัปโหลดไฟล์ที่จำเป็น: ${missingRequirements.map((r) => r.label).join(", ")}`);
+      return;
+    }
+
     const formData = new FormData();
     formData.append("campus_id", String(studentInfo.campus_id));
     formData.append("award_id", award.award_id);
-    formData.append("file", file);
-    formData.append("label", "ใบสมัครทุน");
+
+    // Rename and append each file with the standardized naming convention
+    // Format: username_awardName_requirementLabel[.extension]
+    Object.entries(files).forEach(([requirementLabel, file]) => {
+      const extension = getFileExtension(file.name);
+      const newFileName = generateUploadFileName(
+        studentInfo.username,
+        award.award_name,
+        requirementLabel,
+        extension,
+        0, // existingFilesCount - always 0 for single file per requirement
+      );
+      const renamedFile = renameFile(file, newFileName);
+      formData.append(requirementLabel, renamedFile);
+    });
 
     try {
-      console.log("🚀 Calling API...");
+      console.log("Calling API...");
 
       await api.createApplication(formData);
 
-      console.log("✅ Application submitted successfully");
+      console.log("Application submitted successfully");
 
       router.push("/document");
     } catch (error) {
-      console.error("❌ Submit failed:", error);
+      console.error("Submit failed:", error);
+      alert(error instanceof Error ? error.message : "ไม่สามารถส่งฟอร์มได้ กรุณาลองใหม่");
     }
   };
 
@@ -133,6 +174,8 @@ function CustomAwardPage() {
         awardId={award.award_id}
         awardName={award.award_name}
         awardDescription={award.description}
+        requirements={requirements}
+        username={studentInfo?.username}
       />
     </div>
   );

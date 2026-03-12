@@ -71,3 +71,37 @@ export interface RequestAwardGroup{
   award_id: string;
   requests: Request[];
 }
+
+// ============================================
+// Track Status Types
+// ============================================
+
+export interface RequestLog {
+  action: string;
+  comment: string;
+  approver_name: string;
+  timestamp: string;
+}
+
+export interface RequestDetailResponse {
+  request_id: string;
+  status: RequestStatus;
+  status_thai: string;
+  created_at: string;
+  logs: RequestLog[];
+}
+
+export interface AwardTemplateResponse {
+  award_id: string;
+  award_name: string;
+  template_file_url: string;
+}
+
+export interface ResubmitRequest {
+  files: File[];
+}
+
+export interface ResubmitResponse {
+  message: string;
+  data: Request;
+}
