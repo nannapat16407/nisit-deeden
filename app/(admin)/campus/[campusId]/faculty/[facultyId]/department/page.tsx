@@ -1,140 +1,164 @@
 "use client";
 
-import React, { useState } from "react";
-import { Plus, Search, Edit, ArrowLeft, MoreVertical } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Plus, Search, Edit, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Modal from "@/components/common/Modal";
 import Input from "@/components/ui/Input";
 import clsx from "clsx";
+import { departmentService } from "@/services/departmentService";
+import { facultyService } from "@/services/facultyService";
 
-// --- Types ---
 interface Department {
-  id: string;
-  facultyId: string;
-  code: string;
+  id: number;
+  campusId: number;
+  facultyId: number;
+  refId: string;
   name: string;
-  headName: string;
   isActive: boolean;
 }
 
-// --- Mock Data ---
-const INITIAL_DEPARTMENTS: Department[] = [
-  {
-    id: "d1",
-    facultyId: "f1",
-    code: "D01",
-    name: "วิศวกรรมคอมพิวเตอร์",
-    headName: "อ.ใจดี",
-    isActive: true,
-  },
-  {
-    id: "d2",
-    facultyId: "f1",
-    code: "D02",
-    name: "วิศวกรรมเคมี",
-    headName: "อ.สมชาย",
-    isActive: true,
-  },
-  {
-    id: "d3",
-    facultyId: "f1",
-    code: "D03",
-    name: "วิศวกรรมสิ่งทอ (ปิดหลักสูตร)",
-    headName: "-",
-    isActive: false,
-  },
-  {
-    id: "d4",
-    facultyId: "f2",
-    code: "CS",
-    name: "วิทยาการคอมพิวเตอร์",
-    headName: "ดร.วิทย์",
-    isActive: true,
-  },
-];
-
-const FACULTY_NAMES: Record<string, string> = {
-  f1: "คณะวิศวกรรมศาสตร์",
-  f2: "คณะวิทยาศาสตร์",
-  f3: "คณะบริหารธุรกิจ",
-  f4: "คณะเกษตร กำแพงแสน",
-  f5: "คณะวิทยาการจัดการ",
-};
-
 export default function DepartmentPage() {
   const params = useParams();
-  const campusId = params.campusId as string;
-  const facultyId = params.facultyId as string;
-  const facultyName = FACULTY_NAMES[facultyId] || facultyId;
+  const campusIdParam = Number(params.campusId);
+  const facultyIdParam = Number(params.facultyId);
 
-  const [departments, setDepartments] =
-    useState<Department[]>(INITIAL_DEPARTMENTS);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [facultyName, setFacultyName] = useState<string>("กำลังโหลดชื่อคณะ...");
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDept, setEditingDept] = useState<Department | null>(null);
 
-  // Form State
   const [formData, setFormData] = useState({
-    code: "",
     name: "",
-    headName: "",
   });
 
+  useEffect(() => {
+    const fetchFacultyName = async () => {
+      try {
+        if (!isNaN(campusIdParam) && !isNaN(facultyIdParam)) {
+          const facultyData = await facultyService.getById(campusIdParam, facultyIdParam);
+          setFacultyName(facultyData.name);
+        }
+      } catch (error) {
+        console.error("Error fetching faculty name:", error);
+        setFacultyName(`คณะ (ID: ${facultyIdParam})`);
+      }
+    };
+    fetchFacultyName();
+  }, [campusIdParam, facultyIdParam]);
+
+  const loadDepartments = useCallback(async () => {
+    if (isNaN(facultyIdParam)) return;
+
+    try {
+      setIsLoading(true);
+      const data = await departmentService.getAllByFaculty(facultyIdParam);
+      
+      const formattedData = data.map((item) => ({
+        id: item.department_id,
+        campusId: item.campus_id,
+        facultyId: item.faculty_id,
+        refId: item.ref_id,
+        name: item.department_name,
+        isActive: item.is_active,
+      }));
+
+      formattedData.sort((a, b) => a.id - b.id);
+
+      setDepartments(formattedData);
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [facultyIdParam]);
+
+  useEffect(() => {
+    loadDepartments();
+  }, [loadDepartments]);
+
   const filteredDepartments = departments.filter((dept) => {
-    const matchesFaculty = dept.facultyId === facultyId;
-    const matchesSearch = dept.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+    const matchesSearch = dept.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = showInactive ? true : dept.isActive;
-    return matchesFaculty && matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus;
   });
 
   const handleOpenModal = (dept?: Department) => {
     if (dept) {
       setEditingDept(dept);
-      setFormData({
-        code: dept.code,
-        name: dept.name,
-        headName: dept.headName,
-      });
+      setFormData({ name: dept.name });
     } else {
       setEditingDept(null);
-      setFormData({ code: "", name: "", headName: "" });
+      setFormData({ name: "" });
     }
     setIsModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingDept) {
-      setDepartments((prev) =>
-        prev.map((d) => (d.id === editingDept.id ? { ...d, ...formData } : d)),
-      );
-    } else {
-      const newDept: Department = {
-        id: Date.now().toString(),
-        facultyId,
-        ...formData,
-        isActive: true,
-      };
-      setDepartments((prev) => [newDept, ...prev]);
+    if (!formData.name.trim() || isNaN(campusIdParam) || isNaN(facultyIdParam)) return;
+
+    try {
+      setIsSaving(true);
+      if (editingDept) {
+        await departmentService.update(facultyIdParam, editingDept.id, {
+          department_name: formData.name,
+          is_active: editingDept.isActive,
+        });
+
+        setDepartments((prev) =>
+          prev.map((d) => (d.id === editingDept.id ? { ...d, name: formData.name } : d))
+        );
+      } else {
+        // POST
+        await departmentService.create(campusIdParam, facultyIdParam, {
+          department_name: formData.name,
+        });
+
+        await loadDepartments();
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error saving department:", error);
+    } finally {
+      setIsSaving(false);
     }
-    setIsModalOpen(false);
   };
 
-  const toggleStatus = (id: string) => {
+  const toggleStatus = async (id: number) => {
+    const deptToUpdate = departments.find((d) => d.id === id);
+    if (!deptToUpdate || isNaN(facultyIdParam)) return;
+
+    const newStatus = !deptToUpdate.isActive;
+
     setDepartments((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, isActive: !d.isActive } : d)),
+      prev.map((d) => (d.id === id ? { ...d, isActive: newStatus } : d))
     );
+
+    try {
+      await departmentService.update(facultyIdParam, id, {
+        department_name: deptToUpdate.name,
+        is_active: newStatus,
+      });
+    } catch (error) {
+      console.error("Error updating status:", error);
+      setDepartments((prev) =>
+        prev.map((d) => (d.id === id ? { ...d, isActive: !newStatus } : d))
+      );
+    }
   };
 
   return (
     <div className="font-noto">
       <div className="mb-6">
         <Link
-          href={`/campus/${campusId}/faculty`}
+          href={`/campus/${campusIdParam}/faculty`}
           className="inline-flex items-center text-sm text-gray-500 hover:text-primary mb-2 transition-colors"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
@@ -157,7 +181,6 @@ export default function DepartmentPage() {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center gap-4 mb-6">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -180,66 +203,74 @@ export default function DepartmentPage() {
         </label>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 text-sm">
-                <th className="p-4 font-medium w-32">รหัส</th>
+                <th className="p-4 font-medium w-24">ID</th>
                 <th className="p-4 font-medium">ชื่อสาขา</th>
-                <th className="p-4 font-medium">หัวหน้าภาคฯ</th>
+                <th className="p-4 font-medium w-32">Ref ID</th>
                 <th className="p-4 font-medium">สถานะ</th>
                 <th className="p-4 font-medium text-right">จัดการ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredDepartments.map((dept) => (
-                <tr
-                  key={dept.id}
-                  className="hover:bg-gray-50/50 transition-colors"
-                >
-                  <td className="p-4 text-gray-500 font-mono">{dept.code}</td>
-                  <td className="p-4 font-medium text-gray-900">{dept.name}</td>
-                  <td className="p-4 text-gray-600">{dept.headName}</td>
-                  <td className="p-4">
-                    {/* Toggle Switch */}
-                    <button
-                      onClick={() => toggleStatus(dept.id)}
-                      className={clsx(
-                        "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                        dept.isActive ? "bg-emerald-500" : "bg-gray-200",
-                      )}
-                      role="switch"
-                      aria-checked={dept.isActive}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={clsx(
-                          "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                          dept.isActive ? "translate-x-5" : "translate-x-0",
-                        )}
-                      />
-                    </button>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-gray-500">
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      กำลังโหลดข้อมูล...
+                    </div>
                   </td>
-                  <td className="p-4 text-right">
-                    <div className="flex justify-end gap-2">
+                </tr>
+              ) : filteredDepartments.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-gray-400">
+                    ไม่พบข้อมูลสาขาในคณะนี้
+                  </td>
+                </tr>
+              ) : (
+                filteredDepartments.map((dept) => (
+                  <tr
+                    key={dept.id}
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="p-4 text-gray-500 font-mono">{dept.id}</td>
+                    <td className="p-4 font-medium text-gray-900">{dept.name}</td>
+                    <td className="p-4 text-gray-500 font-mono">
+                      {dept.refId || "-"}
+                    </td>
+                    <td className="p-4">
+                      <button
+                        onClick={() => toggleStatus(dept.id)}
+                        className={clsx(
+                          "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                          dept.isActive ? "bg-emerald-500" : "bg-gray-200"
+                        )}
+                        role="switch"
+                        aria-checked={dept.isActive}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={clsx(
+                            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                            dept.isActive ? "translate-x-5" : "translate-x-0"
+                          )}
+                        />
+                      </button>
+                    </td>
+                    <td className="p-4 text-right">
                       <button
                         onClick={() => handleOpenModal(dept)}
                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredDepartments.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-gray-400">
-                    ไม่พบข้อมูลสาขาในคณะนี้
-                  </td>
-                </tr>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -253,39 +284,27 @@ export default function DepartmentPage() {
       >
         <form onSubmit={handleSave}>
           <Input
-            label="รหัสสาขา"
-            value={formData.code}
-            onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-            required
-            placeholder="เช่น D01"
-          />
-          <Input
             label="ชื่อสาขา"
             value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onChange={(e) => setFormData({ name: e.target.value })}
             required
             placeholder="เช่น วิศวกรรมคอมพิวเตอร์"
-          />
-          <Input
-            label="หัวหน้าภาควิชา"
-            value={formData.headName}
-            onChange={(e) =>
-              setFormData({ ...formData, headName: e.target.value })
-            }
-            placeholder="เช่น อ.ใจดี"
           />
           <div className="flex justify-end gap-3 mt-6">
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              disabled={isSaving}
+              className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
             >
               ยกเลิก
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+              disabled={isSaving}
+              className="flex items-center gap-2 px-4 py-2 text-white bg-primary rounded-lg hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
             >
+              {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
               บันทึก
             </button>
           </div>
