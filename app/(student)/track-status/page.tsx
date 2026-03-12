@@ -1003,7 +1003,7 @@ function TrackStatusPage() {
                   <div>
                     <p className="text-sm text-gray-500 mb-1">สถานะปัจจุบัน</p>
                     <span
-                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${currentStatusColors?.bg} ${currentStatusColors?.text} ${currentStatusColors?.border}`}
+                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${currentStatusColors?.bg} ${currentStatusColors?.text}`}
                     >
                       {statusToUse && getStatusLabel(statusToUse)}
                     </span>
@@ -1073,20 +1073,20 @@ function TrackStatusPage() {
                     const displayLogs = buildDisplayLogs(requestDetail);
                     const latestLog = getLatestLog(requestDetail);
                     return displayLogs.map((log, index) => (
-                      <div
-                        key={index}
-                        className="bg-white rounded-lg shadow-sm p-6"
-                      >
+                    <div
+                      key={index}
+                      className="bg-white rounded-lg shadow-sm p-6"
+                    >
+                      <div className="flex justify-between items-center gap-6">
+                        {/* LEFT SECTION: Icon + Details */}
                         <div className="flex gap-6">
-                          {/* LEFT COLUMN: Icon */}
+                          {/* Icon */}
                           <div className="flex-shrink-0 flex flex-col items-center">
                             <div className={log.color}>{log.icon}</div>
-                            <p className="mt-2 text-sm text-black">
-                              {log.label}
-                            </p>
+                            <p className="mt-2 text-sm text-black">{log.label}</p>
                           </div>
 
-                          {/* RIGHT COLUMN: Details */}
+                          {/* Details */}
                           <div className="flex-1 space-y-3">
                             {/* วันที่เวลา */}
                             <p className="text-base text-gray-500">
@@ -1111,41 +1111,36 @@ function TrackStatusPage() {
                               </p>
                             )}
                           </div>
-
-                          {/* ปุ่มเหตุผลการปฏิเสธ - เฉพาะกรณี reject */}
-                          {log.isReject && (
-                            <div className="flex-shrink-0 flex items-start">
-                              <button
-                                className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors text-sm font-medium"
-                                onClick={() => {
-                                  setRejectComment(log.comment || "-");
-                                  setOpenRejectModal(true);
-                                }}
-                              >
-                                เหตุผลการปฏิเสธ &gt;
-                              </button>
-                            </div>
-                          )}
-
-                          {/* ปุ่มรายละเอียดเอกสารที่ต้องส่งเพิ่มเติม - เฉพาะ log ล่าสุดเท่านั้น */}
-                          {(() => {
-                            const isLatest =
-                              latestLog?.timestamp === log.rawTimestamp;
-                            const shouldShowButton =
-                              isLatest && log.action === "NEEDS_DOCS";
-
-                            return shouldShowButton ? (
-                              <div className="flex-shrink-0 flex items-start">
-                                <button
-                                  className="bg-red-400 text-white px-6 py-2 rounded-lg hover:bg-red-500 transition-colors text-sm font-medium"
-                                  onClick={handleOpenResubmitModal}
-                                >
-                                  รายละเอียดเอกสารที่ต้องส่งเพิ่มเติม &gt;
-                                </button>
-                              </div>
-                            ) : null;
-                          })()}
                         </div>
+
+                        {/* RIGHT SECTION: Action Buttons */}
+                        {/* ปุ่มเหตุผลการปฏิเสธ - เฉพาะกรณี reject */}
+                        {log.isReject && (
+                          <button
+                            className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors text-sm font-medium flex-shrink-0"
+                            onClick={() => {
+                              setRejectComment(log.comment || "-");
+                              setOpenRejectModal(true);
+                            }}
+                          >
+                            เหตุผลการปฏิเสธ &gt;
+                          </button>
+                        )}
+
+                        {/* ปุ่มรายละเอียดเอกสารที่ต้องส่งเพิ่มเติม - เฉพาะ log ล่าสุดเท่านั้น */}
+                        {(() => {
+                          const isLatest = latestLog?.timestamp === log.rawTimestamp;
+                          const shouldShowButton = isLatest && log.action === "NEEDS_DOCS";
+
+                          return shouldShowButton ? (
+                            <button
+                              className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors text-sm font-medium flex-shrink-0"
+                              onClick={handleOpenResubmitModal}
+                            >
+                              รายละเอียดเอกสารที่ต้องส่งเพิ่มเติม &gt;
+                            </button>
+                          ) : null;
+                        })()}
                       </div>
                     ));
                   })()}
@@ -1275,8 +1270,8 @@ const ResubmitModal: React.FC<ResubmitModalProps> = ({
         className="bg-white w-full max-w-[600px] rounded-xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="relative bg-red-400 text-white py-4 px-6">
+        {/* Header: พื้นหลังสีแดง */}
+        <div className="relative bg-red-500 text-white py-4 px-6">
           <h2 className="text-lg font-semibold text-center">
             แจ้งเหตุผลการขอแก้ไขและส่งเอกสารเพิ่มเติม
           </h2>
