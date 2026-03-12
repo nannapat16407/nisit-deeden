@@ -32,6 +32,15 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  // Label mapping for internal keys to Thai display text
+  const labelMap: Record<string, string> = {
+    SIGNED_BY_STUDENT: "ใบสมัครที่ลงนามโดยนิสิต",
+  };
+
+  const getDisplayLabel = (label: string): string => {
+    return labelMap[label] || label;
+  };
+
   // ✅ Helper: Generate display filename (the name that will be used after rename)
   const getDisplayFileName = (file: File, requirementLabel: string): string => {
     if (!username || !awardName) {
@@ -188,7 +197,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
           return (
             <div key={index} className="mb-6">
               <p className="text-gray-700 font-medium mb-2">
-                {requirement.label}
+                {getDisplayLabel(requirement.label)}
                 {extensionText && <span className="text-gray-500"> ({extensionText})</span>}
                 {requirement.required && <span className="text-red-500"> *</span>}
               </p>
