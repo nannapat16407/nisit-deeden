@@ -8,6 +8,11 @@ import { Request } from "@/types/request.type";
 import { DocType } from "@/types/document..type";
 import PdfViewerFromS3 from "@/components/document/PdfViewerFromS3";
 import Modal from "@/components/common/Modal";
+import {
+  renameFile,
+  generateUploadFileName,
+  getFileExtension as getFileExt,
+} from "@/lib/utils";
 
 // Helper functions for file handling
 const getFileExtension = (url: string): string => {
@@ -163,8 +168,23 @@ function RequestDetailContent() {
       formData.append("action", action);
       if (reviewComment) formData.append("comment", reviewComment);
       if (reviewFile) {
-        formData.append("signed_file", reviewFile);
-        formData.append("label", "ใบสมัครที่ลงนามโดยคณบดี");
+        const studentUsername =
+          request.student_id ||
+          request.owner_student_id ||
+          request.Owner?.username ||
+          "unknown";
+        const awardName =
+          request.award_name || request.Award?.award_name || "award";
+        const ext = getFileExt(reviewFile.name);
+        const newFileName = generateUploadFileName(
+          studentUsername,
+          awardName,
+          "ใบสมัครที่ลงนามโดยคณบดี",
+          ext,
+          0,
+        );
+        const renamedFile = renameFile(reviewFile, newFileName);
+        formData.append("SIGNED_BY_DEAN", renamedFile);
       }
 
       if (roleName === "DEPARTMENT_HEAD") {
