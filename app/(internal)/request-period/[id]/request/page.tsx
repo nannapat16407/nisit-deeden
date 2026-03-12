@@ -253,7 +253,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
     } catch (err: any) {
       setAlert({
         open: true,
-        msg: "อนุมัติไม่สำเร็จ (Mock)",
+        msg: "อนุมัติไม่สำเร็จ",
         severity: "error",
       });
       router.back();
