@@ -22,6 +22,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
   const [isActive, setIsActive] = useState(true);
   const [fileName, setFileName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string>("");
 
   // Dynamic Requirements State
   const [requirements, setRequirements] = useState<Requirement[]>([]);
@@ -98,6 +99,17 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate file size if file is selected
+    if (selectedFile) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (selectedFile.size > maxSize) {
+        setFileError(
+          `ไฟล์ขนาดใหญ่เกินไป (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB) กรุณาเลือกไฟล์ที่มีขนาดไม่เกิน 10 MB`,
+        );
+        return;
+      }
+    }
+
     const formData = new FormData();
     formData.append("award_name", name);
     formData.append("award_type", "General"); // Defaulting correctly
@@ -107,7 +119,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
 
     if (selectedFile) {
       formData.append("template_file", selectedFile);
-      formData.append("label", "แม่แบบเอกสาร");
+      formData.append("label", "TEMPLATE");
     }
 
     onSave(formData, initialData?.award_id);
@@ -203,12 +215,15 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
               {/* File Upload Element */}
               <div className="space-y-1 md:col-span-2">
                 <label className="text-sm font-medium text-gray-700">
-                  แบบฟอร์มใบสมัคร (ถ้ามี)
+                  แบบฟอร์มใบสมัคร (ถ้ามี){" "}
+                  <span className="text-xs text-gray-500">
+                    ขนาดไม่เกิน 10 MB
+                  </span>
                 </label>
                 <div className="border border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-col items-center justify-center text-center relative cursor-pointer hover:bg-gray-100 transition-colors">
                   <span className="text-sm text-gray-500 max-w-full truncate px-2">
                     {selectedFile
-                      ? selectedFile.name
+                      ? `${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)`
                       : fileName
                         ? fileName.split("/").pop()
                         : "ยังไม่ได้เลือกไฟล์"}
@@ -218,7 +233,19 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-[0px]"
                     onChange={(e) => {
                       if (e.target.files && e.target.files.length > 0) {
-                        setSelectedFile(e.target.files[0]);
+                        const file = e.target.files[0];
+                        const maxSize = 10 * 1024 * 1024; // 10MB
+
+                        if (file.size > maxSize) {
+                          setFileError(
+                            `ไฟล์ขนาดใหญ่เกินไป (${(file.size / 1024 / 1024).toFixed(2)} MB) กรุณาเลือกไฟล์ที่มีขนาดไม่เกิน 10 MB`,
+                          );
+                          e.target.value = ""; // Reset input
+                          return;
+                        }
+
+                        setFileError("");
+                        setSelectedFile(file);
                       }
                     }}
                     accept=".pdf,.doc,.docx"
@@ -230,6 +257,26 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                     เลือกไฟล์ (PDF/Docx)
                   </button>
                 </div>
+                {fileError && (
+                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    {fileError}
+                  </p>
+                )}
               </div>
             </div>
           </div>

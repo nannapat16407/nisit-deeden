@@ -127,7 +127,7 @@ class ApiClient {
     formData: FormData,
   ): Promise<{ message: string; data: Award }> {
     const response = await fetch(`${this.baseURL}/api/sd/awards/${id}`, {
-      method: "PUT",
+      method: "PATCH",
       body: formData,
       credentials: "include",
     });

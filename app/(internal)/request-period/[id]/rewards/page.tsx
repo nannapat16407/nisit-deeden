@@ -126,20 +126,36 @@ export default function RequestPeriodRewardsPage({
         "requirement_json",
         awardToUpdate.requirement_json || "[]",
       );
-      formData.append("is_active", (!currentStatus).toString());
+
+      // Convert boolean to string for FormData
+      const newStatus = !currentStatus;
+      formData.append("is_active", newStatus ? "true" : "false");
+
       formData.append("campus_id", awardToUpdate.campus_id?.toString() || "1");
       formData.append("period_id", periodId);
 
+      console.log("=== Toggle Status Debug ===");
+      console.log("Award ID:", id);
+      console.log("Current Status:", currentStatus);
+      console.log("New Status:", newStatus);
+      console.log("FormData is_active:", newStatus ? "true" : "false");
+
       const res = await api.updateAward(id, formData);
 
+      console.log("=== Response from API ===");
+      console.log("Response data:", res.data);
+      console.log("Response data.is_active:", res.data.is_active);
+
+      // Update local state with response data
       setAwards(awards.map((a) => (a.award_id === id ? res.data : a)));
 
       setAlert({
         open: true,
-        msg: `เปลี่ยนสถานะรางวัลเป็น ${!currentStatus ? "เปิดใช้งาน" : "ปิดใช้งาน"} สำเร็จ`,
+        msg: `เปลี่ยนสถานะรางวัลเป็น ${newStatus ? "เปิดใช้งาน" : "ปิดใช้งาน"} สำเร็จ`,
         severity: "success",
       });
     } catch (err: any) {
+      console.error("Toggle status error:", err);
       setAlert({
         open: true,
         msg:
@@ -213,9 +229,25 @@ export default function RequestPeriodRewardsPage({
       }
       setIsModalOpen(false);
     } catch (err: any) {
+      console.error("Award save error:", err);
+
+      let errorMessage = "เกิดข้อผิดพลาด";
+
+      if (err.message) {
+        if (
+          err.message.includes("Failed to fetch") ||
+          err.message.includes("ERR_CONNECTION")
+        ) {
+          errorMessage =
+            "การเชื่อมต่อล้มเหลว: ไฟล์อาจมีขนาดใหญ่เกินไป (ต้องไม่เกิน 10 MB) หรือ Backend ไม่ตอบสนอง";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
       setAlert({
         open: true,
-        msg: "เกิดข้อผิดพลาด: " + (err.message || "Unknown error"),
+        msg: errorMessage,
         severity: "error",
       });
     }
