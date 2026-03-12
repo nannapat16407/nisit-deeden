@@ -18,15 +18,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
     }
 
-    const result = await genCommitteePDF(
+    const pdfBytes = await genCommitteePDF(
       body.issue_account,
       body.period,
       body.award_groups_req,
     );
 
-    return NextResponse.json({
-      message: "Committee PDF generated",
-      data: result,
+    return new NextResponse(Buffer.from(pdfBytes), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+      },
     });
   } catch (error) {
     console.error("committee-pdf route error:", error);

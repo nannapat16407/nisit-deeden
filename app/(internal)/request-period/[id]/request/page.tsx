@@ -211,7 +211,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
         throw new Error("Generate committee PDF failed");
       }
 
-      const pdfResult = await pdfResponse.json();
+      const generatedPdfBlob = await pdfResponse.blob();
       const approveIds = selectedRequestIds;
       const rejectIds = requests
         .map((req) => req.RequestID || req.request_id || "")
@@ -223,19 +223,6 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
         `Committee bulk review for period ${periodId}`,
       );
 
-      const generatedPdfPath = pdfResult?.data?.publicPath as
-        | string
-        | undefined;
-      if (!generatedPdfPath) {
-        throw new Error("Missing generated PDF path");
-      }
-
-      const generatedPdfResponse = await fetch(generatedPdfPath);
-      if (!generatedPdfResponse.ok) {
-        throw new Error("Failed to read generated PDF");
-      }
-
-      const generatedPdfBlob = await generatedPdfResponse.blob();
       const uploadFile = new File(
         [generatedPdfBlob],
         `committee-approve-${periodId}.pdf`,
