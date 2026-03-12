@@ -129,7 +129,10 @@ export default function RequestPage() {
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          {!roleBadge && (
+          {!roleBadge && 
+           role !== "DEPARTMENT_HEAD" && 
+           role !== "VICE_DEAN" && 
+           role !== "DEAN" && (
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}

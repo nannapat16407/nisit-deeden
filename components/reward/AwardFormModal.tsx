@@ -30,7 +30,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
   // Helper: แปลง label เป็นภาษาไทย
   const getDisplayLabel = (label: string): string => {
     const labelMap: Record<string, string> = {
-      SIGNED_BY_STUDENT: "ใบสมัครที่ลงนามโดยนิสิต",
+      ใบสมัครที่ลงนามโดยนิสิต: "ใบสมัครที่ลงนามโดยนิสิต",
     };
     return labelMap[label] || label;
   };
@@ -45,9 +45,23 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
         const parsedReqs = initialData.requirement_json
           ? JSON.parse(initialData.requirement_json)
           : [];
-        // แสดง SIGNED_BY_STUDENT ด้วย (ไม่ filter ออก)
+
+        // Deduplicate ใบสมัครที่ลงนามโดยนิสิต/ใบสมัครที่ลงนามโดยนิสิต - keep only first occurrence
+        const seenSystemLabel = new Set<string>();
+        const deduplicatedReqs = parsedReqs.filter((req: any) => {
+          const isSystemLabel =
+            req.label === "ใบสมัครที่ลงนามโดยนิสิต";
+          if (isSystemLabel) {
+            if (seenSystemLabel.has("SYSTEM")) {
+              return false; // Skip duplicate
+            }
+            seenSystemLabel.add("SYSTEM");
+          }
+          return true;
+        });
+
         // Ensure all requirements have extensions array
-        const normalizedReqs = parsedReqs.map((req: any) => ({
+        const normalizedReqs = deduplicatedReqs.map((req: any) => ({
           ...req,
           extensions: req.extensions || [],
           required: req.required !== undefined ? req.required : true,
@@ -125,14 +139,20 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
     formData.append("description", description);
     formData.append("is_active", isActive ? "true" : "false");
 
-    // Inject SIGNED_BY_STUDENT requirement at the beginning
+    // Filter out existing ใบสมัครที่ลงนามโดยนิสิต/ใบสมัครที่ลงนามโดยนิสิต to prevent duplicates
+    const filteredRequirements = requirements.filter(
+      (req) =>
+        req.label !== "ใบสมัครที่ลงนามโดยนิสิต"
+    );
+
+    // Inject ใบสมัครที่ลงนามโดยนิสิต requirement at the beginning
     const signByStudentReq = {
-      label: "SIGNED_BY_STUDENT",
+      label: "ใบสมัครที่ลงนามโดยนิสิต",
       type: "file",
       required: true,
       extensions: ["pdf"],
     };
-    const finalRequirements = [signByStudentReq, ...requirements];
+    const finalRequirements = [signByStudentReq, ...filteredRequirements];
     formData.append("requirement_json", JSON.stringify(finalRequirements));
 
     if (selectedFile) {
@@ -321,7 +341,8 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                 </p>
               )}
               {requirements.map((req, idx) => {
-                const isSystemRequired = req.label === "SIGNED_BY_STUDENT";
+                const isSystemRequired =
+                  req.label === "ใบสมัครที่ลงนามโดยนิสิต";
                 return (
                   <div
                     key={idx}
@@ -331,7 +352,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                         : "bg-gray-50 border-gray-200"
                     }`}
                   >
-                    {/* ซ่อนปุ่มลบถ้าเป็น SIGNED_BY_STUDENT */}
+                    {/* ซ่อนปุ่มลบถ้าเป็น ใบสมัครที่ลงนามโดยนิสิต */}
                     {!isSystemRequired && (
                       <button
                         type="button"
