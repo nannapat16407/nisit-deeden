@@ -12,7 +12,7 @@ import {
   Request,
 } from "@/types/request.type";
 import { RefreshCw, X, Check, Download, Upload } from "lucide-react";
-import { renameResubmitFiles } from "@/lib/utils";
+import { sanitizeFileName } from "@/lib/utils";
 
 // Display log type for rendering in UI
 interface DisplayLog {
@@ -146,9 +146,9 @@ function TrackStatusPage() {
   const [templateData, setTemplateData] =
     useState<AwardTemplateResponse | null>(null);
   const [studentUsername, setStudentUsername] = useState<string | null>(null);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [docFiles, setDocFiles] = useState<Record<string, File>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [needsDocsComment, setNeedsDocsComment] = useState<string>("");
 
   // Fetch list of requests
   useEffect(() => {
@@ -193,56 +193,81 @@ function TrackStatusPage() {
     };
     fetchRequestDetail();
   }, [requests]);
-  // Open resubmit modal and fetch template
+  // Helper: parse requested doc names from SD comment
+  // Format: "ขอเอกสาร: รูปภาพ, ใบเกรด"
+  const parseRequestedDocs = (comment: string): string[] => {
+    const prefix = "ขอเอกสาร: ";
+    if (!comment.startsWith(prefix)) return [];
+    return comment
+      .slice(prefix.length)
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  };
+
+  // Get the NEEDS_DOCS comment from request detail logs
+  const getNeedsDocsComment = (): string => {
+    if (!requestDetail) return "";
+    const logs = requestDetail.logs || [];
+    // Find the latest NEEDS_DOCS log
+    const sortedLogs = [...logs].sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+    );
+    const needsDocsLog = sortedLogs.find((l) => l.action === "NEEDS_DOCS");
+    return needsDocsLog?.comment || "";
+  };
+
   // Open resubmit modal and fetch template
   const handleOpenResubmitModal = async () => {
     if (!latestRequest?.request_id) return;
 
     const result = await api.getAwardTemplate(latestRequest.request_id);
-    console.log("Award template result:", result);
     setTemplateData(result ?? null);
 
     // Fetch username for file renaming
     const username = await api.getStudentUsername();
     setStudentUsername(username);
 
+    // Extract comment and reset file state
+    setNeedsDocsComment(getNeedsDocsComment());
+    setDocFiles({});
+
     setOpenResubmitModal(true);
   };
 
-  // Handle file selection
-  // Handle file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+  // Handle file selection for a specific document label
+  const handleDocFileChange = (
+    docName: string,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const newFiles = Array.from(files);
-
-    // Rename files using the standardized format
+    // Rename file using standardized format: username_awardName_docName.ext
+    let finalFile = file;
     if (studentUsername && templateData?.award_name) {
-      const renamedFiles = renameResubmitFiles(
-        newFiles,
-        studentUsername,
-        templateData.award_name,
-      );
-      setSelectedFiles((prev) => [...prev, ...renamedFiles]);
-    } else {
-      setSelectedFiles((prev) => [...prev, ...newFiles]);
+      const ext = file.name.split(".").pop()?.toLowerCase() || "";
+      const newName = `${sanitizeFileName(studentUsername)}_${sanitizeFileName(templateData.award_name)}_${sanitizeFileName(docName)}.${ext}`;
+      finalFile = new File([file], newName, { type: file.type });
     }
 
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    setDocFiles((prev) => ({ ...prev, [docName]: finalFile }));
   };
 
-  // Remove file from selection
-  const handleRemoveFile = (index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  // Remove file for a specific document label
+  const handleDocFileRemove = (docName: string) => {
+    setDocFiles((prev) => {
+      const updated = { ...prev };
+      delete updated[docName];
+      return updated;
+    });
   };
 
   // Handle resubmit form submission
   const handleResubmit = async () => {
-    if (!latestRequest?.request_id || selectedFiles.length === 0) {
+    const files = Object.values(docFiles);
+    if (!latestRequest?.request_id || files.length === 0) {
       alert("กรุณาเลือกไฟล์อย่างน้อย 1 ไฟล์");
       return;
     }
@@ -250,7 +275,7 @@ function TrackStatusPage() {
     try {
       setIsSubmitting(true);
 
-      await api.resubmitDocuments(latestRequest.request_id, selectedFiles);
+      await api.resubmitDocuments(latestRequest.request_id, files);
 
       // Success - close modal and refresh data
       setOpenResubmitModal(false);
@@ -1185,12 +1210,13 @@ function TrackStatusPage() {
             isOpen={openResubmitModal}
             onClose={() => setOpenResubmitModal(false)}
             templateData={templateData}
-            selectedFiles={selectedFiles}
-            onFileChange={handleFileChange}
-            onRemoveFile={handleRemoveFile}
+            requestedDocs={parseRequestedDocs(needsDocsComment)}
+            needsDocsComment={needsDocsComment}
+            docFiles={docFiles}
+            onDocFileChange={handleDocFileChange}
+            onDocFileRemove={handleDocFileRemove}
             onSubmit={handleResubmit}
             isSubmitting={isSubmitting}
-            fileInputRef={fileInputRef}
           />
         )}
       </div>
@@ -1206,26 +1232,36 @@ interface ResubmitModalProps {
   isOpen: boolean;
   onClose: () => void;
   templateData: AwardTemplateResponse | null;
-  selectedFiles: File[];
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onRemoveFile: (index: number) => void;
+  requestedDocs: string[];
+  needsDocsComment: string;
+  docFiles: Record<string, File>;
+  onDocFileChange: (
+    docName: string,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => void;
+  onDocFileRemove: (docName: string) => void;
   onSubmit: () => void;
   isSubmitting: boolean;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 const ResubmitModal: React.FC<ResubmitModalProps> = ({
   isOpen,
   onClose,
   templateData,
-  selectedFiles,
-  onFileChange,
-  onRemoveFile,
+  requestedDocs,
+  needsDocsComment,
+  docFiles,
+  onDocFileChange,
+  onDocFileRemove,
   onSubmit,
   isSubmitting,
-  fileInputRef,
 }) => {
   if (!isOpen) return null;
+
+  const fileInputRefs = React.useRef<Record<string, HTMLInputElement | null>>(
+    {},
+  );
+  const uploadedCount = Object.keys(docFiles).length;
 
   return (
     <div
@@ -1236,7 +1272,7 @@ const ResubmitModal: React.FC<ResubmitModalProps> = ({
         className="bg-white w-full max-w-[600px] rounded-xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header: พื้นหลังสีแดง */}
+        {/* Header */}
         <div className="relative bg-red-400 text-white py-4 px-6">
           <h2 className="text-lg font-semibold text-center">
             แจ้งเหตุผลการขอแก้ไขและส่งเอกสารเพิ่มเติม
@@ -1251,14 +1287,13 @@ const ResubmitModal: React.FC<ResubmitModalProps> = ({
 
         {/* Body */}
         <div className="p-6 max-h-[60vh] overflow-y-auto">
-          {/* Section 1: รายละเอียดในใบสมัคร */}
+          {/* Section 1: เหตุผลจาก SD */}
           <div className="mb-6">
             <h3 className="text-base font-semibold text-gray-900 mb-2">
-              รายละเอียดในใบสมัคร
+              เหตุผลจากกองพัฒนานิสิต
             </h3>
-            <p className="text-sm text-gray-700 mb-3">
-              เอกสารที่แนบมาไม่ตรงกับประเภทรางวัลที่เลือก กรุณาตรวจสอบและแก้ไข
-              ตามตัวอย่างเอกสาร
+            <p className="text-sm text-gray-700 mb-3 whitespace-pre-wrap">
+              {needsDocsComment || "ต้องการเอกสารเพิ่มเติม"}
             </p>
             {templateData?.template_file_url && (
               <a
@@ -1273,46 +1308,115 @@ const ResubmitModal: React.FC<ResubmitModalProps> = ({
             )}
           </div>
 
-          {/* Section 2: กรุณาอัปโหลดไฟล์ที่แก้ไขแล้ว */}
+          {/* Section 2: อัปโหลดไฟล์ตามรายการ */}
           <div className="mb-6">
-            <h3 className="text-base font-semibold text-gray-900 mb-2">
-              กรุณาอัปโหลดไฟล์ที่แก้ไขแล้ว
+            <h3 className="text-base font-semibold text-gray-900 mb-3">
+              กรุณาอัปโหลดเอกสารที่ขอ
             </h3>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              onChange={onFileChange}
-              className="hidden"
-              multiple
-            />
-
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 text-sm text-[#599fa0] hover:text-[#4a8081] hover:underline font-medium"
-            >
-              <Upload size={16} />
-              อัปโหลด
-            </button>
-
-            {selectedFiles.length > 0 && (
-              <div className="mt-3 space-y-2">
-                {selectedFiles.map((file, index) => (
+            {requestedDocs.length > 0 ? (
+              <div className="space-y-3">
+                {requestedDocs.map((docName) => (
                   <div
-                    key={index}
-                    className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                    key={docName}
+                    className="border border-gray-200 rounded-lg p-3 bg-gray-50"
                   >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-800">
+                        {docName}
+                      </span>
+                      {docFiles[docName] ? (
+                        <span className="text-xs text-green-600 font-medium">
+                          ✓ อัปโหลดแล้ว
+                        </span>
+                      ) : (
+                        <span className="text-xs text-red-500 font-medium">
+                          ยังไม่ได้อัปโหลด
+                        </span>
+                      )}
+                    </div>
+
+                    <input
+                      ref={(el) => {
+                        fileInputRefs.current[docName] = el;
+                      }}
+                      type="file"
+                      onChange={(e) => onDocFileChange(docName, e)}
+                      className="hidden"
+                    />
+
+                    {docFiles[docName] ? (
+                      <div className="flex items-center justify-between bg-white rounded px-3 py-2 border border-gray-100">
+                        <span className="text-sm text-gray-700 truncate flex-1">
+                          {docFiles[docName].name}
+                        </span>
+                        <button
+                          onClick={() => onDocFileRemove(docName)}
+                          className="text-red-500 hover:text-red-700 text-sm ml-2 flex-shrink-0"
+                        >
+                          ลบ
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => fileInputRefs.current[docName]?.click()}
+                        className="inline-flex items-center gap-2 text-sm text-[#599fa0] hover:text-[#4a8081] hover:underline font-medium"
+                      >
+                        <Upload size={14} />
+                        เลือกไฟล์
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* Fallback: ถ้า parse ไม่ได้ ให้อัปโหลดแบบ free-form */
+              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-800">
+                    เอกสารเพิ่มเติม
+                  </span>
+                  {docFiles["_general"] ? (
+                    <span className="text-xs text-green-600 font-medium">
+                      ✓ อัปโหลดแล้ว
+                    </span>
+                  ) : (
+                    <span className="text-xs text-red-500 font-medium">
+                      ยังไม่ได้อัปโหลด
+                    </span>
+                  )}
+                </div>
+
+                <input
+                  ref={(el) => {
+                    fileInputRefs.current["_general"] = el;
+                  }}
+                  type="file"
+                  onChange={(e) => onDocFileChange("_general", e)}
+                  className="hidden"
+                />
+
+                {docFiles["_general"] ? (
+                  <div className="flex items-center justify-between bg-white rounded px-3 py-2 border border-gray-100">
                     <span className="text-sm text-gray-700 truncate flex-1">
-                      {file.name}
+                      {docFiles["_general"].name}
                     </span>
                     <button
-                      onClick={() => onRemoveFile(index)}
-                      className="text-red-500 hover:text-red-700 text-sm ml-2"
+                      onClick={() => onDocFileRemove("_general")}
+                      className="text-red-500 hover:text-red-700 text-sm ml-2 flex-shrink-0"
                     >
                       ลบ
                     </button>
                   </div>
-                ))}
+                ) : (
+                  <button
+                    onClick={() => fileInputRefs.current["_general"]?.click()}
+                    className="inline-flex items-center gap-2 text-sm text-[#599fa0] hover:text-[#4a8081] hover:underline font-medium"
+                  >
+                    <Upload size={14} />
+                    เลือกไฟล์
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -1329,7 +1433,7 @@ const ResubmitModal: React.FC<ResubmitModalProps> = ({
           </button>
           <button
             onClick={onSubmit}
-            disabled={selectedFiles.length === 0 || isSubmitting}
+            disabled={uploadedCount === 0 || isSubmitting}
             className="px-6 py-2 text-white bg-[#599fa0] rounded-lg hover:bg-[#4a8081] transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "กำลังส่ง..." : "ยืนยัน"}
