@@ -56,7 +56,7 @@ function RequestPeriod() {
 
   useEffect(() => {
     const loadPeriodStates = async () => {
-      if (periods.length === 0) {
+      if (periods === null || periods.length === 0) {
         setPeriodState({});
         return;
       }
