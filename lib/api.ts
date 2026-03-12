@@ -311,9 +311,11 @@ class ApiClient {
   async resubmitDocuments(
     requestId: string,
     files: File[],
+    labels: string[],
   ): Promise<ResubmitResponse> {
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
+    labels.forEach((label) => formData.append("labels", label));
 
     const response = await fetch(
       `${this.baseURL}/api/student/requests/${requestId}/resubmit`,

@@ -266,16 +266,19 @@ function TrackStatusPage() {
 
   // Handle resubmit form submission
   const handleResubmit = async () => {
-    const files = Object.values(docFiles);
-    if (!latestRequest?.request_id || files.length === 0) {
+    const entries = Object.entries(docFiles);
+    if (!latestRequest?.request_id || entries.length === 0) {
       alert("กรุณาเลือกไฟล์อย่างน้อย 1 ไฟล์");
       return;
     }
 
+    const labels = entries.map(([docName]) => docName);
+    const files = entries.map(([, file]) => file);
+
     try {
       setIsSubmitting(true);
 
-      await api.resubmitDocuments(latestRequest.request_id, files);
+      await api.resubmitDocuments(latestRequest.request_id, files, labels);
 
       // Success - close modal and refresh data
       setOpenResubmitModal(false);
