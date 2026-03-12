@@ -30,7 +30,7 @@ const MOCK_KPIS = {
 };
 
 const FLOW_FUNNEL_DATA = [
-  { value: 1240, name: "นิสิตส่งคำร้อง", fill: "#8884d8" },
+  { value: 1240, name: "นิสิตส่งใบสมัคร", fill: "#8884d8" },
   { value: 1100, name: "ผ่านภาควิชา", fill: "#83a6ed" },
   { value: 950, name: "ผ่านรองคณบดี", fill: "#8dd1e1" },
   { value: 800, name: "ผ่านคณบดี", fill: "#82ca9d" },
@@ -214,7 +214,7 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           </div>
           <p className="text-center text-sm text-gray-400 mt-2">
-            แสดงจำนวนคำร้องที่ผ่านแต่ละขั้นตอน
+            แสดงจำนวนใบสมัครที่ผ่านแต่ละขั้นตอน
           </p>
         </div>
 

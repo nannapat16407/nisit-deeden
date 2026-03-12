@@ -35,7 +35,9 @@ function DocumentPage() {
         const awardData = res?.data?.awards || [];
 
         // กรองเฉพาะ awards ที่ is_active === true
-        const activeAwards = awardData.filter((award: Award) => award.is_active === true);
+        const activeAwards = awardData.filter(
+          (award: Award) => award.is_active === true,
+        );
 
         // Map API data to component format (แสดงเฉพาะ award_name)
         const awardTypes: AwardOption[] = activeAwards.map((award: Award) => ({
@@ -172,7 +174,9 @@ function DocumentPage() {
       ) : awards.length === 0 ? (
         /* ไม่มีรางวัลที่เปิดรับสมัคร */
         <div className="bg-white rounded-xl p-8 shadow-sm text-center">
-          <p className="text-gray-500 text-lg">ขณะนี้ยังไม่มีรางวัลที่เปิดรับสมัคร</p>
+          <p className="text-gray-500 text-lg">
+            ขณะนี้ยังไม่มีรางวัลที่เปิดรับสมัคร
+          </p>
         </div>
       ) : null}
     </div>

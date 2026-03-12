@@ -74,7 +74,7 @@ export const getName = (key: string) => {
       home: "หน้าแรก",
       document: "เอกสาร",
       request_period: "จัดการช่วงเวลารับสมัคร",
-      request: "รายการคำร้อง",
+      request: "รายการใบสมัคร",
       announcement: "ประกาศ",
       dashboard: "Dashboard",
       profile: "Profile",

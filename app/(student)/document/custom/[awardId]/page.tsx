@@ -7,10 +7,16 @@ import ApplicationForm from "@/components/document/application/ApplicationForm";
 import { api } from "@/lib/api";
 import { Award, Requirement } from "@/types/award.type";
 import { StudentProfileFullResponse } from "@/types/student.type";
-import { generateUploadFileName, getFileExtension, renameFile } from "@/lib/utils";
+import {
+  generateUploadFileName,
+  getFileExtension,
+  renameFile,
+} from "@/lib/utils";
 
 // Helper function to safely parse requirement_json
-const parseRequirements = (requirementJson: string | undefined): Requirement[] => {
+const parseRequirements = (
+  requirementJson: string | undefined,
+): Requirement[] => {
   if (!requirementJson) return [];
 
   try {
@@ -27,7 +33,8 @@ function CustomAwardPage() {
   const router = useRouter();
 
   const [award, setAward] = useState<Award | null>(null);
-  const [studentInfo, setStudentInfo] = useState<StudentProfileFullResponse | null>(null);
+  const [studentInfo, setStudentInfo] =
+    useState<StudentProfileFullResponse | null>(null);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +68,9 @@ function CustomAwardPage() {
       if (foundAward) {
         setAward(foundAward);
         // Parse requirement_json and set requirements
-        const parsedRequirements = parseRequirements(foundAward.requirement_json);
+        const parsedRequirements = parseRequirements(
+          foundAward.requirement_json,
+        );
         setRequirements(parsedRequirements);
       } else {
         setError("ไม่พบข้อมูลรางวัลที่เลือก");
@@ -87,11 +96,13 @@ function CustomAwardPage() {
 
     // Validate that all required files are present
     const missingRequirements = requirements.filter(
-      (req) => req.required && !files[req.label]
+      (req) => req.required && !files[req.label],
     );
 
     if (missingRequirements.length > 0) {
-      alert(`กรุณาอัปโหลดไฟล์ที่จำเป็น: ${missingRequirements.map((r) => r.label).join(", ")}`);
+      alert(
+        `กรุณาอัปโหลดไฟล์ที่จำเป็น: ${missingRequirements.map((r) => r.label).join(", ")}`,
+      );
       return;
     }
 
@@ -124,7 +135,11 @@ function CustomAwardPage() {
       router.push("/document");
     } catch (error) {
       console.error("Submit failed:", error);
-      alert(error instanceof Error ? error.message : "ไม่สามารถส่งฟอร์มได้ กรุณาลองใหม่");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "ไม่สามารถส่งฟอร์มได้ กรุณาลองใหม่",
+      );
     }
   };
 
@@ -158,7 +173,23 @@ function CustomAwardPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* ส่วนที่ 1: ข้อมูลนิสิต (Read-only) */}
+      {/* ส่วนที่ 1: รายละเอียดรางวัล*/}
+      <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-2">
+          {award.award_name}
+        </h2>
+        {award.description && (
+          <div className="mt-3">
+            <h3 className="text-sm font-semibold text-gray-700 mb-1">
+              รายละเอียด
+            </h3>
+            <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
+              {award.description}
+            </p>
+          </div>
+        )}
+      </div>
+      {/* ส่วนที่ 2: ข้อมูลนิสิต (Read-only)  */}
       {studentInfo ? (
         <StudentInfoCard studentInfo={studentInfo} />
       ) : (
@@ -167,7 +198,7 @@ function CustomAwardPage() {
         </div>
       )}
 
-      {/* ส่วนที่ 2: แบบฟอร์มสมัครรางวัล */}
+      {/* ส่วนที่ 3: แบบฟอร์มสมัครรางวัล */}
       <ApplicationForm
         onSubmit={handleFormSubmit}
         templateFileUrl={award.template_file_url}

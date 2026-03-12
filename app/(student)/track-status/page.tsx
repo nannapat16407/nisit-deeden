@@ -143,8 +143,9 @@ function TrackStatusPage() {
 
   // Resubmit modal states
   const [openResubmitModal, setOpenResubmitModal] = useState(false);
-  const [templateData, setTemplateData] = useState<AwardTemplateResponse | null>(null);
-const [studentUsername, setStudentUsername] = useState<string | null>(null);
+  const [templateData, setTemplateData] =
+    useState<AwardTemplateResponse | null>(null);
+  const [studentUsername, setStudentUsername] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
@@ -164,7 +165,7 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
         );
         setRequests(sortedData);
       } catch (err) {
-        setError("ไม่สามารถโหลดข้อมูลคำร้องได้");
+        setError("ไม่สามารถโหลดข้อมูลใบสมัครได้");
       } finally {
         setLoading(false);
       }
@@ -218,7 +219,11 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
 
     // Rename files using the standardized format
     if (studentUsername && templateData?.award_name) {
-      const renamedFiles = renameResubmitFiles(newFiles, studentUsername, templateData.award_name);
+      const renamedFiles = renameResubmitFiles(
+        newFiles,
+        studentUsername,
+        templateData.award_name,
+      );
       setSelectedFiles((prev) => [...prev, ...renamedFiles]);
     } else {
       setSelectedFiles((prev) => [...prev, ...newFiles]);
@@ -251,7 +256,11 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
       setOpenResubmitModal(false);
       window.location.reload();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "ไม่สามารถส่งเอกสารได้ กรุณาลองใหม่");
+      alert(
+        err instanceof Error
+          ? err.message
+          : "ไม่สามารถส่งเอกสารได้ กรุณาลองใหม่",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -419,7 +428,8 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
       return "bg-[#599fa0] border-[#599fa0]";
 
     // For NEEDS_DOCS state - red circle
-    if (isNeedsDocs && currentStep === stepNumber) return "bg-red-500 border-red-500";
+    if (isNeedsDocs && currentStep === stepNumber)
+      return "bg-red-500 border-red-500";
     // For pending/active state (yellow circle)
     if (currentStep === stepNumber) return "bg-[#FCD34D] border-[#FCD34D]";
     // For completed steps
@@ -454,7 +464,11 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
 
     // ⭐ เส้นเดียวที่ทำ blending
     if (stepNumber === currentStep - 1) {
-      const targetColor = isRejected ? rejectedColor : (isNeedsDocs ? rejectedColor : pendingColor);
+      const targetColor = isRejected
+        ? rejectedColor
+        : isNeedsDocs
+          ? rejectedColor
+          : pendingColor;
       return {
         background: `linear-gradient(
           to right,
@@ -607,14 +621,17 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
   const currentStatusColors = statusToUse ? STATUS_COLORS[statusToUse] : null;
 
   // Get the latest log by timestamp (newest first)
-  const getLatestLog = (detail: RequestDetailResponse | null): RequestLog | null => {
+  const getLatestLog = (
+    detail: RequestDetailResponse | null,
+  ): RequestLog | null => {
     if (!detail) return null;
     const logs = detail.logs || [];
     if (logs.length === 0) return null;
 
     // Sort logs by timestamp descending (newest first) - does not mutate original array
     const sortedLogs = [...logs].sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
 
     return sortedLogs[0];
@@ -725,8 +742,20 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
 
       // กรณี log ล่าสุด = PENDING_{VICEDEAN/DEAN/SD/PRESIDENT}
       // ต้องสร้าง 2 กล่อง: current (รอ) + accept (ของก่อนหน้า)
-      if (isLatest && ["PENDING_VICEDEAN", "PENDING_DEAN", "PENDING_SD", "PENDING_PRESIDENT"].includes(action)) {
-        const acceptDisplayInfo = getDisplayInfoForAction(action, "accept", currentStatus);
+      if (
+        isLatest &&
+        [
+          "PENDING_VICEDEAN",
+          "PENDING_DEAN",
+          "PENDING_SD",
+          "PENDING_PRESIDENT",
+        ].includes(action)
+      ) {
+        const acceptDisplayInfo = getDisplayInfoForAction(
+          action,
+          "accept",
+          currentStatus,
+        );
         result.push({
           icon: acceptDisplayInfo.icon,
           color: acceptDisplayInfo.color,
@@ -1016,77 +1045,81 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
                     const displayLogs = buildDisplayLogs(requestDetail);
                     const latestLog = getLatestLog(requestDetail);
                     return displayLogs.map((log, index) => (
-                    <div
-                      key={index}
-                      className="bg-white rounded-lg shadow-sm p-6"
-                    >
-                      <div className="flex gap-6">
-                        {/* LEFT COLUMN: Icon */}
-                        <div className="flex-shrink-0 flex flex-col items-center">
-                          <div className={log.color}>{log.icon}</div>
-                          <p className="mt-2 text-sm text-black">{log.label}</p>
-                        </div>
+                      <div
+                        key={index}
+                        className="bg-white rounded-lg shadow-sm p-6"
+                      >
+                        <div className="flex gap-6">
+                          {/* LEFT COLUMN: Icon */}
+                          <div className="flex-shrink-0 flex flex-col items-center">
+                            <div className={log.color}>{log.icon}</div>
+                            <p className="mt-2 text-sm text-black">
+                              {log.label}
+                            </p>
+                          </div>
 
-                        {/* RIGHT COLUMN: Details */}
-                        <div className="flex-1 space-y-3">
-                          {/* วันที่เวลา */}
-                          <p className="text-base text-gray-500">
-                            {log.timestamp}
-                          </p>
+                          {/* RIGHT COLUMN: Details */}
+                          <div className="flex-1 space-y-3">
+                            {/* วันที่เวลา */}
+                            <p className="text-base text-gray-500">
+                              {log.timestamp}
+                            </p>
 
-                          {/* สถานะ */}
-                          <p className="text-base text-gray-900">
-                            <span className="font-bold">สถานะ</span>{" "}
-                            <span className="font-normal">
-                              {log.statusText}
-                            </span>
-                          </p>
-
-                          {/* ผู้พิจารณา - แสดงเฉพาะ log boxes (ไม่ใช่กล่องบนสุดจาก data) */}
-                          {!log.isFromData && log.approverName && (
+                            {/* สถานะ */}
                             <p className="text-base text-gray-900">
-                              <span className="font-bold">ผู้พิจารณา</span>{" "}
+                              <span className="font-bold">สถานะ</span>{" "}
                               <span className="font-normal">
-                                {log.approverName}
+                                {log.statusText}
                               </span>
                             </p>
-                          )}
-                        </div>
 
-                        {/* ปุ่มเหตุผลการปฏิเสธ - เฉพาะกรณี reject */}
-                        {log.isReject && (
-                          <div className="flex-shrink-0 flex items-start">
-                            <button
-                              className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors text-sm font-medium"
-                              onClick={() => {
-                                setRejectComment(log.comment || "-");
-                                setOpenRejectModal(true);
-                              }}
-                            >
-                              เหตุผลการปฏิเสธ &gt;
-                            </button>
+                            {/* ผู้พิจารณา - แสดงเฉพาะ log boxes (ไม่ใช่กล่องบนสุดจาก data) */}
+                            {!log.isFromData && log.approverName && (
+                              <p className="text-base text-gray-900">
+                                <span className="font-bold">ผู้พิจารณา</span>{" "}
+                                <span className="font-normal">
+                                  {log.approverName}
+                                </span>
+                              </p>
+                            )}
                           </div>
-                        )}
 
-                        {/* ปุ่มรายละเอียดเอกสารที่ต้องส่งเพิ่มเติม - เฉพาะ log ล่าสุดเท่านั้น */}
-                        {(() => {
-                          const isLatest = latestLog?.timestamp === log.rawTimestamp;
-                          const shouldShowButton = isLatest && log.action === "NEEDS_DOCS";
-
-                          return shouldShowButton ? (
+                          {/* ปุ่มเหตุผลการปฏิเสธ - เฉพาะกรณี reject */}
+                          {log.isReject && (
                             <div className="flex-shrink-0 flex items-start">
                               <button
-                                className="bg-red-400 text-white px-6 py-2 rounded-lg hover:bg-red-500 transition-colors text-sm font-medium"
-                                onClick={handleOpenResubmitModal}
+                                className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors text-sm font-medium"
+                                onClick={() => {
+                                  setRejectComment(log.comment || "-");
+                                  setOpenRejectModal(true);
+                                }}
                               >
-                                รายละเอียดเอกสารที่ต้องส่งเพิ่มเติม &gt;
+                                เหตุผลการปฏิเสธ &gt;
                               </button>
                             </div>
-                          ) : null;
-                        })()}
+                          )}
+
+                          {/* ปุ่มรายละเอียดเอกสารที่ต้องส่งเพิ่มเติม - เฉพาะ log ล่าสุดเท่านั้น */}
+                          {(() => {
+                            const isLatest =
+                              latestLog?.timestamp === log.rawTimestamp;
+                            const shouldShowButton =
+                              isLatest && log.action === "NEEDS_DOCS";
+
+                            return shouldShowButton ? (
+                              <div className="flex-shrink-0 flex items-start">
+                                <button
+                                  className="bg-red-400 text-white px-6 py-2 rounded-lg hover:bg-red-500 transition-colors text-sm font-medium"
+                                  onClick={handleOpenResubmitModal}
+                                >
+                                  รายละเอียดเอกสารที่ต้องส่งเพิ่มเติม &gt;
+                                </button>
+                              </div>
+                            ) : null;
+                          })()}
+                        </div>
                       </div>
-                    </div>
-                  ));
+                    ));
                   })()}
                 </div>
               ) : (
@@ -1224,7 +1257,8 @@ const ResubmitModal: React.FC<ResubmitModalProps> = ({
               รายละเอียดในใบสมัคร
             </h3>
             <p className="text-sm text-gray-700 mb-3">
-              เอกสารที่แนบมาไม่ตรงกับประเภทรางวัลที่เลือก กรุณาตรวจสอบและแก้ไข ตามตัวอย่างเอกสาร
+              เอกสารที่แนบมาไม่ตรงกับประเภทรางวัลที่เลือก กรุณาตรวจสอบและแก้ไข
+              ตามตัวอย่างเอกสาร
             </p>
             {templateData?.template_file_url && (
               <a

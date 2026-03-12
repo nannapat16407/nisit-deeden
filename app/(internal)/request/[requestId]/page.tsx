@@ -100,7 +100,7 @@ function RequestDetailContent() {
   const handleSDApproveClick = () => {
     triggerConfirmPopUp({
       title: "ยืนยันการเห็นชอบ",
-      message: "คุณแน่ใจหรือว่าต้องการให้เห็นชอบคำร้องนี้?",
+      message: "คุณแน่ใจหรือว่าต้องการให้เห็นชอบใบสมัครนี้?",
       confirmText: "เห็นชอบ",
       cancelText: "ยกเลิก",
       onConfirm: SDApproveCallback,
@@ -171,7 +171,7 @@ function RequestDetailContent() {
 
     triggerConfirmPopUp({
       title: "ยืนยันการเห็นชอบ",
-      message: "คุณแน่ใจหรือว่าต้องการให้เห็นชอบคำร้องนี้?",
+      message: "คุณแน่ใจหรือว่าต้องการให้เห็นชอบใบสมัครนี้?",
       confirmText: "เห็นชอบ",
       cancelText: "ยกเลิก",
       onConfirm: () => handleRoleReview(roleName, action),

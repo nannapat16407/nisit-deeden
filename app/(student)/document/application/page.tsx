@@ -13,7 +13,8 @@ function ApplicationPage() {
 
   const [award, setAward] = useState<Award | null>(null);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
-  const [studentInfo, setStudentInfo] = useState<StudentProfileFullResponse | null>(null);
+  const [studentInfo, setStudentInfo] =
+    useState<StudentProfileFullResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +32,9 @@ function ApplicationPage() {
       setStudentInfo(response.data);
     } catch (err) {
       console.error("Failed to fetch student profile:", err);
-      setError(err instanceof Error ? err.message : "ไม่สามารถดึงข้อมูลนิสิตได้");
+      setError(
+        err instanceof Error ? err.message : "ไม่สามารถดึงข้อมูลนิสิตได้",
+      );
     }
   };
 
@@ -50,7 +53,9 @@ function ApplicationPage() {
         // Parse requirement_json จาก string เป็น JSON array
         if (foundAward.requirement_json) {
           try {
-            const parsedRequirements: Requirement[] = JSON.parse(foundAward.requirement_json);
+            const parsedRequirements: Requirement[] = JSON.parse(
+              foundAward.requirement_json,
+            );
             setRequirements(parsedRequirements);
           } catch (parseError) {
             console.error("Failed to parse requirement_json:", parseError);
@@ -64,7 +69,9 @@ function ApplicationPage() {
       }
     } catch (err) {
       console.error("Failed to fetch award:", err);
-      setError(err instanceof Error ? err.message : "ไม่สามารถดึงข้อมูลรางวัลได้");
+      setError(
+        err instanceof Error ? err.message : "ไม่สามารถดึงข้อมูลรางวัลได้",
+      );
     } finally {
       setLoading(false);
     }
@@ -95,7 +102,9 @@ function ApplicationPage() {
       console.log("FormData being sent:");
       for (const [key, value] of formData.entries()) {
         if (value instanceof File) {
-          console.log(`  ${key}: File(name="${value.name}", size=${value.size})`);
+          console.log(
+            `  ${key}: File(name="${value.name}", size=${value.size})`,
+          );
         } else {
           console.log(`  ${key}: ${value}`);
         }
@@ -149,7 +158,24 @@ function ApplicationPage() {
         </div>
       )}
 
-      {/* ส่วนที่ 2: แบบฟอร์มสมัครรางวัล */}
+      {/* ส่วนที่ 2: รายละเอียดรางวัล */}
+      <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-2">
+          {award.award_name}
+        </h2>
+        {award.description && (
+          <div className="mt-3">
+            <h3 className="text-sm font-semibold text-gray-700 mb-1">
+              รายละเอียด
+            </h3>
+            <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
+              {award.description}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ส่วนที่ 3: แบบฟอร์มสมัครรางวัล */}
       <ApplicationForm
         onSubmit={handleFormSubmit}
         templateFileUrl={award.template_file_url}
