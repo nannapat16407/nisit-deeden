@@ -34,6 +34,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
 
   // Label mapping for internal keys to Thai display text
   const labelMap: Record<string, string> = {
+    SIGN_BY_STUDENT: "ใบสมัครที่ลงนามโดยนิสิต",
     SIGNED_BY_STUDENT: "ใบสมัครที่ลงนามโดยนิสิต",
   };
 
@@ -47,7 +48,13 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
       return file.name; // Fallback to original name if data not ready
     }
     const extension = getFileExtension(file.name);
-    return generateUploadFileName(username, awardName, requirementLabel, extension, 0);
+    return generateUploadFileName(
+      username,
+      awardName,
+      requirementLabel,
+      extension,
+      0,
+    );
   };
 
   // ✅ Handle file selection แบบ dynamic
@@ -72,7 +79,11 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
     }
 
     // Validate file type with extensions
-    if (requirement.type === "file" && requirement.extensions && requirement.extensions.length > 0) {
+    if (
+      requirement.type === "file" &&
+      requirement.extensions &&
+      requirement.extensions.length > 0
+    ) {
       const fileExt = file.name.split(".").pop()?.toLowerCase();
       if (!requirement.extensions.includes(fileExt || "")) {
         alert(`ไฟล์ต้องเป็น ${requirement.extensions.join(", ")} เท่านั้น`);
@@ -140,8 +151,8 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
   // ✅ Validate required fields
   const areAllRequiredFilesSelected = (): boolean => {
     const requiredRequirements = requirements.filter((req) => req.required);
-    return requiredRequirements.every((req) =>
-      selectedFiles[req.label] !== undefined
+    return requiredRequirements.every(
+      (req) => selectedFiles[req.label] !== undefined,
     );
   };
 
@@ -185,9 +196,21 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
         <h2 className="text-xl font-bold text-gray-800 mb-4">
           แบบฟอร์มสมัครนิสิตดีเด่น {awardName}
         </h2>
-
-{/* Download Template Button */}        {templateFileUrl && (          <div className="mb-6">            <a              href={templateFileUrl}              target="_blank"              rel="noopener noreferrer"              className="inline-flex items-center gap-2 text-sm text-[#599fa0] hover:text-[#4a8081] hover:underline font-medium"            >              <Download size={16} />              ดาวน์โหลดไฟล์แบบฟอร์ม            </a>          </div>        )}
-
+        {/* Download Template Button */}{" "}
+        {templateFileUrl && (
+          <div className="mb-6">
+            {" "}
+            <a
+              href={templateFileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-[#599fa0] hover:text-[#4a8081] hover:underline font-medium"
+            >
+              {" "}
+              <Download size={16} /> ดาวน์โหลดไฟล์แบบฟอร์ม{" "}
+            </a>{" "}
+          </div>
+        )}
         {/* ✅ Render upload inputs แบบ dynamic */}
         {requirements.map((requirement, index) => {
           const selectedFile = selectedFiles[requirement.label];
@@ -198,8 +221,12 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
             <div key={index} className="mb-6">
               <p className="text-gray-700 font-medium mb-2">
                 {getDisplayLabel(requirement.label)}
-                {extensionText && <span className="text-gray-500"> ({extensionText})</span>}
-                {requirement.required && <span className="text-red-500"> *</span>}
+                {extensionText && (
+                  <span className="text-gray-500"> ({extensionText})</span>
+                )}
+                {requirement.required && (
+                  <span className="text-red-500"> *</span>
+                )}
               </p>
 
               <input
@@ -226,7 +253,8 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
               <p className="text-sm text-gray-500 mt-2">
                 {selectedFile ? (
                   <span className="text-emerald-600 font-medium">
-                    ไฟล์ที่เลือก: {getDisplayFileName(selectedFile, requirement.label)}
+                    ไฟล์ที่เลือก:{" "}
+                    {getDisplayFileName(selectedFile, requirement.label)}
                   </span>
                 ) : (
                   "ยังไม่ได้เลือกไฟล์"

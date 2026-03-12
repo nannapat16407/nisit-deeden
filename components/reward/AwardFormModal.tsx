@@ -27,6 +27,14 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
   // Dynamic Requirements State
   const [requirements, setRequirements] = useState<Requirement[]>([]);
 
+  // Helper: แปลง label เป็นภาษาไทย
+  const getDisplayLabel = (label: string): string => {
+    const labelMap: Record<string, string> = {
+      SIGN_BY_STUDENT: "ใบสมัครที่ลงนามโดยนิสิต",
+    };
+    return labelMap[label] || label;
+  };
+
   useEffect(() => {
     if (isOpen && initialData) {
       setName(initialData.award_name || "");
@@ -37,12 +45,9 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
         const parsedReqs = initialData.requirement_json
           ? JSON.parse(initialData.requirement_json)
           : [];
-        // Filter out SIGN_BY_STUDENT (hidden from SD)
-        const visibleReqs = parsedReqs.filter(
-          (req: any) => req.label !== "SIGN_BY_STUDENT",
-        );
+        // แสดง SIGN_BY_STUDENT ด้วย (ไม่ filter ออก)
         // Ensure all requirements have extensions array
-        const normalizedReqs = visibleReqs.map((req: any) => ({
+        const normalizedReqs = parsedReqs.map((req: any) => ({
           ...req,
           extensions: req.extensions || [],
           required: req.required !== undefined ? req.required : true,
@@ -315,139 +320,228 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                   ยังไม่มีข้อกำหนด กดปุ่ม "+ เพิ่ม requirement" ด้านบน
                 </p>
               )}
-              {requirements.map((req, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 bg-gray-50 rounded-lg border border-gray-200 relative group"
-                >
-                  <button
-                    type="button"
-                    onClick={() => removeRequirement(idx)}
-                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-1"
+              {requirements.map((req, idx) => {
+                const isSystemRequired = req.label === "SIGN_BY_STUDENT";
+                return (
+                  <div
+                    key={idx}
+                    className={`p-4 rounded-lg border relative group ${
+                      isSystemRequired
+                        ? "bg-gray-100 border-gray-300 opacity-75"
+                        : "bg-gray-50 border-gray-200"
+                    }`}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                  </button>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-6">
-                    {/* Label Input */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 mb-1 block">
-                        ชื่อข้อมูล (เช่น ใบเกรด, รูปถ่าย)
-                      </label>
-                      <input
-                        type="text"
-                        value={req.label}
-                        onChange={(e) =>
-                          updateRequirement(idx, "label", e.target.value)
-                        }
-                        className="w-full text-sm bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 border px-3 py-1.5"
-                        placeholder="ระบุชื่อ..."
-                      />
-                    </div>
-
-                    {/* Type Select */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 mb-1 block">
-                        ประเภท
-                      </label>
-                      <select
-                        value={req.type}
-                        onChange={(e) =>
-                          updateRequirement(idx, "type", e.target.value)
-                        }
-                        className="w-full text-sm bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 border px-3 py-1.5"
+                    {/* ซ่อนปุ่มลบถ้าเป็น SIGN_BY_STUDENT */}
+                    {!isSystemRequired && (
+                      <button
+                        type="button"
+                        onClick={() => removeRequirement(idx)}
+                        className="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-1"
                       >
-                        <option value="text">ข้อความ (Text)</option>
-                        <option value="file">เอกสาร (File)</option>
-                        <option value="image">รูปภาพ (Image)</option>
-                      </select>
-                    </div>
-
-                    {/* File Extensions (Condition) */}
-                    {(req.type === "file" || req.type === "image") && (
-                      <div className="md:col-span-2">
-                        <label className="text-xs font-medium text-gray-600 mb-1 block">
-                          นามสกุลไฟล์ที่รองรับ
-                        </label>
-                        <div className="flex flex-wrap gap-2 text-xs">
-                          {req.type === "file" && (
-                            <>
-                              <label className="inline-flex items-center gap-1 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={req.extensions.includes("pdf")}
-                                  onChange={() => toggleExtension(idx, "pdf")}
-                                  className="rounded text-emerald-600 focus:ring-emerald-500"
-                                />
-                                <span>PDF</span>
-                              </label>
-                              <label className="inline-flex items-center gap-1 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={req.extensions.includes("docx")}
-                                  onChange={() => toggleExtension(idx, "docx")}
-                                  className="rounded text-emerald-600 focus:ring-emerald-500"
-                                />
-                                <span>DOCX</span>
-                              </label>
-                            </>
-                          )}
-                          {req.type === "image" && (
-                            <>
-                              <label className="inline-flex items-center gap-1 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={req.extensions.includes("png")}
-                                  onChange={() => toggleExtension(idx, "png")}
-                                  className="rounded text-emerald-600 focus:ring-emerald-500"
-                                />
-                                <span>PNG</span>
-                              </label>
-                              <label className="inline-flex items-center gap-1 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={req.extensions.includes("jpg")}
-                                  onChange={() => toggleExtension(idx, "jpg")}
-                                  className="rounded text-emerald-600 focus:ring-emerald-500"
-                                />
-                                <span>JPG/JPEG</span>
-                              </label>
-                            </>
-                          )}
-                        </div>
-                      </div>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </button>
                     )}
 
-                    {/* Checkboxes */}
-                    <div className="md:col-span-2 flex items-center gap-4 mt-1">
-                      <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-6">
+                      {/* Label Input */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 mb-1 block">
+                          ชื่อข้อมูล (เช่น ใบเกรด, รูปถ่าย)
+                        </label>
                         <input
-                          type="checkbox"
-                          checked={req.required}
-                          onChange={(e) =>
-                            updateRequirement(idx, "required", e.target.checked)
+                          type="text"
+                          value={
+                            isSystemRequired
+                              ? getDisplayLabel(req.label)
+                              : req.label
                           }
-                          className="rounded text-emerald-600 focus:ring-emerald-500"
+                          onChange={(e) =>
+                            updateRequirement(idx, "label", e.target.value)
+                          }
+                          disabled={isSystemRequired}
+                          className={`w-full text-sm border-gray-300 rounded-md shadow-sm border px-3 py-1.5 ${
+                            isSystemRequired
+                              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                              : "bg-white text-gray-900 focus:border-emerald-500 focus:ring-emerald-500"
+                          }`}
+                          placeholder="ระบุชื่อ..."
                         />
-                        <span>จำเป็นต้องระบุ (Required)</span>
-                      </label>
+                      </div>
+
+                      {/* Type Select */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 mb-1 block">
+                          ประเภท
+                        </label>
+                        <select
+                          value={req.type}
+                          onChange={(e) =>
+                            updateRequirement(idx, "type", e.target.value)
+                          }
+                          disabled={isSystemRequired}
+                          className={`w-full text-sm border-gray-300 rounded-md shadow-sm border px-3 py-1.5 ${
+                            isSystemRequired
+                              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                              : "bg-white text-gray-900 focus:border-emerald-500 focus:ring-emerald-500"
+                          }`}
+                        >
+                          <option value="text">ข้อความ (Text)</option>
+                          <option value="file">เอกสาร (File)</option>
+                          <option value="image">รูปภาพ (Image)</option>
+                        </select>
+                      </div>
+
+                      {/* File Extensions (Condition) */}
+                      {(req.type === "file" || req.type === "image") && (
+                        <div className="md:col-span-2">
+                          <label className="text-xs font-medium text-gray-600 mb-1 block">
+                            นามสกุลไฟล์ที่รองรับ
+                          </label>
+                          <div className="flex flex-wrap gap-2 text-xs">
+                            {req.type === "file" && (
+                              <>
+                                <label
+                                  className={`inline-flex items-center gap-1 ${
+                                    isSystemRequired
+                                      ? "cursor-not-allowed"
+                                      : "cursor-pointer"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={req.extensions.includes("pdf")}
+                                    onChange={() => toggleExtension(idx, "pdf")}
+                                    disabled={isSystemRequired}
+                                    className="rounded text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+                                  />
+                                  <span
+                                    className={
+                                      isSystemRequired ? "text-gray-400" : ""
+                                    }
+                                  >
+                                    PDF
+                                  </span>
+                                </label>
+                                <label
+                                  className={`inline-flex items-center gap-1 ${
+                                    isSystemRequired
+                                      ? "cursor-not-allowed"
+                                      : "cursor-pointer"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={req.extensions.includes("docx")}
+                                    onChange={() =>
+                                      toggleExtension(idx, "docx")
+                                    }
+                                    disabled={isSystemRequired}
+                                    className="rounded text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+                                  />
+                                  <span
+                                    className={
+                                      isSystemRequired ? "text-gray-400" : ""
+                                    }
+                                  >
+                                    DOCX
+                                  </span>
+                                </label>
+                              </>
+                            )}
+                            {req.type === "image" && (
+                              <>
+                                <label
+                                  className={`inline-flex items-center gap-1 ${
+                                    isSystemRequired
+                                      ? "cursor-not-allowed"
+                                      : "cursor-pointer"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={req.extensions.includes("png")}
+                                    onChange={() => toggleExtension(idx, "png")}
+                                    disabled={isSystemRequired}
+                                    className="rounded text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+                                  />
+                                  <span
+                                    className={
+                                      isSystemRequired ? "text-gray-400" : ""
+                                    }
+                                  >
+                                    PNG
+                                  </span>
+                                </label>
+                                <label
+                                  className={`inline-flex items-center gap-1 ${
+                                    isSystemRequired
+                                      ? "cursor-not-allowed"
+                                      : "cursor-pointer"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={req.extensions.includes("jpg")}
+                                    onChange={() => toggleExtension(idx, "jpg")}
+                                    disabled={isSystemRequired}
+                                    className="rounded text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+                                  />
+                                  <span
+                                    className={
+                                      isSystemRequired ? "text-gray-400" : ""
+                                    }
+                                  >
+                                    JPG/JPEG
+                                  </span>
+                                </label>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Checkboxes */}
+                      <div className="md:col-span-2 flex items-center gap-4 mt-1">
+                        <label
+                          className={`inline-flex items-center gap-2 text-sm ${
+                            isSystemRequired
+                              ? "cursor-not-allowed text-gray-500"
+                              : "cursor-pointer text-gray-700"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={req.required}
+                            onChange={(e) =>
+                              updateRequirement(
+                                idx,
+                                "required",
+                                e.target.checked,
+                              )
+                            }
+                            disabled={isSystemRequired}
+                            className="rounded text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+                          />
+                          <span>จำเป็นต้องระบุ (Required)</span>
+                        </label>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
