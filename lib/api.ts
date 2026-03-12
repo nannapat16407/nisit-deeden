@@ -1,4 +1,7 @@
-import { AuthResponse, MeResponse } from "@/types/user.type";
+import {
+  AuthResponse,
+  MeResponse,
+} from "@/types/user.type";
 import { Period, CreatePeriodRequest, PeriodState } from "@/types/period.type";
 import { Award, CreateAwardRequest } from "@/types/award.type";
 import { Request as RequestType } from "@/types/request.type";
