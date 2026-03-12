@@ -6,12 +6,14 @@ import PeriodCard from "@/components/period/PeriodCard";
 import PeriodFormModal from "@/components/period/PeriodFormModal";
 import { api } from "@/lib/api";
 import { useAlertPopUp } from "@/components/pop-up/AlertPopUp";
+import { useConfirmPopUp } from "@/components/pop-up/ConfirmPopUp";
 import useAuth from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 
 function RequestPeriod() {
   // State and Hooks
   const { setAlert } = useAlertPopUp();
+  const confirm = useConfirmPopUp();
   const { user } = useAuth();
   const router = useRouter();
   const [periods, setPeriods] = useState<Period[]>([]);
@@ -140,27 +142,30 @@ function RequestPeriod() {
       }
     }
 
-    if (
-      window.confirm(
+    confirm.trigger({
+      title: "ยืนยันการลบช่วงเวลา",
+      message:
         "คุณแน่ใจหรือไม่ที่จะลบช่วงเวลานี้? การกระทำนี้ไม่สามารถย้อนกลับได้",
-      )
-    ) {
-      try {
-        await api.deletePeriod(id);
-        setPeriods(periods.filter((p) => p.period_id !== id));
-        setAlert({
-          open: true,
-          msg: "ลบช่วงเวลารับสมัครสำเร็จ",
-          severity: "success",
-        });
-      } catch (err: any) {
-        setAlert({
-          open: true,
-          msg: "เกิดข้อผิดพลาดในการลบ: " + (err.message || "Unknown error"),
-          severity: "error",
-        });
-      }
-    }
+      confirmText: "ลบ",
+      cancelText: "ยกเลิก",
+      onConfirm: async () => {
+        try {
+          await api.deletePeriod(id);
+          setPeriods(periods.filter((p) => p.period_id !== id));
+          setAlert({
+            open: true,
+            msg: "ลบช่วงเวลารับสมัครสำเร็จ",
+            severity: "success",
+          });
+        } catch (err: any) {
+          setAlert({
+            open: true,
+            msg: "เกิดข้อผิดพลาดในการลบ: " + (err.message || "Unknown error"),
+            severity: "error",
+          });
+        }
+      },
+    });
   };
 
   const handleSave = async (periodData: Partial<Period>) => {

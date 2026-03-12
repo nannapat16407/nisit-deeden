@@ -7,6 +7,7 @@ import AwardCard from "@/components/reward/AwardCard";
 import AwardFormModal from "@/components/reward/AwardFormModal";
 import { api } from "@/lib/api";
 import { useAlertPopUp } from "@/components/pop-up/AlertPopUp";
+import { useConfirmPopUp } from "@/components/pop-up/ConfirmPopUp";
 import { useRouter } from "next/navigation";
 
 // Define Page Props as a Promise for params
@@ -22,6 +23,7 @@ export default function RequestPeriodRewardsPage({
 
   const router = useRouter();
   const { setAlert } = useAlertPopUp();
+  const confirm = useConfirmPopUp();
   const [awards, setAwards] = useState<Award[]>([]);
   const [period, setPeriod] = useState<Period | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -182,23 +184,30 @@ export default function RequestPeriodRewardsPage({
       }
     }
 
-    if (window.confirm("คุณแน่ใจหรือไม่ที่จะลบรางวัลนี้?")) {
-      try {
-        await api.deleteAward(id);
-        setAwards(awards.filter((a) => a.award_id !== id));
-        setAlert({
-          open: true,
-          msg: "ลบรางวัลสำเร็จ",
-          severity: "success",
-        });
-      } catch (err: any) {
-        setAlert({
-          open: true,
-          msg: "เกิดข้อผิดพลาดในการลบ: " + (err.message || "Unknown error"),
-          severity: "error",
-        });
-      }
-    }
+    confirm.trigger({
+      title: "ยืนยันการลบรางวัล",
+      message:
+        "คุณแน่ใจหรือไม่ที่จะลบรางวัลนี้? การกระทำนี้ไม่สามารถย้อนกลับได้",
+      confirmText: "ลบ",
+      cancelText: "ยกเลิก",
+      onConfirm: async () => {
+        try {
+          await api.deleteAward(id);
+          setAwards(awards.filter((a) => a.award_id !== id));
+          setAlert({
+            open: true,
+            msg: "ลบรางวัลสำเร็จ",
+            severity: "success",
+          });
+        } catch (err: any) {
+          setAlert({
+            open: true,
+            msg: "เกิดข้อผิดพลาดในการลบ: " + (err.message || "Unknown error"),
+            severity: "error",
+          });
+        }
+      },
+    });
   };
 
   // Typo fix: handleDelete

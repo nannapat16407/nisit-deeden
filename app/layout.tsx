@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Mitr } from "next/font/google";
 import "./globals.css";
 import { AlertPopUpUI } from "@/components/pop-up/AlertPopUp";
+import { ConfirmPopUpUI } from "@/components/pop-up/ConfirmPopUp";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,7 +35,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${mitr.variable} font-sans antialiased`}
       >
-        <AlertPopUpUI>{children}</AlertPopUpUI>
+        <AlertPopUpUI>
+          <ConfirmPopUpUI>{children}</ConfirmPopUpUI>
+        </AlertPopUpUI>
       </body>
     </html>
   );
