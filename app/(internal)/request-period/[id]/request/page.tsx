@@ -41,9 +41,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
         const res = await api.getCommitteeRequest();
         data = res.data;
         // console.log(data)
-
-      } else if(role === "PRESIDENT"){
-
+      } else if (role === "PRESIDENT") {
         const res = await api.getPresidentRequest();
         data = res.data;
       } else if (role !== "STUDENT") {
@@ -102,9 +100,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
       req.status !== "PENDING_COMMITTEE"
     )
       return false;
-    else if (
-      (role === "PRESIDENT") && req.status !== "PENDING_PRESIDENT"
-    )
+    else if (role === "PRESIDENT" && req.status !== "PENDING_PRESIDENT")
       return false;
 
     const searchLower = search.toLowerCase();
@@ -146,7 +142,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
     if (selectedRequestIds.length === 0) {
       setAlert({
         open: true,
-        msg: "กรุณาเลือกรายการคำร้องก่อนอนุมัติ",
+        msg: "กรุณาเลือกรายการใบสมัครก่อนอนุมัติ",
         severity: "warning",
       });
       return;
@@ -270,7 +266,9 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
       message: "คุณแน่ใจหรือไม่ว่าต้องการอนุมัติรายการที่เลือก?",
       confirmText: "อนุมัติ",
       cancelText: "ยกเลิก",
-      onConfirm: () => {router.back()},
+      onConfirm: () => {
+        router.back();
+      },
     });
   };
   const getStatusBadge = (status: string) => {
@@ -313,7 +311,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
       <div className="mb-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-gray-800">
-            รายการคำร้องในรอบนี้
+            รายการใบสมัครในรอบนี้
           </h1>
         </div>
 
@@ -321,9 +319,11 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
           {(isCommitteeHead || isPresidentRole) && (
             <button
               onClick={
-                isCommitteeHead ? handleApproveClick : (
-                  isPresidentRole ? handlePresidentApproveClick : () => {}
-                )
+                isCommitteeHead
+                  ? handleApproveClick
+                  : isPresidentRole
+                    ? handlePresidentApproveClick
+                    : () => {}
               }
               disabled={selectedRequestIds.length === 0}
               className="bg-primary hover:bg-primary-hover disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium"
@@ -373,10 +373,10 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
                     />
                   </th>
                 )}
-                <th className="px-6 py-4 font-semibold">วันที่ยื่นคำร้อง</th>
+                <th className="px-6 py-4 font-semibold">วันที่ยื่นใบสมัคร</th>
                 <th className="px-6 py-4 font-semibold">ประเภทรางวัล</th>
                 <th className="px-6 py-4 font-semibold">ชื่อ-นามสกุล</th>
-                <th className="px-6 py-4 font-semibold">สถานะคำร้อง</th>
+                <th className="px-6 py-4 font-semibold">สถานะใบสมัคร</th>
                 <th className="px-6 py-4 font-semibold"></th>
               </tr>
             </thead>
@@ -384,7 +384,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={(isCommitteeHead ||isPresidentRole )? 6 : 5}
+                    colSpan={isCommitteeHead || isPresidentRole ? 6 : 5}
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     Loading...
@@ -393,10 +393,10 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
               ) : filteredRequests.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={(isCommitteeHead || isPresidentRole) ? 6 : 5}
+                    colSpan={isCommitteeHead || isPresidentRole ? 6 : 5}
                     className="px-6 py-8 text-center text-gray-500"
                   >
-                    ไม่พบคำร้อง
+                    ไม่พบใบสมัคร
                   </td>
                 </tr>
               ) : (
@@ -405,7 +405,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
                     key={req.RequestID}
                     className="hover:bg-gray-50 transition-colors"
                   >
-                    {(isCommitteeHead || isPresidentRole )&& (
+                    {(isCommitteeHead || isPresidentRole) && (
                       <td
                         className="px-4 py-4 cursor-pointer"
                         onClick={() =>
