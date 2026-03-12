@@ -42,7 +42,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
       setLoading(true);
       let data: Request[] = [];
 
-      console.log("USER",user)
+      console.log("USER", user);
       if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
         const res = await api.getCommitteeRequest();
         data = res.data;
@@ -345,10 +345,14 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
                     ? handlePresidentApproveClick
                     : () => {}
               }
-              disabled={isPresidentRole ? false : selectedRequestIds.length === 0}
+              disabled={
+                isPresidentRole ? false : selectedRequestIds.length === 0
+              }
               className="bg-primary hover:bg-primary-hover disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium"
             >
-              {isPresidentRole ? "อนุมัติ" : `อนุมัติที่เลือก ${selectedRequestIds.length}` }
+              {isPresidentRole
+                ? "อนุมัติ"
+                : `อนุมัติที่เลือก ${selectedRequestIds.length}`}
             </button>
           )}
 
@@ -383,7 +387,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 text-sm">
-                {(isCommitteeHead ) && (
+                {isCommitteeHead && (
                   <th className="px-4 py-4 font-semibold w-12">
                     <input
                       type="checkbox"
@@ -404,7 +408,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={(isCommitteeHead)? 6 : 5}
+                    colSpan={isCommitteeHead ? 6 : 5}
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     Loading...
@@ -413,7 +417,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
               ) : filteredRequests.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={(isCommitteeHead) ? 6 : 5}
+                    colSpan={isCommitteeHead ? 6 : 5}
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     ไม่พบใบสมัคร
@@ -422,10 +426,10 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
               ) : (
                 filteredRequests.map((req) => (
                   <tr
-                    key={req.RequestID}
+                    key={req.request_id}
                     className="hover:bg-gray-50 transition-colors"
                   >
-                    {(isCommitteeHead)&& (
+                    {isCommitteeHead && (
                       <td
                         className="px-4 py-4 cursor-pointer"
                         onClick={() =>
