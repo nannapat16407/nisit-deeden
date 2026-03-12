@@ -1,25 +1,17 @@
 import { Period } from "@/types/period.type";
 import { RequestAwardGroup } from "@/types/request.type";
 import { User } from "@/types/user.type";
+import { api } from "@/lib/api";
 import { promises as fs } from "fs";
 import path from "path";
 import { PDFDocument, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 
-type CommitteePDFResult = {
-  filename: string;
-  absolutePath: string;
-  publicPath: string;
-};
-
 export async function genCommitteePDF(
   issue_account: User,
   period: Period,
   award_groups_req: RequestAwardGroup[],
-): Promise<CommitteePDFResult> {
-  const outputDir = path.join(process.cwd(), "public", "temp", "committee_pdf");
-  await fs.mkdir(outputDir, { recursive: true });
-
+): Promise<Uint8Array> {
   const lines: string[] = [];
   lines.push(`รายการอนุมติรางวัลในช่วงปีการศึกษา ${period.academic_year}/${period.semester}`);
   lines.push("");
@@ -37,14 +29,26 @@ export async function genCommitteePDF(
       group.award_id;
     lines.push(`กลุ่มที่ ${sectionIndex} รางวัล ${awardName}`);
 
-    approved.forEach((request, index) => {
-      const requesterName =
-        request.Owner?.fname && request.Owner?.lname
-          ? `${request.Owner.fname} ${request.Owner.lname}`
-          : [request.owner_fname, request.owner_lname].filter(Boolean).join(" ") || "-";
-      const requestId = request.RequestID || request.request_id || "-";
-      lines.push(`   ${index + 1}) ${requesterName} | Request: ${requestId}`);
-    });
+    for (const [index, request] of approved.entries()) {
+      const prefix =
+        request.Owner?.prefix || request.prefix || request.owner_prefix || "";
+      const firstName = request.Owner?.fname || request.fname || request.owner_fname || "";
+      const lastName = request.Owner?.lname || request.lname || request.owner_lname || "";
+      const fullName = [prefix, firstName, lastName].filter(Boolean).join(" ").trim() || "-";
+
+      const rawUsername =
+        request.Owner?.username ||
+        request.owner_student_id ||
+        request.student_id ||
+        "";
+      const usernameMatch = rawUsername.match(/^.*(\d{10})$/);
+      const displayUsername = usernameMatch ? usernameMatch[1] : rawUsername;
+      const requesterName = displayUsername
+        ? `${fullName} ${displayUsername}`
+        : fullName;
+
+      lines.push(`   ${index + 1}) |  ${requesterName}`);
+    }
     lines.push("");
     sectionIndex += 1;
   }
@@ -55,7 +59,7 @@ export async function genCommitteePDF(
   }
 
   const signatureLabel = "ลงชื่อ";
-  const signatureName = `${issue_account.prefix || ""} ${issue_account.fname} ${issue_account.lname}`.trim();
+  const signatureName = `${issue_account.prefix || ""} ${issue_account.first_name} ${issue_account.last_name}`.trim();
   const thaiMonths = [
     "มกราคม",
     "กุมภาพันธ์",
@@ -72,16 +76,6 @@ export async function genCommitteePDF(
   ];
   const issueDate = new Date();
   const signatureDate = `วันที่ ${issueDate.getDate()} เดือน ${thaiMonths[issueDate.getMonth()]} ปี พ.ศ. ${issueDate.getFullYear() + 543}`;
-
-  const now = new Date();
-  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(
-    now.getDate(),
-  ).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(
-    now.getMinutes(),
-  ).padStart(2, "0")}${String(now.getSeconds()).padStart(2, "0")}`;
-  const filename = `committee-approve-${period.period_id}.pdf`;
-  const absolutePath = path.join(outputDir, filename);
-  const publicPath = `/temp/committee_pdf/${filename}`;
 
   const fontDir = path.join(process.cwd(), "public", "fonts");
   const configuredFont = process.env.PDF_FONT_FILE;
@@ -151,8 +145,5 @@ export async function genCommitteePDF(
     color: rgb(0.1, 0.1, 0.1),
   });
 
-  const pdfBytes = await pdfDoc.save();
-  await fs.writeFile(absolutePath, Buffer.from(pdfBytes));
-
-  return { filename, absolutePath, publicPath };
+  return pdfDoc.save();
 }

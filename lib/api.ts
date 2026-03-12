@@ -1,4 +1,7 @@
-import { AuthResponse, MeResponse } from "@/types/user.type";
+import {
+  AuthResponse,
+  MeResponse,
+} from "@/types/user.type";
 import { Period, CreatePeriodRequest, PeriodState } from "@/types/period.type";
 import { Award, CreateAwardRequest } from "@/types/award.type";
 import {
@@ -576,6 +579,32 @@ class ApiClient {
 
   async getPresidentRequest(): Promise<{ data: RequestType[] }> {
     return this.fetch("/api/president/requests");
+  }
+
+  async uploadPresidentPdf(
+    periodId: string,
+    file: File,
+  ): Promise<{ message: string; data: any }> {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(
+      `${this.baseURL}/api/president/upload/period/${periodId}`,
+      {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || errorData.message || "Failed to upload committee PDF",
+      );
+    }
+
+    return response.json();
   }
 }
 

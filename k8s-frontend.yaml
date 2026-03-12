@@ -1,4 +1,3 @@
-# 1. Deployment: สั่งรัน Container ของ Next.js
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,13 +14,21 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: kuis-frontend:latest # ชื่อ Image ที่เราจะให้ GitHub Actions สร้าง
-        imagePullPolicy: Never # สำคัญมาก! บังคับให้ K8s ดึง Image จากเครื่องเราเอง ไม่ต้องไปหาบนเน็ต
+        # LOCAL DEV (imagePullPolicy: Never):
+        #   eval $(minikube docker-env)
+        #   docker compose build  (หรือ make docker-build-prod)
+        #
+        # CI/GHCR (imagePullPolicy: Always):
+        #   image: ghcr.io/472-68-agiledevops/kuis-frontend:develop-latest
+        image: kuis-frontend:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 3000
+        # NEXT_PUBLIC_* ถูก bake เข้า image ตอน build แล้ว ไม่สามารถ override ที่ runtime ได้
+        # ต้อง build image ด้วย NEXT_PUBLIC_API_URL=http://api.kuis-award.local
+        # ดู Dockerfile.prod และ docker-compose.yml
 
 ---
-# 2. Service: เปิดช่องทางให้ระบบอื่นๆ คุยกับ Front-end ได้
 apiVersion: v1
 kind: Service
 metadata:
@@ -35,7 +42,6 @@ spec:
     targetPort: 3000
 
 ---
-# 3. Ingress: รับ Traffic จาก Domain kuis-award.local วิ่งเข้าหา Service
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
