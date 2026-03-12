@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect, use } from "react";
 import { Award } from "@/types/award.type";
+import { Period } from "@/types/period.type";
 import AwardCard from "@/components/reward/AwardCard";
 import AwardFormModal from "@/components/reward/AwardFormModal";
 import { api } from "@/lib/api";
 import { useAlertPopUp } from "@/components/pop-up/AlertPopUp";
+import { useConfirmPopUp } from "@/components/pop-up/ConfirmPopUp";
 import { useRouter } from "next/navigation";
 
 // Define Page Props as a Promise for params
@@ -21,11 +23,26 @@ export default function RequestPeriodRewardsPage({
 
   const router = useRouter();
   const { setAlert } = useAlertPopUp();
+  const confirm = useConfirmPopUp();
   const [awards, setAwards] = useState<Award[]>([]);
+  const [period, setPeriod] = useState<Period | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAward, setEditingAward] = useState<Award | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchPeriod = async () => {
+    try {
+      const response = await api.getPeriods();
+      const periods = response?.data || [];
+      const currentPeriod = periods.find(
+        (p: Period) => String(p.period_id).trim() === String(periodId).trim(),
+      );
+      setPeriod(currentPeriod || null);
+    } catch (err) {
+      console.error("Failed to fetch period:", err);
+    }
+  };
 
   const fetchAwards = async () => {
     try {
@@ -73,6 +90,7 @@ export default function RequestPeriodRewardsPage({
 
   useEffect(() => {
     if (periodId) {
+      fetchPeriod();
       fetchAwards();
     }
   }, [periodId]);
@@ -110,20 +128,36 @@ export default function RequestPeriodRewardsPage({
         "requirement_json",
         awardToUpdate.requirement_json || "[]",
       );
-      formData.append("is_active", (!currentStatus).toString());
+
+      // Convert boolean to string for FormData
+      const newStatus = !currentStatus;
+      formData.append("is_active", newStatus ? "true" : "false");
+
       formData.append("campus_id", awardToUpdate.campus_id?.toString() || "1");
       formData.append("period_id", periodId);
 
+      console.log("=== Toggle Status Debug ===");
+      console.log("Award ID:", id);
+      console.log("Current Status:", currentStatus);
+      console.log("New Status:", newStatus);
+      console.log("FormData is_active:", newStatus ? "true" : "false");
+
       const res = await api.updateAward(id, formData);
 
+      console.log("=== Response from API ===");
+      console.log("Response data:", res.data);
+      console.log("Response data.is_active:", res.data.is_active);
+
+      // Update local state with response data
       setAwards(awards.map((a) => (a.award_id === id ? res.data : a)));
 
       setAlert({
         open: true,
-        msg: `เปลี่ยนสถานะรางวัลเป็น ${!currentStatus ? "เปิดใช้งาน" : "ปิดใช้งาน"} สำเร็จ`,
+        msg: `เปลี่ยนสถานะรางวัลเป็น ${newStatus ? "เปิดใช้งาน" : "ปิดใช้งาน"} สำเร็จ`,
         severity: "success",
       });
     } catch (err: any) {
+      console.error("Toggle status error:", err);
       setAlert({
         open: true,
         msg:
@@ -135,23 +169,45 @@ export default function RequestPeriodRewardsPage({
   };
 
   const handlDelete = async (id: string) => {
-    if (window.confirm("คุณแน่ใจหรือไม่ที่จะลบรางวัลนี้?")) {
-      try {
-        await api.deleteAward(id);
-        setAwards(awards.filter((a) => a.award_id !== id));
+    // ตรวจสอบว่าถึงเวลาเริ่มช่วงรับสมัครแล้วหรือไม่
+    if (period) {
+      const now = new Date();
+      const startDate = new Date(period.start_date);
+
+      if (now >= startDate) {
         setAlert({
           open: true,
-          msg: "ลบรางวัลสำเร็จ",
-          severity: "success",
-        });
-      } catch (err: any) {
-        setAlert({
-          open: true,
-          msg: "เกิดข้อผิดพลาดในการลบ: " + (err.message || "Unknown error"),
+          msg: "ไม่สามารถลบรางวัลได้ เนื่องจากถึงเวลาเริ่มรับสมัครแล้ว",
           severity: "error",
         });
+        return;
       }
     }
+
+    confirm.trigger({
+      title: "ยืนยันการลบรางวัล",
+      message:
+        "คุณแน่ใจหรือไม่ที่จะลบรางวัลนี้? การกระทำนี้ไม่สามารถย้อนกลับได้",
+      confirmText: "ลบ",
+      cancelText: "ยกเลิก",
+      onConfirm: async () => {
+        try {
+          await api.deleteAward(id);
+          setAwards(awards.filter((a) => a.award_id !== id));
+          setAlert({
+            open: true,
+            msg: "ลบรางวัลสำเร็จ",
+            severity: "success",
+          });
+        } catch (err: any) {
+          setAlert({
+            open: true,
+            msg: "เกิดข้อผิดพลาดในการลบ: " + (err.message || "Unknown error"),
+            severity: "error",
+          });
+        }
+      },
+    });
   };
 
   // Typo fix: handleDelete
@@ -182,9 +238,25 @@ export default function RequestPeriodRewardsPage({
       }
       setIsModalOpen(false);
     } catch (err: any) {
+      console.error("Award save error:", err);
+
+      let errorMessage = "เกิดข้อผิดพลาด";
+
+      if (err.message) {
+        if (
+          err.message.includes("Failed to fetch") ||
+          err.message.includes("ERR_CONNECTION")
+        ) {
+          errorMessage =
+            "การเชื่อมต่อล้มเหลว: ไฟล์อาจมีขนาดใหญ่เกินไป (ต้องไม่เกิน 10 MB) หรือ Backend ไม่ตอบสนอง";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
       setAlert({
         open: true,
-        msg: "เกิดข้อผิดพลาด: " + (err.message || "Unknown error"),
+        msg: errorMessage,
         severity: "error",
       });
     }

@@ -49,7 +49,7 @@ export default function RequestPage() {
       } else if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
         const res = await api.getCommitteeRequest();
         data = res.data;
-      } else if (role === "PRESIDENT"){
+      } else if (role === "PRESIDENT") {
         const res = await api.getPresidentRequest();
         data = res.data;
       } else {
@@ -120,7 +120,7 @@ export default function RequestPage() {
     <div className="w-full">
       <div className="mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-gray-800">รายการคำร้อง</h1>
+          <h1 className="text-2xl font-bold text-gray-800">รายการใบสมัคร</h1>
           {roleBadge && (
             <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-1 rounded">
               {roleBadge}
@@ -129,19 +129,22 @@ export default function RequestPage() {
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          {!roleBadge && (
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="ALL">สถานะคำร้อง (ทั้งหมด)</option>
-              <option value="PENDING_HEAD">รอหัวหน้าภาคฯ</option>
-              <option value="PENDING_VICEDEAN">รอรองคณบดี</option>
-              <option value="PENDING_DEAN">รอคณบดี</option>
-              {/* Add more options */}
-            </select>
-          )}
+          {!roleBadge &&
+            role !== "DEPARTMENT_HEAD" &&
+            role !== "VICE_DEAN" &&
+            role !== "DEAN" && (
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="ALL">สถานะใบสมัคร (ทั้งหมด)</option>
+                <option value="PENDING_HEAD">รอหัวหน้าภาคฯ</option>
+                <option value="PENDING_VICEDEAN">รอรองคณบดี</option>
+                <option value="PENDING_DEAN">รอคณบดี</option>
+                {/* Add more options */}
+              </select>
+            )}
 
           <div className="relative flex-1 md:w-64">
             <input
@@ -174,10 +177,10 @@ export default function RequestPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 text-sm">
-                <th className="px-6 py-4 font-semibold">วันที่ยื่นคำร้อง</th>
+                <th className="px-6 py-4 font-semibold">วันที่ยื่นใบสมัคร</th>
                 <th className="px-6 py-4 font-semibold">ประเภทรางวัล</th>
                 <th className="px-6 py-4 font-semibold">ชื่อ-นามสกุล</th>
-                <th className="px-6 py-4 font-semibold">สถานะคำร้อง</th>
+                <th className="px-6 py-4 font-semibold">สถานะใบสมัคร</th>
                 <th className="px-6 py-4 font-semibold"></th>
               </tr>
             </thead>
@@ -197,7 +200,7 @@ export default function RequestPage() {
                     colSpan={5}
                     className="px-6 py-8 text-center text-gray-500"
                   >
-                    ไม่พบคำร้อง
+                    ไม่พบใบสมัคร
                   </td>
                 </tr>
               ) : (

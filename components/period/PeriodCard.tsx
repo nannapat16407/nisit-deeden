@@ -8,7 +8,7 @@ interface PeriodCardProps {
   onDelete: (id: string) => void;
   showButtons?: boolean;
   isCommitteeRole?: boolean;
-  isPresidentRole? : boolean;
+  isPresidentRole?: boolean;
   committeeDocumentAvailable?: boolean;
   presidentDocumentAvailable?: boolean;
   onPDFView?: (periodId: string) => void;
@@ -66,8 +66,6 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
       </div>
 
       <div className="flex items-center gap-4">
-
-
         <div
           className={`px-3 py-1 rounded-full text-xs font-bold ${isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}
         >
@@ -120,7 +118,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
               <path d="M3 12h.01" />
               <path d="M3 18h.01" />
             </svg>
-            ดูคำร้อง
+            ใบสมัครทั้งหมด
           </Link>
         )}
         

@@ -32,51 +32,54 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [selectedRequestIds, setSelectedRequestIds] = useState<string[]>([]);
 
   const isCommitteeHead = role === "COMMITTEE_HEAD";
   const isPresidentRole = role === "PRESIDENT";
+  const isSDRole = role === "SD_STAFF";
 
   const fetchRequests = async () => {
     try {
       setLoading(true);
       let data: Request[] = [];
 
-      console.log("USER",user)
-      if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
-        const res = await api.getCommitteeRequest();
-        data = res.data;
-        // console.log(data)
-
-      } else if(role === "PRESIDENT"){
-
-        const res = await api.getPresidentRequest();
-        data = res.data;
-      } else if (role !== "STUDENT") {
-        const res = await api.getDeptRequests();
-        data = res.data;
+      if (isSDRole) {
+        const res = await api.getSDAllRequests();
+        data = res.data || [];
+        setRequests(data);
       } else {
-        console.warn("No fetcher for role:", role);
-        router.back();
+        if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
+          const res = await api.getCommitteeRequest();
+          data = res.data;
+        } else if (role === "PRESIDENT") {
+          const res = await api.getPresidentRequest();
+          data = res.data;
+        } else if (role !== "STUDENT") {
+          const res = await api.getDeptRequests();
+          data = res.data;
+        } else {
+          console.warn("No fetcher for role:", role);
+          router.back();
+        }
+
+        const res = await api.getAvailableAwards();
+        const awards: Award[] = Array.isArray(res.data)
+          ? res.data
+              .flatMap((p: any) => (Array.isArray(p?.awards) ? p.awards : []))
+              .filter((award): award is Award => Boolean(award))
+          : [];
+
+        const periodAwardIds = new Set(
+          awards
+            .filter((award) => award?.period_id === periodId)
+            .map((award) => award.award_id),
+        );
+        const filteredByPeriod = data.filter((req) =>
+          req.award_id ? periodAwardIds.has(req.award_id) : false,
+        );
+        setRequests(filteredByPeriod);
       }
-
-      const res = await api.getAvailableAwards();
-      const awards: Award[] = Array.isArray(res.data)
-        ? res.data
-            .flatMap((p: any) => (Array.isArray(p?.awards) ? p.awards : []))
-            .filter((award): award is Award => Boolean(award))
-        : [];
-
-      const periodAwardIds = new Set(
-        awards
-          .filter((award) => award?.period_id === periodId)
-          .map((award) => award.award_id),
-      );
-      const filteredByPeriod = data.filter((req) =>
-        req.award_id ? periodAwardIds.has(req.award_id) : false,
-      );
-      console.log(filteredByPeriod);
-      setRequests(filteredByPeriod);
     } catch (err: any) {
       console.error("Failed to fetch requests:", err);
       if (
@@ -108,17 +111,20 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
       req.status !== "PENDING_COMMITTEE"
     )
       return false;
-    else if (
-      (role === "PRESIDENT") && req.status !== "PENDING_PRESIDENT"
-    )
+    else if (role === "PRESIDENT" && req.status !== "PENDING_PRESIDENT")
+      return false;
+
+    // Status filter for SD
+    if (isSDRole && statusFilter !== "ALL" && req.status !== statusFilter)
       return false;
 
     const searchLower = search.toLowerCase();
+    const displayName =
+      req.student_name ||
+      `${req.owner_fname || ""} ${req.owner_lname || ""}`.trim();
     const matchesSearch =
       req.award_name?.toLowerCase().includes(searchLower) ||
-      (req.owner_fname + " " + req.owner_lname)
-        .toLowerCase()
-        .includes(searchLower);
+      displayName.toLowerCase().includes(searchLower);
 
     return matchesSearch;
   });
@@ -152,7 +158,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
     if (selectedRequestIds.length === 0) {
       setAlert({
         open: true,
-        msg: "กรุณาเลือกรายการคำร้องก่อนอนุมัติ",
+        msg: "กรุณาเลือกรายการใบสมัครก่อนอนุมัติ",
         severity: "warning",
       });
       return;
@@ -211,7 +217,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
         throw new Error("Generate committee PDF failed");
       }
 
-      const pdfResult = await pdfResponse.json();
+      const generatedPdfBlob = await pdfResponse.blob();
       const approveIds = selectedRequestIds;
       const rejectIds = requests
         .map((req) => req.RequestID || req.request_id || "")
@@ -223,19 +229,6 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
         `Committee bulk review for period ${periodId}`,
       );
 
-      const generatedPdfPath = pdfResult?.data?.publicPath as
-        | string
-        | undefined;
-      if (!generatedPdfPath) {
-        throw new Error("Missing generated PDF path");
-      }
-
-      const generatedPdfResponse = await fetch(generatedPdfPath);
-      if (!generatedPdfResponse.ok) {
-        throw new Error("Failed to read generated PDF");
-      }
-
-      const generatedPdfBlob = await generatedPdfResponse.blob();
       const uploadFile = new File(
         [generatedPdfBlob],
         `committee-approve-${periodId}.pdf`,
@@ -302,7 +295,8 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
   const handlePresidentApproveClick = () => {
     triggerPDFUploadPopUp({
       title: "ยืนยันการอนุมัติ",
-      message: "คุณแน่ใจหรือไม่ว่าต้องการอนุมัติคำร้องในรอบนี้",
+      message:
+        "อัพโหลดไฟล์ PDF ประกาศมหาวิทยาลัยที่ลงนามโดยอธิการบดีเพื่ออนุมัติใบสมัครในรอบนี้",
       confirmText: "อนุมัติ",
       cancelText: "ยกเลิก",
       onConfirm: presidentApproveCallback,
@@ -310,6 +304,24 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
   };
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case "PENDING_HEAD":
+        return (
+          <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+            รอหัวหน้าภาค
+          </span>
+        );
+      case "PENDING_VICEDEAN":
+        return (
+          <span className="bg-orange-100 text-orange-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+            รอรองคณบดี
+          </span>
+        );
+      case "PENDING_DEAN":
+        return (
+          <span className="bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+            รอคณบดี
+          </span>
+        );
       case "PENDING_SD":
         return (
           <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
@@ -326,6 +338,19 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
         return (
           <span className="bg-pink-100 text-pink-800 text-xs font-semibold px-2.5 py-0.5 rounded">
             รออธิการบดี
+          </span>
+        );
+      case "NEEDS_DOCS":
+        return (
+          <span className="bg-red-100 text-red-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+            ขอเอกสารเพิ่ม
+          </span>
+        );
+      case "COMPLETED":
+      case "COMPLETE":
+        return (
+          <span className="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+            เสร็จสิ้น
           </span>
         );
       default:
@@ -348,7 +373,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
       <div className="mb-6 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-gray-800">
-            รายการคำร้องในรอบนี้
+            รายการใบสมัครในรอบนี้
           </h1>
         </div>
 
@@ -356,15 +381,39 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
           {(isCommitteeHead || isPresidentRole) && (
             <button
               onClick={
-                isCommitteeHead ? handleApproveClick : (
-                  isPresidentRole ? handlePresidentApproveClick : () => {}
-                )
+                isCommitteeHead
+                  ? handleApproveClick
+                  : isPresidentRole
+                    ? handlePresidentApproveClick
+                    : () => {}
               }
-              disabled={isPresidentRole ? false : selectedRequestIds.length === 0}
+              disabled={
+                isPresidentRole ? false : selectedRequestIds.length === 0
+              }
               className="bg-primary hover:bg-primary-hover disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium"
             >
-              {isPresidentRole ? "อนุมัติ" : `อนุมัติที่เลือก ${selectedRequestIds.length}` }
+              {isPresidentRole
+                ? "อนุมัติ"
+                : `อนุมัติที่เลือก ${selectedRequestIds.length}`}
             </button>
+          )}
+
+          {isSDRole && (
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="ALL">ทุกสถานะ</option>
+              <option value="PENDING_HEAD">รอหัวหน้าภาค</option>
+              <option value="PENDING_VICEDEAN">รอรองคณบดี</option>
+              <option value="PENDING_DEAN">รอคณบดี</option>
+              <option value="PENDING_SD">รอกองกิจฯ</option>
+              <option value="PENDING_COMMITTEE">รอคณะกรรมการ</option>
+              <option value="PENDING_PRESIDENT">รออธิการบดี</option>
+              <option value="NEEDS_DOCS">ขอเอกสารเพิ่ม</option>
+              <option value="COMPLETED">เสร็จสิ้น</option>
+            </select>
           )}
 
           <div className="relative flex-1 md:w-64">
@@ -398,7 +447,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-gray-600 text-sm">
-                {(isCommitteeHead ) && (
+                {isCommitteeHead && (
                   <th className="px-4 py-4 font-semibold w-12">
                     <input
                       type="checkbox"
@@ -408,10 +457,10 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
                     />
                   </th>
                 )}
-                <th className="px-6 py-4 font-semibold">วันที่ยื่นคำร้อง</th>
+                <th className="px-6 py-4 font-semibold">วันที่ยื่นใบสมัคร</th>
                 <th className="px-6 py-4 font-semibold">ประเภทรางวัล</th>
                 <th className="px-6 py-4 font-semibold">ชื่อ-นามสกุล</th>
-                <th className="px-6 py-4 font-semibold">สถานะคำร้อง</th>
+                <th className="px-6 py-4 font-semibold">สถานะใบสมัคร</th>
                 <th className="px-6 py-4 font-semibold"></th>
               </tr>
             </thead>
@@ -419,7 +468,7 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={(isCommitteeHead)? 6 : 5}
+                    colSpan={isCommitteeHead ? 6 : 5}
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     Loading...
@@ -428,19 +477,19 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
               ) : filteredRequests.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={(isCommitteeHead) ? 6 : 5}
+                    colSpan={isCommitteeHead ? 6 : 5}
                     className="px-6 py-8 text-center text-gray-500"
                   >
-                    ไม่พบคำร้อง
+                    ไม่พบใบสมัคร
                   </td>
                 </tr>
               ) : (
                 filteredRequests.map((req) => (
                   <tr
-                    key={req.RequestID}
+                    key={req.request_id}
                     className="hover:bg-gray-50 transition-colors"
                   >
-                    {(isCommitteeHead)&& (
+                    {isCommitteeHead && (
                       <td
                         className="px-4 py-4 cursor-pointer"
                         onClick={() =>
@@ -467,12 +516,18 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
                     </td>
                     <td className="px-6 py-4">{req.award_name || "-"}</td>
                     <td className="px-6 py-4">
-                      {`${req.owner_fname} ${req.owner_lname}`}
+                      {req.student_name ||
+                        `${req.owner_fname || ""} ${req.owner_lname || ""}`.trim() ||
+                        "-"}
                     </td>
                     <td className="px-6 py-4">{getStatusBadge(req.status)}</td>
                     <td className="px-6 py-4 text-right">
                       <Link
-                        href={`/request/${req.request_id}`}
+                        href={
+                          isSDRole
+                            ? `/request/${req.request_id}?view=true`
+                            : `/request/${req.request_id}`
+                        }
                         className="text-emerald-600 hover:text-emerald-800 font-medium"
                       >
                         ดูรายละเอียด &gt;

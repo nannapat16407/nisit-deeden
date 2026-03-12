@@ -22,9 +22,18 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
   const [isActive, setIsActive] = useState(true);
   const [fileName, setFileName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string>("");
 
   // Dynamic Requirements State
   const [requirements, setRequirements] = useState<Requirement[]>([]);
+
+  // Helper: แปลง label เป็นภาษาไทย
+  const getDisplayLabel = (label: string): string => {
+    const labelMap: Record<string, string> = {
+      ใบสมัครที่ลงนามโดยนิสิต: "ใบสมัครที่ลงนามโดยนิสิต",
+    };
+    return labelMap[label] || label;
+  };
 
   useEffect(() => {
     if (isOpen && initialData) {
@@ -36,8 +45,22 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
         const parsedReqs = initialData.requirement_json
           ? JSON.parse(initialData.requirement_json)
           : [];
+
+        // Deduplicate ใบสมัครที่ลงนามโดยนิสิต/ใบสมัครที่ลงนามโดยนิสิต - keep only first occurrence
+        const seenSystemLabel = new Set<string>();
+        const deduplicatedReqs = parsedReqs.filter((req: any) => {
+          const isSystemLabel = req.label === "ใบสมัครที่ลงนามโดยนิสิต";
+          if (isSystemLabel) {
+            if (seenSystemLabel.has("SYSTEM")) {
+              return false; // Skip duplicate
+            }
+            seenSystemLabel.add("SYSTEM");
+          }
+          return true;
+        });
+
         // Ensure all requirements have extensions array
-        const normalizedReqs = parsedReqs.map((req: any) => ({
+        const normalizedReqs = deduplicatedReqs.map((req: any) => ({
           ...req,
           extensions: req.extensions || [],
           required: req.required !== undefined ? req.required : true,
@@ -98,16 +121,41 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate file size if file is selected
+    if (selectedFile) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (selectedFile.size > maxSize) {
+        setFileError(
+          `ไฟล์ขนาดใหญ่เกินไป (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB) กรุณาเลือกไฟล์ที่มีขนาดไม่เกิน 10 MB`,
+        );
+        return;
+      }
+    }
+
     const formData = new FormData();
     formData.append("award_name", name);
     formData.append("award_type", "General"); // Defaulting correctly
     formData.append("description", description);
     formData.append("is_active", isActive ? "true" : "false");
-    formData.append("requirement_json", JSON.stringify(requirements));
+
+    // Filter out existing ใบสมัครที่ลงนามโดยนิสิต/ใบสมัครที่ลงนามโดยนิสิต to prevent duplicates
+    const filteredRequirements = requirements.filter(
+      (req) => req.label !== "ใบสมัครที่ลงนามโดยนิสิต",
+    );
+
+    // Inject ใบสมัครที่ลงนามโดยนิสิต requirement at the beginning
+    const signByStudentReq = {
+      label: "ใบสมัครที่ลงนามโดยนิสิต",
+      type: "file",
+      required: true,
+      extensions: ["pdf"],
+    };
+    const finalRequirements = [signByStudentReq, ...filteredRequirements];
+    formData.append("requirement_json", JSON.stringify(finalRequirements));
 
     if (selectedFile) {
       formData.append("template_file", selectedFile);
-      formData.append("label", "แม่แบบเอกสาร");
+      formData.append("label", "TEMPLATE");
     }
 
     onSave(formData, initialData?.award_id);
@@ -203,12 +251,15 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
               {/* File Upload Element */}
               <div className="space-y-1 md:col-span-2">
                 <label className="text-sm font-medium text-gray-700">
-                  แบบฟอร์มใบสมัคร (ถ้ามี)
+                  แบบฟอร์มใบสมัคร (ถ้ามี){" "}
+                  <span className="text-xs text-gray-500">
+                    ขนาดไม่เกิน 10 MB
+                  </span>
                 </label>
                 <div className="border border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 flex flex-col items-center justify-center text-center relative cursor-pointer hover:bg-gray-100 transition-colors">
                   <span className="text-sm text-gray-500 max-w-full truncate px-2">
                     {selectedFile
-                      ? selectedFile.name
+                      ? `${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)`
                       : fileName
                         ? fileName.split("/").pop()
                         : "ยังไม่ได้เลือกไฟล์"}
@@ -218,7 +269,19 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-[0px]"
                     onChange={(e) => {
                       if (e.target.files && e.target.files.length > 0) {
-                        setSelectedFile(e.target.files[0]);
+                        const file = e.target.files[0];
+                        const maxSize = 10 * 1024 * 1024; // 10MB
+
+                        if (file.size > maxSize) {
+                          setFileError(
+                            `ไฟล์ขนาดใหญ่เกินไป (${(file.size / 1024 / 1024).toFixed(2)} MB) กรุณาเลือกไฟล์ที่มีขนาดไม่เกิน 10 MB`,
+                          );
+                          e.target.value = ""; // Reset input
+                          return;
+                        }
+
+                        setFileError("");
+                        setSelectedFile(file);
                       }
                     }}
                     accept=".pdf,.doc,.docx"
@@ -230,6 +293,26 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                     เลือกไฟล์ (PDF/Docx)
                   </button>
                 </div>
+                {fileError && (
+                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    {fileError}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -255,139 +338,229 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                   ยังไม่มีข้อกำหนด กดปุ่ม "+ เพิ่ม requirement" ด้านบน
                 </p>
               )}
-              {requirements.map((req, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 bg-gray-50 rounded-lg border border-gray-200 relative group"
-                >
-                  <button
-                    type="button"
-                    onClick={() => removeRequirement(idx)}
-                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-1"
+              {requirements.map((req, idx) => {
+                const isSystemRequired =
+                  req.label === "ใบสมัครที่ลงนามโดยนิสิต";
+                return (
+                  <div
+                    key={idx}
+                    className={`p-4 rounded-lg border relative group ${
+                      isSystemRequired
+                        ? "bg-gray-100 border-gray-300 opacity-75"
+                        : "bg-gray-50 border-gray-200"
+                    }`}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                  </button>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-6">
-                    {/* Label Input */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 mb-1 block">
-                        ชื่อข้อมูล (เช่น ใบเกรด, รูปถ่าย)
-                      </label>
-                      <input
-                        type="text"
-                        value={req.label}
-                        onChange={(e) =>
-                          updateRequirement(idx, "label", e.target.value)
-                        }
-                        className="w-full text-sm bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 border px-3 py-1.5"
-                        placeholder="ระบุชื่อ..."
-                      />
-                    </div>
-
-                    {/* Type Select */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 mb-1 block">
-                        ประเภท
-                      </label>
-                      <select
-                        value={req.type}
-                        onChange={(e) =>
-                          updateRequirement(idx, "type", e.target.value)
-                        }
-                        className="w-full text-sm bg-white text-gray-900 border-gray-300 rounded-md shadow-sm focus:border-emerald-500 focus:ring-emerald-500 border px-3 py-1.5"
+                    {/* ซ่อนปุ่มลบถ้าเป็น ใบสมัครที่ลงนามโดยนิสิต */}
+                    {!isSystemRequired && (
+                      <button
+                        type="button"
+                        onClick={() => removeRequirement(idx)}
+                        className="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-1"
                       >
-                        <option value="text">ข้อความ (Text)</option>
-                        <option value="file">เอกสาร (File)</option>
-                        <option value="image">รูปภาพ (Image)</option>
-                      </select>
-                    </div>
-
-                    {/* File Extensions (Condition) */}
-                    {(req.type === "file" || req.type === "image") && (
-                      <div className="md:col-span-2">
-                        <label className="text-xs font-medium text-gray-600 mb-1 block">
-                          นามสกุลไฟล์ที่รองรับ
-                        </label>
-                        <div className="flex flex-wrap gap-2 text-xs">
-                          {req.type === "file" && (
-                            <>
-                              <label className="inline-flex items-center gap-1 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={req.extensions.includes("pdf")}
-                                  onChange={() => toggleExtension(idx, "pdf")}
-                                  className="rounded text-emerald-600 focus:ring-emerald-500"
-                                />
-                                <span>PDF</span>
-                              </label>
-                              <label className="inline-flex items-center gap-1 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={req.extensions.includes("docx")}
-                                  onChange={() => toggleExtension(idx, "docx")}
-                                  className="rounded text-emerald-600 focus:ring-emerald-500"
-                                />
-                                <span>DOCX</span>
-                              </label>
-                            </>
-                          )}
-                          {req.type === "image" && (
-                            <>
-                              <label className="inline-flex items-center gap-1 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={req.extensions.includes("png")}
-                                  onChange={() => toggleExtension(idx, "png")}
-                                  className="rounded text-emerald-600 focus:ring-emerald-500"
-                                />
-                                <span>PNG</span>
-                              </label>
-                              <label className="inline-flex items-center gap-1 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={req.extensions.includes("jpg")}
-                                  onChange={() => toggleExtension(idx, "jpg")}
-                                  className="rounded text-emerald-600 focus:ring-emerald-500"
-                                />
-                                <span>JPG/JPEG</span>
-                              </label>
-                            </>
-                          )}
-                        </div>
-                      </div>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </button>
                     )}
 
-                    {/* Checkboxes */}
-                    <div className="md:col-span-2 flex items-center gap-4 mt-1">
-                      <label className="inline-flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-6">
+                      {/* Label Input */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 mb-1 block">
+                          ชื่อข้อมูล (เช่น ใบเกรด, รูปถ่าย)
+                        </label>
                         <input
-                          type="checkbox"
-                          checked={req.required}
-                          onChange={(e) =>
-                            updateRequirement(idx, "required", e.target.checked)
+                          type="text"
+                          value={
+                            isSystemRequired
+                              ? getDisplayLabel(req.label)
+                              : req.label
                           }
-                          className="rounded text-emerald-600 focus:ring-emerald-500"
+                          onChange={(e) =>
+                            updateRequirement(idx, "label", e.target.value)
+                          }
+                          disabled={isSystemRequired}
+                          className={`w-full text-sm border-gray-300 rounded-md shadow-sm border px-3 py-1.5 ${
+                            isSystemRequired
+                              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                              : "bg-white text-gray-900 focus:border-emerald-500 focus:ring-emerald-500"
+                          }`}
+                          placeholder="ระบุชื่อ..."
                         />
-                        <span>จำเป็นต้องระบุ (Required)</span>
-                      </label>
+                      </div>
+
+                      {/* Type Select */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 mb-1 block">
+                          ประเภท
+                        </label>
+                        <select
+                          value={req.type}
+                          onChange={(e) =>
+                            updateRequirement(idx, "type", e.target.value)
+                          }
+                          disabled={isSystemRequired}
+                          className={`w-full text-sm border-gray-300 rounded-md shadow-sm border px-3 py-1.5 ${
+                            isSystemRequired
+                              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                              : "bg-white text-gray-900 focus:border-emerald-500 focus:ring-emerald-500"
+                          }`}
+                        >
+                          <option value="text">ข้อความ (Text)</option>
+                          <option value="file">เอกสาร (File)</option>
+                          <option value="image">รูปภาพ (Image)</option>
+                        </select>
+                      </div>
+
+                      {/* File Extensions (Condition) */}
+                      {(req.type === "file" || req.type === "image") && (
+                        <div className="md:col-span-2">
+                          <label className="text-xs font-medium text-gray-600 mb-1 block">
+                            นามสกุลไฟล์ที่รองรับ
+                          </label>
+                          <div className="flex flex-wrap gap-2 text-xs">
+                            {req.type === "file" && (
+                              <>
+                                <label
+                                  className={`inline-flex items-center gap-1 ${
+                                    isSystemRequired
+                                      ? "cursor-not-allowed"
+                                      : "cursor-pointer"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={req.extensions.includes("pdf")}
+                                    onChange={() => toggleExtension(idx, "pdf")}
+                                    disabled={isSystemRequired}
+                                    className="rounded text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+                                  />
+                                  <span
+                                    className={
+                                      isSystemRequired ? "text-gray-400" : ""
+                                    }
+                                  >
+                                    PDF
+                                  </span>
+                                </label>
+                                <label
+                                  className={`inline-flex items-center gap-1 ${
+                                    isSystemRequired
+                                      ? "cursor-not-allowed"
+                                      : "cursor-pointer"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={req.extensions.includes("docx")}
+                                    onChange={() =>
+                                      toggleExtension(idx, "docx")
+                                    }
+                                    disabled={isSystemRequired}
+                                    className="rounded text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+                                  />
+                                  <span
+                                    className={
+                                      isSystemRequired ? "text-gray-400" : ""
+                                    }
+                                  >
+                                    DOCX
+                                  </span>
+                                </label>
+                              </>
+                            )}
+                            {req.type === "image" && (
+                              <>
+                                <label
+                                  className={`inline-flex items-center gap-1 ${
+                                    isSystemRequired
+                                      ? "cursor-not-allowed"
+                                      : "cursor-pointer"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={req.extensions.includes("png")}
+                                    onChange={() => toggleExtension(idx, "png")}
+                                    disabled={isSystemRequired}
+                                    className="rounded text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+                                  />
+                                  <span
+                                    className={
+                                      isSystemRequired ? "text-gray-400" : ""
+                                    }
+                                  >
+                                    PNG
+                                  </span>
+                                </label>
+                                <label
+                                  className={`inline-flex items-center gap-1 ${
+                                    isSystemRequired
+                                      ? "cursor-not-allowed"
+                                      : "cursor-pointer"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={req.extensions.includes("jpg")}
+                                    onChange={() => toggleExtension(idx, "jpg")}
+                                    disabled={isSystemRequired}
+                                    className="rounded text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+                                  />
+                                  <span
+                                    className={
+                                      isSystemRequired ? "text-gray-400" : ""
+                                    }
+                                  >
+                                    JPG/JPEG
+                                  </span>
+                                </label>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Checkboxes */}
+                      <div className="md:col-span-2 flex items-center gap-4 mt-1">
+                        <label
+                          className={`inline-flex items-center gap-2 text-sm ${
+                            isSystemRequired
+                              ? "cursor-not-allowed text-gray-500"
+                              : "cursor-pointer text-gray-700"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={req.required}
+                            onChange={(e) =>
+                              updateRequirement(
+                                idx,
+                                "required",
+                                e.target.checked,
+                              )
+                            }
+                            disabled={isSystemRequired}
+                            className="rounded text-emerald-600 focus:ring-emerald-500 disabled:opacity-50"
+                          />
+                          <span>จำเป็นต้องระบุ (Required)</span>
+                        </label>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

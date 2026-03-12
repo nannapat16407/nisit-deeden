@@ -1,13 +1,45 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import useAuth from "@/hooks/useAuth";
 import { Request } from "@/types/request.type";
 import { DocType } from "@/types/document..type";
 import PdfViewerFromS3 from "@/components/document/PdfViewerFromS3";
 import Modal from "@/components/common/Modal";
+import {
+  renameFile,
+  generateUploadFileName,
+  getFileExtension as getFileExt,
+} from "@/lib/utils";
+
+// Helper functions for file handling
+const getFileExtension = (url: string): string => {
+  const pathname = new URL(url).pathname;
+  const extension = pathname.split(".").pop()?.toLowerCase() || "";
+  return extension;
+};
+
+const getFileName = (url: string): string => {
+  const pathname = new URL(url).pathname;
+  const fileName = pathname.split("/").pop() || "file";
+  return decodeURIComponent(fileName);
+};
+
+const isImageFile = (extension: string): boolean => {
+  return ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(
+    extension,
+  );
+};
+
+const isPdfFile = (extension: string): boolean => {
+  return extension === "pdf";
+};
+
+const isDocFile = (extension: string): boolean => {
+  return ["doc", "docx"].includes(extension);
+};
 
 import {
   useConfirmPopUp,
@@ -24,6 +56,8 @@ function RequestDetailContent() {
   const { user } = useAuth();
   const role = user?.role;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const viewOnly = searchParams.get("view") === "true";
   const { trigger: triggerConfirmPopUp } = useConfirmPopUp();
   const { trigger: triggerEditDocList } = useEditDocListPopUp();
 
@@ -100,7 +134,7 @@ function RequestDetailContent() {
   const handleSDApproveClick = () => {
     triggerConfirmPopUp({
       title: "ยืนยันการเห็นชอบ",
-      message: "คุณแน่ใจหรือว่าต้องการให้เห็นชอบคำร้องนี้?",
+      message: "คุณแน่ใจหรือว่าต้องการให้เห็นชอบใบสมัครนี้?",
       confirmText: "เห็นชอบ",
       cancelText: "ยกเลิก",
       onConfirm: SDApproveCallback,
@@ -136,8 +170,24 @@ function RequestDetailContent() {
       formData.append("action", action);
       if (reviewComment) formData.append("comment", reviewComment);
       if (reviewFile) {
-        formData.append("signed_file", reviewFile);
-        formData.append("label", "เอกสารลงนามโดยคณบดี");
+        const studentUsername =
+          request.student_id ||
+          request.owner_student_id ||
+          request.username ||
+          request.Owner?.username ||
+          "unknown";
+        const awardName =
+          request.award_name || request.Award?.award_name || "award";
+        const ext = getFileExt(reviewFile.name);
+        const newFileName = generateUploadFileName(
+          studentUsername,
+          awardName,
+          "ใบสมัครที่ลงนามโดยคณบดี",
+          ext,
+          0,
+        );
+        const renamedFile = renameFile(reviewFile, newFileName);
+        formData.append("ใบสมัครที่ลงนามโดยคณบดี", renamedFile);
       }
 
       if (roleName === "DEPARTMENT_HEAD") {
@@ -171,7 +221,7 @@ function RequestDetailContent() {
 
     triggerConfirmPopUp({
       title: "ยืนยันการเห็นชอบ",
-      message: "คุณแน่ใจหรือว่าต้องการให้เห็นชอบคำร้องนี้?",
+      message: "คุณแน่ใจหรือว่าต้องการให้เห็นชอบใบสมัครนี้?",
       confirmText: "เห็นชอบ",
       cancelText: "ยกเลิก",
       onConfirm: () => handleRoleReview(roleName, action),
@@ -251,6 +301,7 @@ function RequestDetailContent() {
                 )}
               </p>
               {role === "SD_STAFF" &&
+                !viewOnly &&
                 (isEditingAward ? (
                   <div className="flex gap-1 ml-2">
                     <button
@@ -330,7 +381,12 @@ function RequestDetailContent() {
               </div>
               <div>
                 <span className="text-gray-500 block">รหัสนิสิต</span>
-                <span className="font-medium text-gray-800 text-lg">-</span>
+                <span className="font-medium text-gray-800 text-lg">
+                  {request.student_id ||
+                    request.owner_student_id ||
+                    request.Owner?.username ||
+                    "-"}
+                </span>
               </div>
               <div>
                 <span className="text-gray-500 block">Email</span>
@@ -370,39 +426,149 @@ function RequestDetailContent() {
             </h2>
 
             {request.attachments && request.attachments.length > 0 ? (
-              request.attachments.map((doc, idx) => (
-                <div
-                  key={doc.attachment_id || idx}
-                  className="border rounded-lg p-4 bg-gray-50 flex flex-col items-center mb-6 last:mb-0"
-                >
-                  <div className="w-full h-auto bg-gray-200 rounded flex items-center justify-center text-gray-400 mb-4 overflow-hidden border">
-                    <PdfViewerFromS3 s3Url={doc.file_url} />
-                  </div>
-                  <a
-                    href={doc.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline font-medium flex items-center gap-2"
+              (() => {
+                let displayAttachments = [...request.attachments];
+
+                // ถ้ามี "ใบสมัครที่ลงนามโดยคณบดี" → ซ่อน "ใบสมัครที่ลงนามโดยนิสิต" แล้วเอา "ใบสมัครที่ลงนามโดยคณบดี" ขึ้นแรก
+                if (
+                  [
+                    "SD_STAFF",
+                    "COMMITTEE",
+                    "COMMITTEE_HEAD",
+                    "PRESIDENT",
+                  ].includes(
+                    typeof role === "string" ? role : role?.RoleName || "",
+                  )
+                ) {
+                  const hasDeanSigned = displayAttachments.some(
+                    (a) => a.label === "ใบสมัครที่ลงนามโดยคณบดี",
+                  );
+                  if (hasDeanSigned) {
+                    displayAttachments = displayAttachments.filter(
+                      (a) => a.label !== "ใบสมัครที่ลงนามโดยนิสิต",
+                    );
+                  }
+                  displayAttachments.sort((a, b) => {
+                    if (a.label === "ใบสมัครที่ลงนามโดยคณบดี") return -1;
+                    if (b.label === "ใบสมัครที่ลงนามโดยคณบดี") return 1;
+                    return 0;
+                  });
+                }
+
+                return displayAttachments;
+              })().map((doc, idx) => {
+                const fileExtension = getFileExtension(doc.file_url);
+                const fileName = getFileName(doc.file_url);
+                const isImage = isImageFile(fileExtension);
+                const isPdf = isPdfFile(fileExtension);
+                const isDoc = isDocFile(fileExtension);
+
+                return (
+                  <div
+                    key={doc.attachment_id || idx}
+                    className="border rounded-lg p-4 bg-gray-50 flex flex-col mb-6 last:mb-0"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                    {/* File Name Header */}
+                    <div className="mb-3 pb-2 border-b border-gray-200">
+                      <p className="text-sm font-semibold text-gray-700 truncate">
+                        {fileName}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        ประเภท: {fileExtension.toUpperCase()}
+                      </p>
+                    </div>
+
+                    {/* File Viewer */}
+                    <div className="w-full bg-gray-200 rounded flex items-center justify-center mb-4 overflow-hidden border">
+                      {isPdf ? (
+                        <PdfViewerFromS3 s3Url={doc.file_url} />
+                      ) : isImage ? (
+                        <div className="w-full max-h-[600px] flex items-center justify-center bg-white">
+                          <img
+                            src={doc.file_url}
+                            alt={fileName}
+                            className="max-w-full max-h-[600px] object-contain"
+                          />
+                        </div>
+                      ) : isDoc ? (
+                        <div className="w-full h-64 flex flex-col items-center justify-center text-gray-500 bg-white">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="64"
+                            height="64"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-blue-500 mb-3"
+                          >
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                          </svg>
+                          <p className="font-medium">ไฟล์เอกสาร Word</p>
+                          <p className="text-sm mt-1">
+                            กรุณาดาวน์โหลดเพื่อดูไฟล์
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="w-full h-64 flex flex-col items-center justify-center text-gray-500 bg-white">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="64"
+                            height="64"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-gray-400 mb-3"
+                          >
+                            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                            <polyline points="13 2 13 9 20 9"></polyline>
+                          </svg>
+                          <p className="font-medium">
+                            ไม่สามารถแสดงตัวอย่างได้
+                          </p>
+                          <p className="text-sm mt-1">
+                            กรุณาดาวน์โหลดเพื่อดูไฟล์
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Download Button */}
+                    <a
+                      href={doc.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline font-medium flex items-center justify-center gap-2 py-2 px-4 bg-white rounded-lg border border-primary/20 hover:bg-primary/5 transition-colors"
                     >
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    Download PDF {idx + 1}
-                  </a>
-                </div>
-              ))
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                      </svg>
+                      ดาวน์โหลดไฟล์
+                    </a>
+                  </div>
+                );
+              })
             ) : (
               <div className="text-center py-10 bg-gray-50 rounded-lg text-gray-500 border border-gray-200 border-dashed">
                 <p>ไม่มีเอกสารแนบ</p>
@@ -465,46 +631,19 @@ function RequestDetailContent() {
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
               <h3 className="font-bold text-gray-800 mb-4">ส่วนสำหรับคณบดี</h3>
 
-              <div className="mb-6 space-y-4">
-                <div>
-                  <a
-                    href={
-                      request.attachments?.[request.attachments.length - 1]
-                        ?.file_url || "#"
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors text-sm font-medium"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    ดาวน์โหลดไฟล์ใบสมัคร
-                  </a>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    อัปโหลดเอกสารที่เซ็นแล้ว
-                  </label>
-                  <input
-                    type="file"
-                    onChange={(e) => setReviewFile(e.target.files?.[0] || null)}
-                    className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
-                    accept=".pdf"
-                  />
-                </div>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  อัปโหลดเอกสารที่เซ็นแล้ว
+                </label>
+                <input
+                  type="file"
+                  onChange={(e) => setReviewFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
+                  accept=".pdf"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  หากต้องการแนบเอกสารที่ลงนามแล้ว กรุณาเลือกไฟล์ PDF
+                </p>
               </div>
 
               <div className="flex gap-4">
@@ -525,7 +664,7 @@ function RequestDetailContent() {
           )}
 
           {/* Actions (If SD Staff) */}
-          {role === "SD_STAFF" && (
+          {role === "SD_STAFF" && !viewOnly && (
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
               <h3 className="font-bold text-gray-800 mb-4">
                 ส่วนสำหรับกองกิจการนักศึกษา

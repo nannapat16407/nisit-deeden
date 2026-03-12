@@ -115,6 +115,23 @@ const Sidebar: React.FC<SidebarProps> = ({ role = "SD" }) => {
             <path d="M13 21v-8h-2v8" />
           </svg>
         );
+      case "honor_roll":
+        return (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M12 15l-3 5 1-4-3-1 3-5-1 4 3 1z" />
+            <circle cx="12" cy="8" r="6" />
+          </svg>
+        );
       default:
         return (
           <svg

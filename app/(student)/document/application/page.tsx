@@ -5,19 +5,20 @@ import { useParams } from "next/navigation";
 import StudentInfoCard from "@/components/document/application/StudentInfoCard";
 import ApplicationForm from "@/components/document/application/ApplicationForm";
 import { api } from "@/lib/api";
-import { Award } from "@/types/award.type";
+import { Award, Requirement } from "@/types/award.type";
 import { StudentProfileFullResponse } from "@/types/student.type";
 
 function ApplicationPage() {
   const params = useParams();
 
   const [award, setAward] = useState<Award | null>(null);
+  const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [studentInfo, setStudentInfo] =
     useState<StudentProfileFullResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ดึงข้อมูล student profile จาก API
+  // ดึงข้อมูล student profile และ award
   useEffect(() => {
     const fetchData = async () => {
       await Promise.all([fetchStudentProfile(), fetchAward()]);
@@ -42,11 +43,27 @@ function ApplicationPage() {
       setLoading(true);
       setError(null);
 
+      // เรียก GET /api/sd/awards/:id
       const response = await api.getAward(params.awardId as string);
       const foundAward = response.data;
 
       if (foundAward) {
         setAward(foundAward);
+
+        // Parse requirement_json จาก string เป็น JSON array
+        if (foundAward.requirement_json) {
+          try {
+            const parsedRequirements: Requirement[] = JSON.parse(
+              foundAward.requirement_json,
+            );
+            setRequirements(parsedRequirements);
+          } catch (parseError) {
+            console.error("Failed to parse requirement_json:", parseError);
+            setRequirements([]);
+          }
+        } else {
+          setRequirements([]);
+        }
       } else {
         setError("ไม่พบข้อมูลรางวัลที่เลือก");
       }
@@ -60,9 +77,8 @@ function ApplicationPage() {
     }
   };
 
-  const handleFormSubmit = async (file: File) => {
-    console.log("SUBMIT CLICKED");
-
+  // Handle form submit ด้วย multipart/form-data
+  const handleFormSubmit = async (files: Record<string, File>) => {
     if (!award || !studentInfo) {
       alert("ข้อมูลไม่ครบ กรุณาลองใหม่");
       return;
@@ -70,16 +86,32 @@ function ApplicationPage() {
 
     try {
       const formData = new FormData();
+
+      // เพิ่ม campus_id และ award_id
       formData.append("campus_id", String(studentInfo.campus_id));
       formData.append("award_id", award.award_id);
-      formData.append("file", file);
-      formData.append("label", "ใบสมัครทุน");
 
-      console.log("Sending to backend...");
+      // เพิ่มไฟล์ตาม label ใน requirement_json
+      requirements.forEach((req) => {
+        const file = files[req.label];
+        if (file) {
+          formData.append(req.label, file);
+        }
+      });
 
+      console.log("FormData being sent:");
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(
+            `  ${key}: File(name="${value.name}", size=${value.size})`,
+          );
+        } else {
+          console.log(`  ${key}: ${value}`);
+        }
+      }
+
+      // POST /api/student/apply ด้วย multipart/form-data
       await api.createApplication(formData);
-      console.log("AFTER API CALL");
-
       alert("สมัครสำเร็จ");
     } catch (err) {
       console.error(err);
@@ -126,13 +158,31 @@ function ApplicationPage() {
         </div>
       )}
 
-      {/* ส่วนที่ 2: แบบฟอร์มสมัครรางวัล */}
+      {/* ส่วนที่ 2: รายละเอียดรางวัล */}
+      <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
+        <h2 className="text-xl font-bold text-gray-800 mb-2">
+          {award.award_name}
+        </h2>
+        {award.description && (
+          <div className="mt-3">
+            <h3 className="text-sm font-semibold text-gray-700 mb-1">
+              รายละเอียด
+            </h3>
+            <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
+              {award.description}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ส่วนที่ 3: แบบฟอร์มสมัครรางวัล */}
       <ApplicationForm
         onSubmit={handleFormSubmit}
         templateFileUrl={award.template_file_url}
         awardId={award.award_id}
         awardName={award.award_name}
         awardDescription={award.description}
+        requirements={requirements}
       />
     </div>
   );
