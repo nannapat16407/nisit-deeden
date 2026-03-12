@@ -266,6 +266,24 @@ function RequestPeriod() {
         return;
       }
 
+      // 3.5. End Date must not be in the past (for creating new period)
+      if (!periodData.period_id) {
+        const now = new Date();
+        // Set time to start of day for fair comparison
+        now.setHours(0, 0, 0, 0);
+        const endDateOnly = new Date(endDate);
+        endDateOnly.setHours(0, 0, 0, 0);
+        
+        if (endDateOnly < now) {
+          setAlert({
+            open: true,
+            msg: "ไม่สามารถสร้างช่วงเวลาที่มีวันสิ้นสุดเป็นวันที่ผ่านมาแล้ว",
+            severity: "error",
+          });
+          return;
+        }
+      }
+
       // 4. Uniqueness Check (Year + Semester)
       if (periods !== null) {
         const duplicate = periods.find(
