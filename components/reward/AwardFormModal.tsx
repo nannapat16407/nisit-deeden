@@ -30,7 +30,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
   // Helper: แปลง label เป็นภาษาไทย
   const getDisplayLabel = (label: string): string => {
     const labelMap: Record<string, string> = {
-      SIGN_BY_STUDENT: "ใบสมัครที่ลงนามโดยนิสิต",
+      SIGNED_BY_STUDENT: "ใบสมัครที่ลงนามโดยนิสิต",
     };
     return labelMap[label] || label;
   };
@@ -45,7 +45,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
         const parsedReqs = initialData.requirement_json
           ? JSON.parse(initialData.requirement_json)
           : [];
-        // แสดง SIGN_BY_STUDENT ด้วย (ไม่ filter ออก)
+        // แสดง SIGNED_BY_STUDENT ด้วย (ไม่ filter ออก)
         // Ensure all requirements have extensions array
         const normalizedReqs = parsedReqs.map((req: any) => ({
           ...req,
@@ -125,9 +125,9 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
     formData.append("description", description);
     formData.append("is_active", isActive ? "true" : "false");
 
-    // Inject SIGN_BY_STUDENT requirement at the beginning
+    // Inject SIGNED_BY_STUDENT requirement at the beginning
     const signByStudentReq = {
-      label: "SIGN_BY_STUDENT",
+      label: "SIGNED_BY_STUDENT",
       type: "file",
       required: true,
       extensions: ["pdf"],
@@ -321,7 +321,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                 </p>
               )}
               {requirements.map((req, idx) => {
-                const isSystemRequired = req.label === "SIGN_BY_STUDENT";
+                const isSystemRequired = req.label === "SIGNED_BY_STUDENT";
                 return (
                   <div
                     key={idx}
@@ -331,7 +331,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
                         : "bg-gray-50 border-gray-200"
                     }`}
                   >
-                    {/* ซ่อนปุ่มลบถ้าเป็น SIGN_BY_STUDENT */}
+                    {/* ซ่อนปุ่มลบถ้าเป็น SIGNED_BY_STUDENT */}
                     {!isSystemRequired && (
                       <button
                         type="button"
