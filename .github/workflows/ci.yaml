@@ -42,5 +42,5 @@ jobs:
         run: npm run build
         env:
           # Add any required dummy environment variables here for the build to succeed
-          NEXT_PUBLIC_API_URL: http://localhost:8080
-          NEXT_PUBLIC_FRONTEND_URL: http://localhost:3000
+          NEXT_PUBLIC_API_URL: https://67c9-158-108-229-42.ngrok-free.app
+          NEXT_PUBLIC_FRONTEND_URL: http://kuis-award.local
