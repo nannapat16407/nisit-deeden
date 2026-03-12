@@ -24,6 +24,7 @@ export const ROUTES_BY_ROLE = {
     home: "/home",
     document: "/document",
     track_status: "/track-status",
+    honor_roll: "/honor-roll",
 //    announcement: "/announcement",
   },
   SD_STAFF: {
@@ -31,30 +32,37 @@ export const ROUTES_BY_ROLE = {
     request_period: "/request-period",
     request: "/request",
     announcement: "/announcement",
+    honor_roll: "/honor-roll",
   },
   DEPARTMENT_HEAD: {
     home: "/home",
     request: "/request",
+    honor_roll: "/honor-roll",
   },
   VICE_DEAN: {
     home: "/home",
     request: "/request",
+    honor_roll: "/honor-roll",
   },
   DEAN: {
     home: "/home",
     request: "/request",
+    honor_roll: "/honor-roll",
   },
   COMMITTEE: {
     home: "/request",
     request_period: "/request-period",
+    honor_roll: "/honor-roll",
   },
   COMMITTEE_HEAD: {
     home: "/request",
     request_period: "/request-period",
+    honor_roll: "/honor-roll",
   },
   PRESIDENT: {
     home: "/request",
     request_period: "/request-period",
+    honor_roll: "/honor-roll",
   }
 };
 
@@ -82,6 +90,7 @@ export const getName = (key: string) => {
       user: "User Management",
       campus: "จัดการวิทยาเขต",
       track_status: "ติดตามสถานะ",
+      honor_roll: "ทำเนียบนิสิตดีเด่น",
     };
     return names[key] || key;
   };  

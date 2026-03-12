@@ -169,6 +169,11 @@ class ApiClient {
     return this.fetch(`/api/sd/awards/${id}`);
   }
 
+  // History
+  async getCompleteHistory(): Promise<{ data: any[] }> {
+    return this.fetch("/api/history-success");
+  }
+
   // SD Request Management
   async getSDRequests(): Promise<{ data: RequestType[] }> {
     return this.fetch("/api/sd/requests");
