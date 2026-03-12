@@ -433,7 +433,9 @@ function RequestDetailContent() {
                     "COMMITTEE",
                     "COMMITTEE_HEAD",
                     "PRESIDENT",
-                  ].includes(typeof role === "string" ? role : role?.RoleName || "")
+                  ].includes(
+                    typeof role === "string" ? role : role?.RoleName || "",
+                  )
                 ) {
                   const hasDeanSigned = displayAttachments.some(
                     (a) => a.label === "ใบสมัครที่ลงนามโดยคณบดี",

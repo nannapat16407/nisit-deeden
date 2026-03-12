@@ -174,6 +174,10 @@ class ApiClient {
     return this.fetch("/api/sd/requests");
   }
 
+  async getSDAllRequests(): Promise<{ data: RequestType[] }> {
+    return this.fetch("/api/sd/all-requests");
+  }
+
   async reviewSDRequest(
     id: string,
     action: "approve" | "need_docs",

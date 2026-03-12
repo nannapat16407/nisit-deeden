@@ -32,49 +32,54 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [selectedRequestIds, setSelectedRequestIds] = useState<string[]>([]);
 
   const isCommitteeHead = role === "COMMITTEE_HEAD";
   const isPresidentRole = role === "PRESIDENT";
+  const isSDRole = role === "SD_STAFF";
 
   const fetchRequests = async () => {
     try {
       setLoading(true);
       let data: Request[] = [];
 
-      console.log("USER", user);
-      if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
-        const res = await api.getCommitteeRequest();
-        data = res.data;
-        // console.log(data)
-      } else if (role === "PRESIDENT") {
-        const res = await api.getPresidentRequest();
-        data = res.data;
-      } else if (role !== "STUDENT") {
-        const res = await api.getDeptRequests();
-        data = res.data;
+      if (isSDRole) {
+        const res = await api.getSDAllRequests();
+        data = res.data || [];
+        setRequests(data);
       } else {
-        console.warn("No fetcher for role:", role);
-        router.back();
+        if (role === "COMMITTEE" || role === "COMMITTEE_HEAD") {
+          const res = await api.getCommitteeRequest();
+          data = res.data;
+        } else if (role === "PRESIDENT") {
+          const res = await api.getPresidentRequest();
+          data = res.data;
+        } else if (role !== "STUDENT") {
+          const res = await api.getDeptRequests();
+          data = res.data;
+        } else {
+          console.warn("No fetcher for role:", role);
+          router.back();
+        }
+
+        const res = await api.getAvailableAwards();
+        const awards: Award[] = Array.isArray(res.data)
+          ? res.data
+              .flatMap((p: any) => (Array.isArray(p?.awards) ? p.awards : []))
+              .filter((award): award is Award => Boolean(award))
+          : [];
+
+        const periodAwardIds = new Set(
+          awards
+            .filter((award) => award?.period_id === periodId)
+            .map((award) => award.award_id),
+        );
+        const filteredByPeriod = data.filter((req) =>
+          req.award_id ? periodAwardIds.has(req.award_id) : false,
+        );
+        setRequests(filteredByPeriod);
       }
-
-      const res = await api.getAvailableAwards();
-      const awards: Award[] = Array.isArray(res.data)
-        ? res.data
-            .flatMap((p: any) => (Array.isArray(p?.awards) ? p.awards : []))
-            .filter((award): award is Award => Boolean(award))
-        : [];
-
-      const periodAwardIds = new Set(
-        awards
-          .filter((award) => award?.period_id === periodId)
-          .map((award) => award.award_id),
-      );
-      const filteredByPeriod = data.filter((req) =>
-        req.award_id ? periodAwardIds.has(req.award_id) : false,
-      );
-      console.log(filteredByPeriod);
-      setRequests(filteredByPeriod);
     } catch (err: any) {
       console.error("Failed to fetch requests:", err);
       if (
@@ -109,12 +114,17 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
     else if (role === "PRESIDENT" && req.status !== "PENDING_PRESIDENT")
       return false;
 
+    // Status filter for SD
+    if (isSDRole && statusFilter !== "ALL" && req.status !== statusFilter)
+      return false;
+
     const searchLower = search.toLowerCase();
+    const displayName =
+      req.student_name ||
+      `${req.owner_fname || ""} ${req.owner_lname || ""}`.trim();
     const matchesSearch =
       req.award_name?.toLowerCase().includes(searchLower) ||
-      (req.owner_fname + " " + req.owner_lname)
-        .toLowerCase()
-        .includes(searchLower);
+      displayName.toLowerCase().includes(searchLower);
 
     return matchesSearch;
   });
@@ -285,7 +295,8 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
   const handlePresidentApproveClick = () => {
     triggerPDFUploadPopUp({
       title: "ยืนยันการอนุมัติ",
-      message: "อัพโหลดไฟล์ PDF ประกาศมหาวิทยาลัยที่ลงนามโดยอธิการบดีเพื่ออนุมัติใบสมัครในรอบนี้",
+      message:
+        "อัพโหลดไฟล์ PDF ประกาศมหาวิทยาลัยที่ลงนามโดยอธิการบดีเพื่ออนุมัติใบสมัครในรอบนี้",
       confirmText: "อนุมัติ",
       cancelText: "ยกเลิก",
       onConfirm: presidentApproveCallback,
@@ -293,6 +304,24 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
   };
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case "PENDING_HEAD":
+        return (
+          <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+            รอหัวหน้าภาค
+          </span>
+        );
+      case "PENDING_VICEDEAN":
+        return (
+          <span className="bg-orange-100 text-orange-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+            รอรองคณบดี
+          </span>
+        );
+      case "PENDING_DEAN":
+        return (
+          <span className="bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+            รอคณบดี
+          </span>
+        );
       case "PENDING_SD":
         return (
           <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
@@ -309,6 +338,19 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
         return (
           <span className="bg-pink-100 text-pink-800 text-xs font-semibold px-2.5 py-0.5 rounded">
             รออธิการบดี
+          </span>
+        );
+      case "NEEDS_DOCS":
+        return (
+          <span className="bg-red-100 text-red-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+            ขอเอกสารเพิ่ม
+          </span>
+        );
+      case "COMPLETED":
+      case "COMPLETE":
+        return (
+          <span className="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+            เสร็จสิ้น
           </span>
         );
       default:
@@ -354,6 +396,24 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
                 ? "อนุมัติ"
                 : `อนุมัติที่เลือก ${selectedRequestIds.length}`}
             </button>
+          )}
+
+          {isSDRole && (
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="ALL">ทุกสถานะ</option>
+              <option value="PENDING_HEAD">รอหัวหน้าภาค</option>
+              <option value="PENDING_VICEDEAN">รอรองคณบดี</option>
+              <option value="PENDING_DEAN">รอคณบดี</option>
+              <option value="PENDING_SD">รอกองกิจฯ</option>
+              <option value="PENDING_COMMITTEE">รอคณะกรรมการ</option>
+              <option value="PENDING_PRESIDENT">รออธิการบดี</option>
+              <option value="NEEDS_DOCS">ขอเอกสารเพิ่ม</option>
+              <option value="COMPLETED">เสร็จสิ้น</option>
+            </select>
           )}
 
           <div className="relative flex-1 md:w-64">
@@ -456,7 +516,9 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
                     </td>
                     <td className="px-6 py-4">{req.award_name || "-"}</td>
                     <td className="px-6 py-4">
-                      {`${req.owner_fname} ${req.owner_lname}`}
+                      {req.student_name ||
+                        `${req.owner_fname || ""} ${req.owner_lname || ""}`.trim() ||
+                        "-"}
                     </td>
                     <td className="px-6 py-4">{getStatusBadge(req.status)}</td>
                     <td className="px-6 py-4 text-right">
