@@ -26,14 +26,13 @@ function RequestPeriod() {
   // Check if user is COMMITTEE or COMMITTEE_HEAD
   const isCommitteeRole =
     user?.role === "COMMITTEE" || user?.role === "COMMITTEE_HEAD";
-  
-  const isPresidentRole = 
-    user?.role === "PRESIDENT";
+
+  const isPresidentRole = user?.role === "PRESIDENT";
 
   const fetchPeriods = async () => {
     try {
       console.log(user);
-      setLoading(true);      
+      setLoading(true);
 
       const response = await api.getPeriods();
       // console.log("ASDSD", response);
@@ -88,7 +87,7 @@ function RequestPeriod() {
     // ตรวจสอบว่าถ้าถึงเวลารับสมัครแล้ว ห้ามแก้ไข (ยกเว้นสถานะการเปิด/ปิด)
     const now = new Date();
     const startDate = new Date(period.start_date);
-    
+
     if (now >= startDate) {
       setAlert({
         open: true,
@@ -97,15 +96,14 @@ function RequestPeriod() {
       });
       return;
     }
-    
+
     setEditingPeriod(period);
     setIsModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
-    
     // Find the period to check its dates
-    const periodToDelete = periods.find(p => p.period_id === id);
+    const periodToDelete = periods.find((p) => p.period_id === id);
     if (periodToDelete) {
       const now = new Date();
       const startDate = new Date(periodToDelete.start_date);
@@ -160,20 +158,24 @@ function RequestPeriod() {
 
       // 1. Check if editing period that has already started (only allow is_active change)
       if (periodData.period_id) {
-        const existingPeriod = periods.find(p => p.period_id === periodData.period_id);
+        const existingPeriod = periods.find(
+          (p) => p.period_id === periodData.period_id,
+        );
         if (existingPeriod) {
           const now = new Date();
           const existingStartDate = new Date(existingPeriod.start_date);
-          
+
           // ถ้าถึงเวลารับสมัครแล้ว อนุญาตแค่เปลี่ยน is_active
           if (now >= existingStartDate) {
             // เช็คว่ามีการเปลี่ยนแปลงอะไรนอกจาก is_active หรือไม่
-            const hasOtherChanges = 
+            const hasOtherChanges =
               existingPeriod.academic_year != academicYearNum ||
               existingPeriod.semester != semesterNum ||
-              new Date(existingPeriod.start_date).toISOString() !== startDate.toISOString() ||
-              new Date(existingPeriod.end_date).toISOString() !== endDate.toISOString();
-            
+              new Date(existingPeriod.start_date).toISOString() !==
+                startDate.toISOString() ||
+              new Date(existingPeriod.end_date).toISOString() !==
+                endDate.toISOString();
+
             if (hasOtherChanges) {
               setAlert({
                 open: true,
@@ -227,15 +229,15 @@ function RequestPeriod() {
         const overlapping = periods.find((p) => {
           // Skip self when editing
           if (p.period_id === periodData.period_id) return false;
-  
+
           const existingStart = new Date(p.start_date);
           const existingEnd = new Date(p.end_date);
-  
+
           // Check if date ranges overlap
           // Overlap occurs when: (StartA <= EndB) AND (EndA >= StartB)
           return startDate <= existingEnd && endDate >= existingStart;
         });
-  
+
         if (overlapping) {
           const overlappingStartDate = new Date(
             overlapping.start_date,
@@ -252,16 +254,7 @@ function RequestPeriod() {
         }
       }
 
-      // 6. Year Consistency Check (Strict-ish Validation)
-        setAlert({
-          open: true,
-          msg: "วันที่เริ่มต้นต้องมาก่อนวันที่สิ้นสุด",
-          severity: "error",
-        });
-        return;
-      }
-
-      // 7. Year-Date Consistency Check
+      // 6. Year-Date Consistency Check
       // BE Year to AD Year approx: BE - 543.
       // User requested "strict" logic.
       // We will BLOCK if the year is totally off (more than 1 year difference).
@@ -389,15 +382,19 @@ function RequestPeriod() {
   // Filter periods based on role
   const filteredPeriods = isCommitteeRole
     ? periods.filter((p) => p.is_active)
-    : (isPresidentRole ? periods.filter((p) => 
-      p.is_active && ( periodCommitteeState[p.period_id] ?? false)
-    ) : periods);
+    : isPresidentRole
+      ? periods.filter(
+          (p) => p.is_active && (periodCommitteeState[p.period_id] ?? false),
+        )
+      : periods;
 
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold font-noto text-gray-800">
-          {isCommitteeRole || isPresidentRole ? "ช่วงเวลาที่ต้องอนุมัติ" : "ช่วงเวลารับสมัคร"}
+          {isCommitteeRole || isPresidentRole
+            ? "ช่วงเวลาที่ต้องอนุมัติ"
+            : "ช่วงเวลารับสมัคร"}
         </h1>
         {!(isCommitteeRole || isPresidentRole) && (
           <button
@@ -431,21 +428,22 @@ function RequestPeriod() {
         <div className="text-center py-20 text-red-500">{error}</div>
       ) : (
         <div className="flex flex-col gap-4">
-          {filteredPeriods !== null && filteredPeriods.map((period) => (
-            <PeriodCard
-              key={period.period_id}
-              period={period}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              showButtons={!(isCommitteeRole || isPresidentRole)}
-              isCommitteeRole={isCommitteeRole}
-              isPresidentRole={isPresidentRole}
-              committeeDocumentAvailable={
-                periodCommitteeState[period.period_id] ?? false
-              }
-              onCommitteePDFView={CommitteePDFViewCallback}
-            />
-          ))}
+          {filteredPeriods !== null &&
+            filteredPeriods.map((period) => (
+              <PeriodCard
+                key={period.period_id}
+                period={period}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                showButtons={!(isCommitteeRole || isPresidentRole)}
+                isCommitteeRole={isCommitteeRole}
+                isPresidentRole={isPresidentRole}
+                committeeDocumentAvailable={
+                  periodCommitteeState[period.period_id] ?? false
+                }
+                onCommitteePDFView={CommitteePDFViewCallback}
+              />
+            ))}
 
           {filteredPeriods !== null && (
             <div className="text-center py-20 text-gray-400">
@@ -457,7 +455,7 @@ function RequestPeriod() {
         </div>
       )}
 
-      {!(isCommitteeRole || isPresidentRole ) && (
+      {!(isCommitteeRole || isPresidentRole) && (
         <PeriodFormModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
