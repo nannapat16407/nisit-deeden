@@ -49,8 +49,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
         // Deduplicate ใบสมัครที่ลงนามโดยนิสิต/ใบสมัครที่ลงนามโดยนิสิต - keep only first occurrence
         const seenSystemLabel = new Set<string>();
         const deduplicatedReqs = parsedReqs.filter((req: any) => {
-          const isSystemLabel =
-            req.label === "ใบสมัครที่ลงนามโดยนิสิต";
+          const isSystemLabel = req.label === "ใบสมัครที่ลงนามโดยนิสิต";
           if (isSystemLabel) {
             if (seenSystemLabel.has("SYSTEM")) {
               return false; // Skip duplicate
@@ -141,8 +140,7 @@ const AwardFormModal: React.FC<AwardFormModalProps> = ({
 
     // Filter out existing ใบสมัครที่ลงนามโดยนิสิต/ใบสมัครที่ลงนามโดยนิสิต to prevent duplicates
     const filteredRequirements = requirements.filter(
-      (req) =>
-        req.label !== "ใบสมัครที่ลงนามโดยนิสิต"
+      (req) => req.label !== "ใบสมัครที่ลงนามโดยนิสิต",
     );
 
     // Inject ใบสมัครที่ลงนามโดยนิสิต requirement at the beginning

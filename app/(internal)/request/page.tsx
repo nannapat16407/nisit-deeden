@@ -129,22 +129,22 @@ export default function RequestPage() {
         </div>
 
         <div className="flex items-center gap-3 w-full md:w-auto">
-          {!roleBadge && 
-           role !== "DEPARTMENT_HEAD" && 
-           role !== "VICE_DEAN" && 
-           role !== "DEAN" && (
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="ALL">สถานะใบสมัคร (ทั้งหมด)</option>
-              <option value="PENDING_HEAD">รอหัวหน้าภาคฯ</option>
-              <option value="PENDING_VICEDEAN">รอรองคณบดี</option>
-              <option value="PENDING_DEAN">รอคณบดี</option>
-              {/* Add more options */}
-            </select>
-          )}
+          {!roleBadge &&
+            role !== "DEPARTMENT_HEAD" &&
+            role !== "VICE_DEAN" &&
+            role !== "DEAN" && (
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="ALL">สถานะใบสมัคร (ทั้งหมด)</option>
+                <option value="PENDING_HEAD">รอหัวหน้าภาคฯ</option>
+                <option value="PENDING_VICEDEAN">รอรองคณบดี</option>
+                <option value="PENDING_DEAN">รอคณบดี</option>
+                {/* Add more options */}
+              </select>
+            )}
 
           <div className="relative flex-1 md:w-64">
             <input
