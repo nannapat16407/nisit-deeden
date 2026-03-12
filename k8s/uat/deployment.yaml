@@ -40,7 +40,9 @@ spec:
     targetPort: 3000
 
 ---
-# Combined Ingress: frontend + backend on the same host (no CORS issues)
+# Ingress: 2 hosts per env (align with manifest)
+# - Public link: uat-kuis-award.local (app)
+# - API link:    api.uat-kuis-award.local (backend)
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -51,6 +53,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
+  # App host: /api -> backend (for OAuth callback /api/auth/session), / -> frontend
   - host: uat-kuis-award.local
     http:
       paths:
@@ -66,5 +69,16 @@ spec:
         backend:
           service:
             name: frontend-service
+            port:
+              number: 80
+  # API host: all paths -> backend (for frontend API calls to api.uat-kuis-award.local)
+  - host: api.uat-kuis-award.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
             port:
               number: 80
