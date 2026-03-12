@@ -63,7 +63,12 @@ function useAuth() {
       setLoading(true)
       setError(null)
 
-      const oauthUrl = process.env.NEXT_PUBLIC_OAUTH_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8008'
+      // Prefer OAuth URL (ngrok), else same-origin so login hits cluster backend, else localhost for dev
+      const oauthUrl =
+        process.env.NEXT_PUBLIC_OAUTH_URL ||
+        process.env.NEXT_PUBLIC_API_URL ||
+        (typeof window !== 'undefined' ? window.location.origin : '') ||
+        'http://localhost:8008'
       window.location.href = `${oauthUrl}/api/auth/google`
     } catch (err) {
       console.error('Google login failed:', err)
