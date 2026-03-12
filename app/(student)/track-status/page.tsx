@@ -946,7 +946,7 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
                   <div>
                     <p className="text-sm text-gray-500 mb-1">สถานะปัจจุบัน</p>
                     <span
-                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${currentStatusColors?.bg} ${currentStatusColors?.text} ${currentStatusColors?.border}`}
+                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${currentStatusColors?.bg} ${currentStatusColors?.text}`}
                     >
                       {statusToUse && getStatusLabel(statusToUse)}
                     </span>
@@ -1020,52 +1020,54 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
                       key={index}
                       className="bg-white rounded-lg shadow-sm p-6"
                     >
-                      <div className="flex gap-6">
-                        {/* LEFT COLUMN: Icon */}
-                        <div className="flex-shrink-0 flex flex-col items-center">
-                          <div className={log.color}>{log.icon}</div>
-                          <p className="mt-2 text-sm text-black">{log.label}</p>
-                        </div>
+                      <div className="flex justify-between items-center gap-6">
+                        {/* LEFT SECTION: Icon + Details */}
+                        <div className="flex gap-6">
+                          {/* Icon */}
+                          <div className="flex-shrink-0 flex flex-col items-center">
+                            <div className={log.color}>{log.icon}</div>
+                            <p className="mt-2 text-sm text-black">{log.label}</p>
+                          </div>
 
-                        {/* RIGHT COLUMN: Details */}
-                        <div className="flex-1 space-y-3">
-                          {/* วันที่เวลา */}
-                          <p className="text-base text-gray-500">
-                            {log.timestamp}
-                          </p>
+                          {/* Details */}
+                          <div className="flex-1 space-y-3">
+                            {/* วันที่เวลา */}
+                            <p className="text-base text-gray-500">
+                              {log.timestamp}
+                            </p>
 
-                          {/* สถานะ */}
-                          <p className="text-base text-gray-900">
-                            <span className="font-bold">สถานะ</span>{" "}
-                            <span className="font-normal">
-                              {log.statusText}
-                            </span>
-                          </p>
-
-                          {/* ผู้พิจารณา - แสดงเฉพาะ log boxes (ไม่ใช่กล่องบนสุดจาก data) */}
-                          {!log.isFromData && log.approverName && (
+                            {/* สถานะ */}
                             <p className="text-base text-gray-900">
-                              <span className="font-bold">ผู้พิจารณา</span>{" "}
+                              <span className="font-bold">สถานะ</span>{" "}
                               <span className="font-normal">
-                                {log.approverName}
+                                {log.statusText}
                               </span>
                             </p>
-                          )}
+
+                            {/* ผู้พิจารณา - แสดงเฉพาะ log boxes (ไม่ใช่กล่องบนสุดจาก data) */}
+                            {!log.isFromData && log.approverName && (
+                              <p className="text-base text-gray-900">
+                                <span className="font-bold">ผู้พิจารณา</span>{" "}
+                                <span className="font-normal">
+                                  {log.approverName}
+                                </span>
+                              </p>
+                            )}
+                          </div>
                         </div>
 
+                        {/* RIGHT SECTION: Action Buttons */}
                         {/* ปุ่มเหตุผลการปฏิเสธ - เฉพาะกรณี reject */}
                         {log.isReject && (
-                          <div className="flex-shrink-0 flex items-start">
-                            <button
-                              className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors text-sm font-medium"
-                              onClick={() => {
-                                setRejectComment(log.comment || "-");
-                                setOpenRejectModal(true);
-                              }}
-                            >
-                              เหตุผลการปฏิเสธ &gt;
-                            </button>
-                          </div>
+                          <button
+                            className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors text-sm font-medium flex-shrink-0"
+                            onClick={() => {
+                              setRejectComment(log.comment || "-");
+                              setOpenRejectModal(true);
+                            }}
+                          >
+                            เหตุผลการปฏิเสธ &gt;
+                          </button>
                         )}
 
                         {/* ปุ่มรายละเอียดเอกสารที่ต้องส่งเพิ่มเติม - เฉพาะ log ล่าสุดเท่านั้น */}
@@ -1074,14 +1076,12 @@ const [studentUsername, setStudentUsername] = useState<string | null>(null);
                           const shouldShowButton = isLatest && log.action === "NEEDS_DOCS";
 
                           return shouldShowButton ? (
-                            <div className="flex-shrink-0 flex items-start">
-                              <button
-                                className="bg-red-400 text-white px-6 py-2 rounded-lg hover:bg-red-500 transition-colors text-sm font-medium"
-                                onClick={handleOpenResubmitModal}
-                              >
-                                รายละเอียดเอกสารที่ต้องส่งเพิ่มเติม &gt;
-                              </button>
-                            </div>
+                            <button
+                              className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors text-sm font-medium flex-shrink-0"
+                              onClick={handleOpenResubmitModal}
+                            >
+                              รายละเอียดเอกสารที่ต้องส่งเพิ่มเติม &gt;
+                            </button>
                           ) : null;
                         })()}
                       </div>
@@ -1204,7 +1204,7 @@ const ResubmitModal: React.FC<ResubmitModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header: พื้นหลังสีแดง */}
-        <div className="relative bg-red-400 text-white py-4 px-6">
+        <div className="relative bg-red-500 text-white py-4 px-6">
           <h2 className="text-lg font-semibold text-center">
             แจ้งเหตุผลการขอแก้ไขและส่งเอกสารเพิ่มเติม
           </h2>

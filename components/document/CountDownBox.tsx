@@ -87,8 +87,8 @@ const CountDownBox: React.FC<CountDownBoxProps> = ({
 
   // ข้อความแสดงช่วงเวลา - ใช้ค่าจริงถ้ามี
   const periodText = (periodStart && periodEnd)
-    ? `ช่วงเวลาที่กำหนดระหว่างวันที่ ${formatDateToBE(start)} - ${formatDateToBE(end)}`
-    : "ช่วงเวลาที่กำหนดระหว่างวันที่ 1 มกราคม 2569 - 31 ธันวาคม 2569";
+    ? `ช่วงเวลาที่กำหนด: "ระหว่างวันที่ ${formatDateToBE(start)} - ${formatDateToBE(end)}"`
+    : 'ช่วงเวลาที่กำหนด: "ระหว่างวันที่ 1 มกราคม 2569 - 31 ธันวาคม 2569"';
 
   return (
     <div className="bg-[#B8CFCC] bg-opacity-40 rounded-lg p-8 text-center text-gray-800">
