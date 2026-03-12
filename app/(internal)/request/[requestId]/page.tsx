@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import useAuth from "@/hooks/useAuth";
 import { Request } from "@/types/request.type";
@@ -56,6 +56,8 @@ function RequestDetailContent() {
   const { user } = useAuth();
   const role = user?.role;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const viewOnly = searchParams.get("view") === "true";
   const { trigger: triggerConfirmPopUp } = useConfirmPopUp();
   const { trigger: triggerEditDocList } = useEditDocListPopUp();
 
@@ -299,6 +301,7 @@ function RequestDetailContent() {
                 )}
               </p>
               {role === "SD_STAFF" &&
+                !viewOnly &&
                 (isEditingAward ? (
                   <div className="flex gap-1 ml-2">
                     <button
@@ -661,7 +664,7 @@ function RequestDetailContent() {
           )}
 
           {/* Actions (If SD Staff) */}
-          {role === "SD_STAFF" && (
+          {role === "SD_STAFF" && !viewOnly && (
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
               <h3 className="font-bold text-gray-800 mb-4">
                 ส่วนสำหรับกองกิจการนักศึกษา

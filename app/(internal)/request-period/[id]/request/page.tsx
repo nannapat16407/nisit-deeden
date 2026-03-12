@@ -523,7 +523,11 @@ function RequestPeriodRequestContent({ params }: { params: Params }) {
                     <td className="px-6 py-4">{getStatusBadge(req.status)}</td>
                     <td className="px-6 py-4 text-right">
                       <Link
-                        href={`/request/${req.request_id}`}
+                        href={
+                          isSDRole
+                            ? `/request/${req.request_id}?view=true`
+                            : `/request/${req.request_id}`
+                        }
                         className="text-emerald-600 hover:text-emerald-800 font-medium"
                       >
                         ดูรายละเอียด &gt;
