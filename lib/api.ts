@@ -216,6 +216,37 @@ class ApiClient {
     return this.fetch(`/api/sd/announcements/${id}`);
   }
 
+  async createAnnouncement(data: {
+    title: string;
+    description: string;
+    campus_id: number;
+  }): Promise<AnnouncementResponse> {
+    return this.fetch("/api/sd/announcements", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAnnouncement(
+    id: string,
+    data: {
+      title: string;
+      description: string;
+      is_active: boolean;
+    }
+  ): Promise<AnnouncementResponse> {
+    return this.fetch(`/api/sd/announcements/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAnnouncement(id: string): Promise<{ message: string }> {
+    return this.fetch(`/api/sd/announcements/${id}`, {
+      method: "DELETE",
+    });
+  }
+
   async createApplication(
     formData: FormData,
   ): Promise<{ message: string; data: RequestType }> {
