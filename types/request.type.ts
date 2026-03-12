@@ -54,7 +54,7 @@ export interface Request {
 
   status_thai?: string;
 
-  attachments?: { attachment_id: string; file_url: string }[];
+  attachments?: { attachment_id: string; file_url: string; label?: string }[];
 
   // Relations
   Owner?: User;

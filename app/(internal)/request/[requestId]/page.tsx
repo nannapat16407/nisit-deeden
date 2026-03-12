@@ -184,7 +184,7 @@ function RequestDetailContent() {
           0,
         );
         const renamedFile = renameFile(reviewFile, newFileName);
-        formData.append("SIGNED_BY_DEAN", renamedFile);
+        formData.append("ใบสมัครที่ลงนามโดยคณบดี", renamedFile);
       }
 
       if (roleName === "DEPARTMENT_HEAD") {
@@ -417,7 +417,28 @@ function RequestDetailContent() {
             </h2>
 
             {request.attachments && request.attachments.length > 0 ? (
-              request.attachments.map((doc, idx) => {
+              (() => {
+                let displayAttachments = [...request.attachments];
+
+                // SD role: ถ้ามี "ใบสมัครที่ลงนามโดยคณบดี" → ซ่อน "ใบสมัครที่ลงนามโดยนิสิต" แล้วเอา "ใบสมัครที่ลงนามโดยคณบดี" ขึ้นแรก
+                if (role === "SD_STAFF") {
+                  const hasDeanSigned = displayAttachments.some(
+                    (a) => a.label === "ใบสมัครที่ลงนามโดยคณบดี",
+                  );
+                  if (hasDeanSigned) {
+                    displayAttachments = displayAttachments.filter(
+                      (a) => a.label !== "ใบสมัครที่ลงนามโดยนิสิต",
+                    );
+                  }
+                  displayAttachments.sort((a, b) => {
+                    if (a.label === "ใบสมัครที่ลงนามโดยคณบดี") return -1;
+                    if (b.label === "ใบสมัครที่ลงนามโดยคณบดี") return 1;
+                    return 0;
+                  });
+                }
+
+                return displayAttachments;
+              })().map((doc, idx) => {
                 const fileExtension = getFileExtension(doc.file_url);
                 const fileName = getFileName(doc.file_url);
                 const isImage = isImageFile(fileExtension);
