@@ -36,6 +36,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
   const labelMap: Record<string, string> = {
     SIGN_BY_STUDENT: "ใบสมัครที่ลงนามโดยนิสิต",
     SIGNED_BY_STUDENT: "ใบสมัครที่ลงนามโดยนิสิต",
+    SIGN_BY_DEAN: "ใบสมัครที่ลงนามโดยคณบดี",
   };
 
   const getDisplayLabel = (label: string): string => {

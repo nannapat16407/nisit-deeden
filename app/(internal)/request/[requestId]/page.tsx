@@ -164,7 +164,7 @@ function RequestDetailContent() {
       if (reviewComment) formData.append("comment", reviewComment);
       if (reviewFile) {
         formData.append("signed_file", reviewFile);
-        formData.append("label", "เอกสารลงนามโดยคณบดี");
+        formData.append("label", "ใบสมัครที่ลงนามโดยคณบดี");
       }
 
       if (roleName === "DEPARTMENT_HEAD") {
@@ -572,46 +572,19 @@ function RequestDetailContent() {
             <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
               <h3 className="font-bold text-gray-800 mb-4">ส่วนสำหรับคณบดี</h3>
 
-              <div className="mb-6 space-y-4">
-                <div>
-                  <a
-                    href={
-                      request.attachments?.[request.attachments.length - 1]
-                        ?.file_url || "#"
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors text-sm font-medium"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="7 10 12 15 17 10"></polyline>
-                      <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                    ดาวน์โหลดไฟล์ใบสมัคร
-                  </a>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    อัปโหลดเอกสารที่เซ็นแล้ว
-                  </label>
-                  <input
-                    type="file"
-                    onChange={(e) => setReviewFile(e.target.files?.[0] || null)}
-                    className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
-                    accept=".pdf"
-                  />
-                </div>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  อัปโหลดเอกสารที่เซ็นแล้ว
+                </label>
+                <input
+                  type="file"
+                  onChange={(e) => setReviewFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm border-gray-300 rounded border p-2 bg-white"
+                  accept=".pdf"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  หากต้องการแนบเอกสารที่ลงนามแล้ว กรุณาเลือกไฟล์ PDF
+                </p>
               </div>
 
               <div className="flex gap-4">
