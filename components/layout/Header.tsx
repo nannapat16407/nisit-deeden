@@ -21,7 +21,7 @@ function Header({
   const [showDropdown, setShowDropdown] = useState(false);
 
   return (
-    <header className="h-[60px] bg-white flex items-center justify-between px-6 text-gray-800 shadow-sm border-b border-gray-100 z-10 sticky top-0">
+    <header className="h-[60px] bg-white flex items-center justify-between px-6 text-gray-800 shadow-sm border-b border-gray-100 z-50 sticky top-0">
       <div className="flex items-center gap-2 font-noto">
         <span className="font-bold text-lg text-emerald-700">{title}</span>
         {showBreadcrumbs && (

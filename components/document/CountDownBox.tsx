@@ -59,7 +59,7 @@ const CountDownBox: React.FC<CountDownBoxProps> = ({
     return () => clearInterval(timer);
   }, [targetDate]);
 
-  const formatNumber = (num: number) => num.toString().padStart(2, "0");
+  const formatNumber = (num: number) => num.toString();
 
   const formatDateToBE = (dateString: string) => {
     const date = new Date(dateString);

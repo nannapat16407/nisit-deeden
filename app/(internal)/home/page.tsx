@@ -155,7 +155,10 @@ function HomePage() {
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Hero Section */}
         <div className="bg-white rounded-lg shadow-sm p-8 flex justify-between items-center relative overflow-hidden">
-          <div className="z-10">
+          {/* Decorative Background */}
+          <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-green-50 to-transparent pointer-events-none z-0"></div>
+
+          <div className="relative z-10">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               ยินดีต้อนรับระบบนิสิตดีเด่น
             </h1>
@@ -176,14 +179,11 @@ function HomePage() {
           {userRole === "STUDENT" && (
             <button
               onClick={() => router.push("/document")}
-              className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 z-10"
+              className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium transition flex items-center gap-2 relative z-10"
             >
               สมัคร <span>{">"}</span>
             </button>
           )}
-
-          {/* Decorative Background Element */}
-          <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-green-50 to-transparent pointer-events-none"></div>
         </div>
 
         {/* Countdown Section */}
