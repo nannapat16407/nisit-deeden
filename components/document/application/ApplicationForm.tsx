@@ -198,7 +198,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
           แบบฟอร์มสมัครนิสิตดีเด่น {awardName}
         </h2>
         {/* Download Template Button */}{" "}
-        {templateFileUrl && (
+        {templateFileUrl ? (
           <div className="mb-6">
             {" "}
             <a
@@ -210,6 +210,10 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({
               {" "}
               <Download size={16} /> ดาวน์โหลดไฟล์แบบฟอร์ม{" "}
             </a>{" "}
+          </div>
+        ) : (
+          <div className="mb-6">
+            <p className="text-sm text-gray-400">ยังไม่มีไฟล์แบบฟอร์มสำหรับรางวัลนี้</p>
           </div>
         )}
         {/* ✅ Render upload inputs แบบ dynamic */}

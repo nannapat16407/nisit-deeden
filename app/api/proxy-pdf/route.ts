@@ -8,11 +8,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const response = await fetch(url, {
+    // Rewrite Docker-internal MinIO URL to localhost for local dev
+    const fetchUrl = url.replace("http://minio:9000", "http://localhost:9000");
+
+    const response = await fetch(fetchUrl, {
       method: "GET",
-      headers: {
-        // You can add headers here if necessary
-      },
     });
 
     if (!response.ok) {
@@ -25,10 +25,9 @@ export async function GET(req: NextRequest) {
 
     return new NextResponse(arrayBuffer, {
       headers: {
-        "Content-Type": "application/pdf",
+        "Content-Type": response.headers.get("Content-Type") || "application/pdf",
         "Access-Control-Allow-Origin": "*",
         "Cache-Control": "public, max-age=3600",
-        // Prevent browsers from trying to sniff content type
         "X-Content-Type-Options": "nosniff",
       },
     });
