@@ -15,6 +15,8 @@ import { RefreshCw, X, Check, Download, Upload } from "lucide-react";
 import { sanitizeFileName } from "@/lib/utils";
 
 // Display log type for rendering in UI
+type DisplayCategory = "pending" | "approved" | "rejected" | "needs_docs";
+
 interface DisplayLog {
   icon: React.ReactNode;
   color: string;
@@ -28,6 +30,7 @@ interface DisplayLog {
   isResubmitted?: boolean; // Flag to indicate if user has resubmitted documents
   rawTimestamp: string; // Original ISO timestamp for comparison
   action: string; // Original action for button display logic
+  displayCategory: DisplayCategory;
 }
 
 const TIMELINE_STEPS = [
@@ -35,6 +38,7 @@ const TIMELINE_STEPS = [
   { key: "vice_dean", label: "รองคณบดี" },
   { key: "dean", label: "คณบดี" },
   { key: "sd_staff", label: "กองพัฒนานิสิต" },
+  { key: "committee", label: "คณะกรรมการ" },
   { key: "president", label: "อธิการบดี" },
 ];
 
@@ -118,15 +122,15 @@ const STATUS_TO_STEP: Record<RequestStatus, number> = {
   PENDING_VICEDEAN: 2,
   PENDING_DEAN: 3,
   PENDING_SD: 4,
-  PENDING_COMMITTEE: 5, // Keep for status mapping, but not displayed in stepper
-  PENDING_PRESIDENT: 5, // Changed from 6 to 5
-  NEEDS_DOCS: 4, // กองพัฒนานิสิต
+  PENDING_COMMITTEE: 5,
+  PENDING_PRESIDENT: 6,
+  NEEDS_DOCS: 4,
   REJECTED_BY_HEAD: 1,
   REJECTED_BY_VICEDEAN: 2,
   REJECTED_BY_DEAN: 3,
-  REJECTED_BY_COMMITTEE: 5, // Keep for status mapping
-  COMPLETE: 5, // Changed from 6 to 5
-  COMPLETED: 5, // Changed from 6 to 5
+  REJECTED_BY_COMMITTEE: 5,
+  COMPLETE: 6,
+  COMPLETED: 6,
 };
 
 function TrackStatusPage() {
@@ -686,6 +690,7 @@ function TrackStatusPage() {
         isReject: false,
         rawTimestamp: detail.created_at,
         action: currentStatus,
+        displayCategory: currentStatus.startsWith("PENDING_") ? "pending" : currentStatus === "NEEDS_DOCS" ? "needs_docs" : currentStatus.startsWith("REJECTED_BY_") ? "rejected" : "approved",
       });
       return result;
     }
@@ -710,6 +715,7 @@ function TrackStatusPage() {
         isReject: false,
         rawTimestamp: logs[0].timestamp,
         action: logs[0].action,
+        displayCategory: "pending",
       });
       return result;
     }
@@ -754,31 +760,20 @@ function TrackStatusPage() {
 
       const displayInfo = getDisplayInfoForAction(action, mode, currentStatus);
 
-      result.push({
-        icon: displayInfo.icon,
-        color: displayInfo.color,
-        label: displayInfo.label,
-        timestamp: formatThaiDate(log.timestamp),
-        statusText: displayInfo.statusText,
-        approverName: showApprover ? log.approver_name || "-" : undefined,
-        isFromData: false,
-        comment: log.comment,
-        isReject: isRejected,
-        rawTimestamp: log.timestamp,
-        action: log.action,
-      });
-
-      // กรณี log ล่าสุด = PENDING_{VICEDEAN/DEAN/SD/PRESIDENT}
-      // ต้องสร้าง 2 กล่อง: current (รอ) + accept (ของก่อนหน้า)
-      if (
+      // กรณี log ล่าสุด = PENDING_{VICEDEAN/DEAN/SD/COMMITTEE/PRESIDENT}
+      // ต้องสร้าง 2 กล่อง: accept (สิ่งที่เพิ่งเกิด) + current (สถานะปัจจุบัน)
+      const isDualBox =
         isLatest &&
         [
           "PENDING_VICEDEAN",
           "PENDING_DEAN",
           "PENDING_SD",
+          "PENDING_COMMITTEE",
           "PENDING_PRESIDENT",
-        ].includes(action)
-      ) {
+        ].includes(action);
+
+      if (isDualBox) {
+        // Push กล่อง accept = สิ่งที่เพิ่งเกิดขึ้น
         const acceptDisplayInfo = getDisplayInfoForAction(
           action,
           "accept",
@@ -796,11 +791,52 @@ function TrackStatusPage() {
           isReject: false,
           rawTimestamp: log.timestamp,
           action: log.action,
+          displayCategory: "approved",
         });
       }
+
+      // Derive display category for the main card
+      const getCategory = (): DisplayCategory => {
+        if (isRejected) return "rejected";
+        if (action === "NEEDS_DOCS") return "needs_docs";
+        if (action === "COMPLETE" || action === "COMPLETED") return "approved";
+        if (mode === "current") return "pending";
+        return "approved";
+      };
+
+      // Push กล่อง current/accept ตามปกติ
+      result.push({
+        icon: displayInfo.icon,
+        color: displayInfo.color,
+        label: displayInfo.label,
+        timestamp: formatThaiDate(log.timestamp),
+        statusText: displayInfo.statusText,
+        approverName: showApprover ? log.approver_name || "-" : undefined,
+        isFromData: false,
+        comment: log.comment,
+        isReject: isRejected,
+        rawTimestamp: log.timestamp,
+        action: log.action,
+        displayCategory: getCategory(),
+      });
     }
 
-    // เรียง logs ตาม timestamp จากใหม่ → เก่า (บน-ล่าง)
+    // Sort: pending/needs_docs บนสุด → approved → rejected
+    // ในแต่ละ group เรียงตาม timestamp ล่าสุดก่อน
+    const categoryPriority: Record<DisplayCategory, number> = {
+      pending: 1,
+      needs_docs: 1,
+      approved: 2,
+      rejected: 3,
+    };
+
+    result.sort((a, b) => {
+      const pA = categoryPriority[a.displayCategory];
+      const pB = categoryPriority[b.displayCategory];
+      if (pA !== pB) return pA - pB;
+      return new Date(b.rawTimestamp).getTime() - new Date(a.rawTimestamp).getTime();
+    });
+
     return result;
   };
 
@@ -894,6 +930,18 @@ function TrackStatusPage() {
       PENDING_PRESIDENT: {
         currentStep: {
           statusText: "อธิการบดี อยู่ระหว่างการพิจารณา",
+          label: "รอพิจารณา",
+          color: "text-yellow-500",
+        },
+        acceptStep: {
+          statusText: "คณะกรรมการ อนุมัติแล้ว",
+          label: "อนุมัติแล้ว",
+          color: "text-[#599fa0]",
+        },
+      },
+      PENDING_COMMITTEE: {
+        currentStep: {
+          statusText: "คณะกรรมการ อยู่ระหว่างการพิจารณา",
           label: "รอพิจารณา",
           color: "text-yellow-500",
         },
