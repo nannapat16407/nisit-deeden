@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Image from "next/image";
 import { ROUTES_BY_ROLE, getName } from "@/constants/route";
 import { Home, FileText, ClipboardList } from "lucide-react";
 
@@ -161,17 +160,9 @@ const Sidebar: React.FC<SidebarProps> = ({ role = "SD" }) => {
 
   return (
     <aside className="w-[280px] h-screen bg-white shadow-xl flex flex-col z-20 shrink-0 sticky top-0">
-      <div className="p-6 flex flex-col items-center border-b border-gray-100">
-        <div className="w-full relative h-16 mb-2">
-          {/* Ensures logo is visible, using object-contain */}
-          <Image
-            src="/nisit-deeden.svg"
-            alt="Nisit Deeden Logo"
-            fill
-            className="object-contain"
-            priority
-          />
-        </div>
+      <div className="px-6 py-5 flex flex-col border-b border-gray-100">
+        <h1 className="text-lg font-bold text-emerald-700 tracking-wide">นิสิตดีเด่น</h1>
+        <p className="text-xs text-gray-400 mt-0.5">มหาวิทยาลัยเกษตรศาสตร์</p>
       </div>
 
       <nav className="flex-1 p-4 space-y-3 overflow-y-auto">

@@ -34,8 +34,9 @@ function LeftMenu({ buttons = [] }: LeftMenuProps) {
     <>
       <div className="w-[25%] h-full p-4">
         <div className="bg-white rounded-2xl shadow-2xl h-full flex flex-col">
-          <div className="w-[90%] p-4">
-            <img src="/nisit-deeden.svg" alt="Logo" className="w-full" />
+          <div className="w-[90%] px-4 pt-5 pb-3">
+            <h1 className="text-lg font-bold text-emerald-700 tracking-wide">นิสิตดีเด่น</h1>
+            <p className="text-xs text-gray-400 mt-0.5">มหาวิทยาลัยเกษตรศาสตร์</p>
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 pb-4">

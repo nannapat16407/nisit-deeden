@@ -585,7 +585,7 @@ function RequestPeriod() {
             />
           ))}
 
-          {filteredPeriods !== null && (
+          {filteredPeriods.length === 0 && (
             <div className="text-center py-20 text-gray-400">
               {isCommitteeRole || isPresidentRole
                 ? "ไม่พบข้อมูลช่วงเวลาที่ต้องอนุมัติ"
